@@ -11,14 +11,24 @@ export async function loadModel() {
     if (model) return model;
 
     try {
-        const modelAsset = Asset.fromModule(require('../../assets/models/mobilenet_v2_1.0_224_quant.tflite'));
+        // Load Model asset
+        console.log('Loading model asset...');
+        const modelModule = require('../../assets/models/mobilenet_v2_1.0_224_quant.tflite');
+        console.log('Model module required:', modelModule);
+
+        const modelAsset = Asset.fromModule(modelModule);
         await modelAsset.downloadAsync();
 
+        console.log('Model asset downloaded to:', modelAsset.localUri);
         // Use localUri to load
         model = await loadTensorflowModel({ url: modelAsset.localUri });
 
-        const labelsAsset = Asset.fromModule(require('../../assets/models/labels.txt'));
+        // Load Labels
+        console.log('Loading labels asset...');
+        const labelsModule = require('../../assets/models/labels.txt');
+        const labelsAsset = Asset.fromModule(labelsModule);
         await labelsAsset.downloadAsync();
+        console.log('Labels asset downloaded to:', labelsAsset.localUri);
         const text = await FileSystem.readAsStringAsync(labelsAsset.localUri);
         labels = text.split('\n').map(l => l.trim()).filter(Boolean);
 
