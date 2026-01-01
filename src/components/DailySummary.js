@@ -1,0 +1,341 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Rect, G, Line, Text as SvgText } from 'react-native-svg';
+import { subscribeToMeals } from '../api/mealService';
+import { useTranslation } from '../hooks/useTranslation';
+import { useSettings } from '../state/SettingsContext';
+
+export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress }) {
+  const t = useTranslation();
+  const { language } = useSettings();
+  const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
+  const [loading, setLoading] = useState(true);
+
+
+
+  useEffect(() => {
+    // Local mode: always proceed
+    const now = new Date();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
+
+    const unsub = subscribeToMeals(useLocalStorage, (fetched) => {
+      const next = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+      const dailyMap = {};
+
+      // Helper to get local date key YYYY-MM-DD
+      const getLocalDateKey = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dd}`;
+      };
+
+      const todayKey = getLocalDateKey(today);
+
+      // Initialize 7 days
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(sevenDaysAgo);
+        d.setDate(d.getDate() + i);
+        const key = getLocalDateKey(d);
+        dailyMap[key] = 0;
+      }
+
+      fetched.forEach((data) => {
+        const mealDate = data.dateObj || new Date(data.timestamp);
+        const mealCals = Number(data.calories) || 0;
+        const dateKey = getLocalDateKey(mealDate);
+
+        if (dateKey === todayKey) {
+          next.calories += mealCals;
+          next.protein += Number(data.protein) || 0;
+          next.carbs += Number(data.carbs) || 0;
+          next.fat += Number(data.fat) || 0;
+        }
+
+        if (dailyMap[dateKey] !== undefined) {
+          dailyMap[dateKey] += mealCals;
+        }
+      });
+
+      // Find first meal date (start of measurement)
+      let firstMealEpoch = Infinity;
+      if (fetched.length > 0) {
+        fetched.forEach(m => {
+          const timestamp = m.dateObj ? m.dateObj.getTime() : (m.timestamp ? new Date(m.timestamp).getTime() : Date.now());
+          if (timestamp < firstMealEpoch) firstMealEpoch = timestamp;
+        });
+      } else {
+        // If no data, assume user starts "now", so previous days are treated as history
+        firstMealEpoch = Date.now();
+      }
+
+      // If no meals, treat effectively as if user started 'tomorrow' (so today is 0 real, older are fake)
+      // But we must exclude today from fake data logic as per requirement "okrem dneska"
+      const firstMealDate = new Date(firstMealEpoch);
+      firstMealDate.setHours(0, 0, 0, 0); // Start of that day
+
+      // Apply fake data for pure history gaps before start
+      // Requirement: "okrem dneska a zacatia merania" => Fake only if day < firstMealDate AND not Today
+      Object.keys(dailyMap).forEach(key => {
+        const [y, m, d] = key.split('-').map(Number);
+        const currentDayDate = new Date(y, m - 1, d);
+
+        // If older than first meal AND not today
+        // Note: isToday check is redundant if firstMealDate <= today, but safe to keep
+        if (currentDayDate < firstMealDate && key !== todayKey) {
+          const seed = currentDayDate.getDate() * 7 + currentDayDate.getMonth() * 13 + y;
+          // Random factor between 0.85 and 1.15
+          // (seed % 30) gives 0..29 -> /100 -> 0.00..0.29 -> +0.85 -> 0.85..1.14
+          const randomFactor = 0.85 + ((seed % 30) / 100);
+          dailyMap[key] = Math.round(dailyGoal * randomFactor);
+        }
+      });
+
+      // Format for Chart
+      const weekStats = Object.keys(dailyMap).sort().map(key => {
+        const [y, m, d] = key.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
+        return {
+          label: date.toLocaleDateString(language, { weekday: 'narrow' }).toUpperCase(),
+          calories: dailyMap[key],
+          isToday: key === todayKey
+        };
+      });
+
+      setTotals(next);
+      setWeekData(weekStats);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, [useLocalStorage]);
+
+  const todayCalories = totals.calories;
+  const remaining = dailyGoal - todayCalories;
+  const isOverGoal = remaining < 0;
+
+  const [weekData, setWeekData] = useState([]);
+
+  const progress = useMemo(() => {
+    const goalSafe = Number.isFinite(dailyGoal) && dailyGoal > 0 ? dailyGoal : 1;
+    return Math.max(0, Math.min(1, todayCalories / goalSafe));
+  }, [dailyGoal, todayCalories]);
+
+  const size = 280;
+  const stroke = 18;
+  const r = 116;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circumference = 2 * Math.PI * r;
+  const dashOffset = circumference * (1 - progress);
+
+  // Chart settings (matching web)
+  const maxChartVal = Math.max(dailyGoal, ...weekData.map(d => d.calories)) * 1.1;
+  const safeMax = maxChartVal || 2000;
+  const barWidth = 10;
+  const barGap = 6;
+  const chartWidth = weekData.length * (barWidth + barGap) - barGap;
+  const startX = (size - chartWidth) / 2;
+  const chartBaseY = 110; // Moved down slightly to avoid hitting top arc
+
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <Text style={styles.muted}>{t.loading}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.ringWrap}>
+        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <Circle
+            cx={cx}
+            cy={cy}
+            r={r}
+            stroke={colors.border || "rgba(255,255,255,0.12)"}
+            strokeWidth={stroke}
+            fill="none"
+          />
+          <Circle
+            cx={cx}
+            cy={cy}
+            r={r}
+            stroke={colors.accent || "#2DD4BF"}
+            strokeWidth={stroke}
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray={`${circumference} ${circumference}`}
+            strokeDashoffset={dashOffset}
+            origin={`${cx}, ${cy}`}
+            rotation={-90}
+          />
+
+          {/* 7-Day Mini Chart */}
+          <G x={startX} y={chartBaseY}>
+            {weekData.map((d, i) => {
+              const GOAL_HEIGHT = 30; // Reduced height to fit better
+              // Cap at 150% like HistoryScreen
+              const pct = Math.min((d.calories / (dailyGoal || 1)), 1.5);
+              const barHeight = pct * GOAL_HEIGHT;
+              const x = i * (barWidth + barGap);
+              const isToday = d.isToday;
+
+              return (
+                <G key={i}>
+                  {/* Track (Goal Background) */}
+                  <Rect
+                    x={x}
+                    y={-GOAL_HEIGHT}
+                    width={barWidth}
+                    height={GOAL_HEIGHT}
+                    rx={3}
+                    fill="rgba(59, 130, 246, 0.3)"
+                  />
+
+                  {/* Fill (Orange, or Teal for Today) */}
+                  <Rect
+                    x={x}
+                    y={-Math.max(2, barHeight)}
+                    width={barWidth}
+                    height={Math.max(2, barHeight)}
+                    rx={3}
+                    fill={isToday ? '#2DD4BF' : '#FB923C'}
+                  />
+
+                  {/* Goal Marker (Blue Line at 100%) */}
+                  <Rect
+                    x={x}
+                    y={-GOAL_HEIGHT - 1} // Centered on top edge of track roughly
+                    width={barWidth}
+                    height={2}
+                    fill="#3B82F6"
+                  />
+
+                  <SvgText
+                    x={x + barWidth / 2}
+                    y={14}
+                    fill={isToday ? colors.accent : colors.muted}
+                    fontSize="10"
+                    fontWeight={isToday ? "800" : "600"}
+                    textAnchor="middle"
+                  >
+                    {d.label}
+                  </SvgText>
+                </G>
+              );
+            })}
+          </G>
+        </Svg>
+
+        <Pressable
+          style={styles.center}
+          onPress={onPress}
+        >
+          <View style={styles.centerRow}>
+            <Text style={[styles.kcalValue, { color: '#FB923C' }]}>{todayCalories.toLocaleString()}</Text>
+            <Text style={[styles.kcalUnit, { color: '#FB923C' }]}>kcal</Text>
+          </View>
+          <Text style={[styles.goalText, { color: colors.muted }]}>{t.dailyGoalLabel}: {Number(dailyGoal).toLocaleString()} kcal</Text>
+          <Text style={[styles.remainingText, isOverGoal && styles.remainingOver, !isOverGoal && { color: colors.accent }]}>
+            {Math.abs(remaining).toLocaleString()} kcal {isOverGoal ? t.overGoal : t.remainingLabel}
+          </Text>
+        </Pressable>
+      </View>
+
+      <View style={[styles.macros, { borderTopColor: colors.border }]}>
+        <Macro label={t.protein} value={`${totals.protein.toFixed(1)}g`} colors={colors} />
+        <Macro label={t.carbs} value={`${totals.carbs.toFixed(1)}g`} colors={colors} />
+        <Macro label={t.fat} value={`${totals.fat.toFixed(1)}g`} colors={colors} />
+      </View>
+    </View>
+  );
+}
+
+function Macro({ label, value, colors }) {
+  return (
+    <View style={styles.macroItem}>
+      <Text style={[styles.macroValue, { color: colors.text }]}>{value}</Text>
+      <Text style={[styles.macroLabel, { color: colors.muted }]}>{label}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  loading: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  muted: {
+    color: 'rgba(255,255,255,0.7)',
+  },
+  ringWrap: {
+    width: 280,
+    height: 280,
+  },
+  center: {
+    position: 'absolute',
+    top: 45, // Shifted down to be below the chart
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+  },
+  centerRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    marginTop: 8,
+  },
+  kcalValue: {
+    fontSize: 44,
+    fontWeight: '800',
+  },
+  kcalUnit: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  goalText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  remainingText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  remainingOver: {
+    color: '#F87171',
+  },
+  macros: {
+    marginTop: 12,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
+    paddingTop: 12,
+  },
+  macroItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  macroValue: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  macroLabel: {
+    fontSize: 12,
+  },
+});

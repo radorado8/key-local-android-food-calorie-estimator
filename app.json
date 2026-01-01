@@ -1,0 +1,72 @@
+{
+  "expo": {
+    "name": "Calories AI Local",
+    "slug": "android-food-calorie-estimator",
+    "scheme": "keylocalfoodestimator",
+    "version": "1.0.2",
+    "orientation": "portrait",
+    "icon": "./assets/icon_key_fire.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rados.keylocalandroidfoodcalorieestimator"
+    },
+    "android": {
+      "package": "com.rados.keylocalandroidfoodcalorieestimator",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon_key_fire.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "gradleProperties": {
+              "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g"
+            }
+          }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Povoliť prístup k fotkám pre analýzu jedla.",
+          "cameraPermission": "Povoliť prístup k fotoaparátu pre odfotenie jedla."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Povoliť prístup k fotoaparátu pre odfotenie jedla."
+        }
+      ],
+      "expo-localization",
+      "@react-native-community/datetimepicker",
+      "expo-secure-store",
+      "expo-document-picker",
+      "expo-file-system"
+    ],
+    "extra": {
+      "allowedEmails": [],
+      "eas": {
+        "projectId": "66626bfd-c13b-4883-a7bd-c6d9d8b522c4"
+      }
+    }
+  }
+}
