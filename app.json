@@ -60,7 +60,8 @@
       "@react-native-community/datetimepicker",
       "expo-secure-store",
       "expo-document-picker",
-      "expo-file-system"
+      "expo-file-system",
+      "react-native-fast-tflite"
     ],
     "extra": {
       "allowedEmails": [],
