@@ -232,5 +232,17 @@
     "carbs": 3.1,
     "fat": 0.3,
     "protein": 1.2
+  },
+  "French loaf": {
+    "calories": 220,
+    "carbs": 44,
+    "fat": 1.1,
+    "protein": 7.6
+  },
+  "bakery": {
+    "calories": 287,
+    "carbs": 55,
+    "fat": 1.84,
+    "protein": 9.8
   }
 }
