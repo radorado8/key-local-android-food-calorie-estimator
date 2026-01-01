@@ -1,7 +1,7 @@
 import { classifyImage } from './localClassifier';
 import nutritionDB from '../data/nutritionDB.json';
 
-export async function analyzeImageLocal(imageUri) {
+export async function analyzeImageLocal({ imageUri, weightG }) {
     try {
         const { label, confidence } = await classifyImage(imageUri);
         console.log(`Local Classification: ${label} (${(confidence * 100).toFixed(1)}%)`);
@@ -25,15 +25,19 @@ export async function analyzeImageLocal(imageUri) {
             };
         }
 
-        // Map to standard format expected by ScannerScreen
+        // Calculation Logic
+        // nutritionDB values are per 100g
+        const finalWeight = weightG ? Number(weightG) : 100;
+        const ratio = finalWeight / 100;
+
         return {
             success: true,
             name: label.replace(/_/g, ' '), // e.g. "hot_dog" -> "hot dog"
-            calories: Math.round(nutrition.calories),
-            protein: nutrition.protein,
-            carbs: nutrition.carbs,
-            fat: nutrition.fat,
-            weight: 100, // standard 100g base
+            calories: Math.round(nutrition.calories * ratio),
+            protein: Math.round(nutrition.protein * ratio * 10) / 10,
+            carbs: Math.round(nutrition.carbs * ratio * 10) / 10,
+            fat: Math.round(nutrition.fat * ratio * 10) / 10,
+            weight_g: finalWeight,
             analysisMethod: 'local_tflite',
             confidence: confidence
         };

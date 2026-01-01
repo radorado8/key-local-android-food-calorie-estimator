@@ -1,164 +1,272 @@
 {
-    "banana": {
-        "calories": 89,
-        "protein": 1.1,
-        "carbs": 22.8,
-        "fat": 0.3
+    "acorn_squash": {
+        "calories": 40,
+        "carbs": 10,
+        "fat": 0.1,
+        "protein": 1
     },
     "apple": {
         "calories": 52,
-        "protein": 0.3,
         "carbs": 13.8,
-        "fat": 0.2
-    },
-    "pizza": {
-        "calories": 266,
-        "protein": 11,
-        "carbs": 33,
-        "fat": 10
-    },
-    "cheeseburger": {
-        "calories": 303,
-        "protein": 15,
-        "carbs": 30,
-        "fat": 14
-    },
-    "hot_dog": {
-        "calories": 290,
-        "protein": 10,
-        "carbs": 4.2,
-        "fat": 26
-    },
-    "ice_cream": {
-        "calories": 207,
-        "protein": 3.5,
-        "carbs": 24,
-        "fat": 11
-    },
-    "orange": {
-        "calories": 47,
-        "protein": 0.9,
-        "carbs": 11.8,
-        "fat": 0.1
-    },
-    "broccoli": {
-        "calories": 34,
-        "protein": 2.8,
-        "carbs": 6.6,
-        "fat": 0.4
-    },
-    "cucumber": {
-        "calories": 16,
-        "protein": 0.7,
-        "carbs": 3.6,
-        "fat": 0.1
-    },
-    "strawberry": {
-        "calories": 32,
-        "protein": 0.7,
-        "carbs": 7.7,
-        "fat": 0.3
-    },
-    "burrito": {
-        "calories": 206,
-        "protein": 8,
-        "carbs": 24,
-        "fat": 8
-    },
-    "bagel": {
-        "calories": 250,
-        "protein": 10,
-        "carbs": 49,
-        "fat": 1.5
-    },
-    "pretzel": {
-        "calories": 380,
-        "protein": 9,
-        "carbs": 80,
-        "fat": 3
-    },
-    "mashed_potato": {
-        "calories": 88,
-        "protein": 1.7,
-        "carbs": 15,
-        "fat": 2.8
-    },
-    "cabbage": {
-        "calories": 25,
-        "protein": 1.3,
-        "carbs": 5.8,
-        "fat": 0.1
-    },
-    "cauliflower": {
-        "calories": 25,
-        "protein": 1.9,
-        "carbs": 5,
-        "fat": 0.3
-    },
-    "zucchini": {
-        "calories": 17,
-        "protein": 1.2,
-        "carbs": 3.1,
-        "fat": 0.3
-    },
-    "spaghetti_squash": {
-        "calories": 31,
-        "protein": 0.6,
-        "carbs": 7,
-        "fat": 0.6
-    },
-    "acorn_squash": {
-        "calories": 40,
-        "protein": 1,
-        "carbs": 10,
-        "fat": 0.1
+        "fat": 0.2,
+        "protein": 0.3
     },
     "artichoke": {
         "calories": 47,
-        "protein": 3.3,
         "carbs": 10.5,
-        "fat": 0.2
+        "fat": 0.2,
+        "protein": 3.3
+    },
+    "bagel": {
+        "calories": 250,
+        "carbs": 49,
+        "fat": 1.5,
+        "protein": 10
+    },
+    "banana": {
+        "calories": 89,
+        "carbs": 22.8,
+        "fat": 0.3,
+        "protein": 1.1
     },
     "bell_pepper": {
         "calories": 20,
-        "protein": 0.9,
         "carbs": 4.6,
-        "fat": 0.2
+        "fat": 0.2,
+        "protein": 0.9
+    },
+    "broccoli": {
+        "calories": 34,
+        "carbs": 6.6,
+        "fat": 0.4,
+        "protein": 2.8
+    },
+    "burrito": {
+        "calories": 206,
+        "carbs": 24,
+        "fat": 8,
+        "protein": 8
+    },
+    "butternut_squash": {
+        "calories": 45,
+        "carbs": 12.0,
+        "fat": 0.1,
+        "protein": 1.0
+    },
+    "cabbage": {
+        "calories": 25,
+        "carbs": 5.8,
+        "fat": 0.1,
+        "protein": 1.3
+    },
+    "carbonara": {
+        "calories": 190,
+        "carbs": 20.0,
+        "fat": 9.0,
+        "protein": 8.0
     },
     "cardoon": {
         "calories": 17,
-        "protein": 0.7,
         "carbs": 4,
-        "fat": 0.1
+        "fat": 0.1,
+        "protein": 0.7
     },
-    "mushroom": {
-        "calories": 22,
-        "protein": 3.1,
-        "carbs": 3.3,
-        "fat": 0.3
+    "cauliflower": {
+        "calories": 25,
+        "carbs": 5,
+        "fat": 0.3,
+        "protein": 1.9
     },
-    "granny_smith": {
-        "calories": 52,
-        "protein": 0.3,
-        "carbs": 13.8,
-        "fat": 0.2
+    "cheeseburger": {
+        "calories": 303,
+        "carbs": 30,
+        "fat": 14,
+        "protein": 15
     },
-    "lemon": {
-        "calories": 29,
-        "protein": 1.1,
-        "carbs": 9,
-        "fat": 0.3
+    "chocolate_sauce": {
+        "calories": 278,
+        "carbs": 66.0,
+        "fat": 4.0,
+        "protein": 1.4
+    },
+    "consomme": {
+        "calories": 7,
+        "carbs": 0.2,
+        "fat": 0.2,
+        "protein": 1.0
+    },
+    "cucumber": {
+        "calories": 16,
+        "carbs": 3.6,
+        "fat": 0.1,
+        "protein": 0.7
+    },
+    "custard_apple": {
+        "calories": 75,
+        "carbs": 17.7,
+        "fat": 0.7,
+        "protein": 1.6
+    },
+    "dough": {
+        "calories": 274,
+        "carbs": 55.0,
+        "fat": 2.0,
+        "protein": 8.0
+    },
+    "eggnog": {
+        "calories": 95,
+        "carbs": 8.0,
+        "fat": 5.0,
+        "protein": 4.0
+    },
+    "espresso": {
+        "calories": 9,
+        "carbs": 1.7,
+        "fat": 0.0,
+        "protein": 0.1
     },
     "fig": {
         "calories": 74,
-        "protein": 0.8,
         "carbs": 19,
-        "fat": 0.3
+        "fat": 0.3,
+        "protein": 0.8
+    },
+    "french_loaf": {
+        "calories": 274,
+        "carbs": 57.0,
+        "fat": 1.0,
+        "protein": 9.0
+    },
+    "granny_smith": {
+        "calories": 52,
+        "carbs": 13.8,
+        "fat": 0.2,
+        "protein": 0.3
+    },
+    "guacamole": {
+        "calories": 167,
+        "carbs": 8.5,
+        "fat": 15.0,
+        "protein": 2.0
+    },
+    "hot_dog": {
+        "calories": 290,
+        "carbs": 4.2,
+        "fat": 26,
+        "protein": 10
+    },
+    "hot_pot": {
+        "calories": 98,
+        "carbs": 8.0,
+        "fat": 4.0,
+        "protein": 6.0
+    },
+    "ice_cream": {
+        "calories": 207,
+        "carbs": 24,
+        "fat": 11,
+        "protein": 3.5
+    },
+    "ice_lolly": {
+        "calories": 80,
+        "carbs": 20.0,
+        "fat": 0.0,
+        "protein": 0.0
+    },
+    "jackfruit": {
+        "calories": 95,
+        "carbs": 23.2,
+        "fat": 0.6,
+        "protein": 1.7
+    },
+    "lemon": {
+        "calories": 29,
+        "carbs": 9,
+        "fat": 0.3,
+        "protein": 1.1
+    },
+    "mashed_potato": {
+        "calories": 88,
+        "carbs": 15,
+        "fat": 2.8,
+        "protein": 1.7
+    },
+    "meat_loaf": {
+        "calories": 250,
+        "carbs": 10.0,
+        "fat": 17.0,
+        "protein": 14.0
+    },
+    "mushroom": {
+        "calories": 22,
+        "carbs": 3.3,
+        "fat": 0.3,
+        "protein": 3.1
+    },
+    "orange": {
+        "calories": 47,
+        "carbs": 11.8,
+        "fat": 0.1,
+        "protein": 0.9
     },
     "pineapple": {
         "calories": 50,
-        "protein": 0.5,
         "carbs": 13,
-        "fat": 0.1
+        "fat": 0.1,
+        "protein": 0.5
+    },
+    "pizza": {
+        "calories": 266,
+        "carbs": 33,
+        "fat": 10,
+        "protein": 11
+    },
+    "pomegranate": {
+        "calories": 83,
+        "carbs": 18.7,
+        "fat": 1.2,
+        "protein": 1.7
+    },
+    "potpie": {
+        "calories": 204,
+        "carbs": 18.0,
+        "fat": 12.0,
+        "protein": 7.0
+    },
+    "pretzel": {
+        "calories": 380,
+        "carbs": 80,
+        "fat": 3,
+        "protein": 9
+    },
+    "red_wine": {
+        "calories": 85,
+        "carbs": 2.6,
+        "fat": 0.0,
+        "protein": 0.1
+    },
+    "spaghetti_squash": {
+        "calories": 31,
+        "carbs": 7,
+        "fat": 0.6,
+        "protein": 0.6
+    },
+    "strawberry": {
+        "calories": 32,
+        "carbs": 7.7,
+        "fat": 0.3,
+        "protein": 0.7
+    },
+    "trifle": {
+        "calories": 186,
+        "carbs": 22.0,
+        "fat": 9.0,
+        "protein": 4.0
+    },
+    "zucchini": {
+        "calories": 17,
+        "carbs": 3.1,
+        "fat": 0.3,
+        "protein": 1.2
     }
 }

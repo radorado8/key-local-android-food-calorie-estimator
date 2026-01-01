@@ -43,59 +43,101 @@ export async function analyzeImage({ base64Data, mimeType, weightG, language = '
         }
     };
 
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        });
+    // Retry logic
+    let attempts = 0;
+    const maxAttempts = 3;
 
-        if (!response.ok) {
-            const errText = await response.text();
-            let errMsg = `Gemini API Error: ${response.status}`;
+    while (attempts < maxAttempts) {
+        attempts++;
+        try {
+            console.log(`Gemini API Request (Attempt ${attempts}/${maxAttempts})...`);
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                // If 503 (Service Unavailable) or 429 (Too Many Requests), throw to trigger retry
+                if (response.status === 503 || response.status === 429) {
+                    throw new Error(`Server Busy (${response.status})`);
+                }
+
+                let errMsg = `Gemini API Error: ${response.status}`;
+                try {
+                    const errJson = JSON.parse(errText);
+                    errMsg = errJson.error?.message || errMsg;
+                } catch { }
+                // Fatal error, don't retry unless network
+                throw new Error(errMsg);
+            }
+
+            // Safe JSON Parsing
+            const rawText = await response.text();
+
+            if (!rawText || !rawText.trim()) {
+                throw new Error('Empty response from backend');
+            }
+
+            let data;
             try {
-                const errJson = JSON.parse(errText);
-                errMsg = errJson.error?.message || errMsg;
-            } catch { }
-            throw new Error(errMsg);
+                data = JSON.parse(rawText);
+            } catch (jsonErr) {
+                console.error("Gemini JSON Parse Error. Raw response:", rawText);
+                throw new Error("Invalid JSON response from server");
+            }
+
+            // Parse response content
+            const candidate = data.candidates?.[0];
+            if (!candidate) throw new Error('No candidates returned from Gemini.');
+
+            const part = candidate.content?.parts?.[0];
+            if (!part || !part.text) throw new Error('Empty response from Gemini.');
+
+            const textContent = part.text.trim();
+
+            // Clean markdown code blocks if present
+            const jsonStr = textContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+
+            const result = JSON.parse(jsonStr);
+
+            if (result.error === 'not_food') {
+                throw new Error('not_food');
+            }
+
+            // Sanitize numbers
+            return {
+                name: result.name || 'Unknown Food',
+                calories: Number(result.calories) || 0,
+                protein: Number(result.protein) || 0,
+                carbs: Number(result.carbs) || 0,
+                fat: Number(result.fat) || 0,
+                weight_g: Number(result.weight_g) || 0,
+                confidence: Number(result.confidence) || 0.5
+            };
+
+        } catch (error) {
+            console.warn(`Attempt ${attempts} failed:`, error.message);
+
+            // Should we retry?
+            const isRetryable =
+                error.message.includes('Network request failed') ||
+                error.message.includes('Server Busy') ||
+                error.message.includes('Empty response') ||
+                error.message.includes('Invalid JSON') ||
+                error.message.includes('Unexpected end of input');
+
+            if (attempts >= maxAttempts || !isRetryable) {
+                console.error('Gemini Analysis Failed after retries:', error);
+                throw error;
+            }
+
+            // Wait before retry (1s, 2s, 3s...)
+            await new Promise(r => setTimeout(r, 1000 * attempts));
         }
-
-        const data = await response.json();
-
-        // Parse response
-        const candidate = data.candidates?.[0];
-        if (!candidate) throw new Error('No candidates returned from Gemini.');
-
-        const part = candidate.content?.parts?.[0];
-        if (!part || !part.text) throw new Error('Empty response from Gemini.');
-
-        const rawText = part.text.trim();
-
-        // Clean markdown code blocks if present (though responseMimeType should prevent this, safety first)
-        const jsonStr = rawText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-
-        const result = JSON.parse(jsonStr);
-
-        if (result.error === 'not_food') {
-            throw new Error('not_food');
-        }
-
-        // Sanitize numbers
-        return {
-            name: result.name || 'Unknown Food',
-            calories: Number(result.calories) || 0,
-            protein: Number(result.protein) || 0,
-            carbs: Number(result.carbs) || 0,
-            fat: Number(result.fat) || 0,
-            weight_g: Number(result.weight_g) || 0,
-            confidence: Number(result.confidence) || 0.5
-        };
-
-    } catch (error) {
-        console.error('Gemini Analysis Failed:', error);
-        // Propagate error to be handled by UI (e.g. "not_food" maps to specific message)
-        throw error;
     }
 }

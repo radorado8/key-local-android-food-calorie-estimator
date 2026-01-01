@@ -52,7 +52,11 @@ export async function analyzeFood(payload) {
     if (!payload.imageUri) {
       throw new Error('Local Analysis requires imageUri');
     }
-    const result = await analyzeImageLocal(payload.imageUri);
+    // Pass full payload (contains weightG, etc.)
+    const result = await analyzeImageLocal({
+      imageUri: payload.imageUri,
+      weightG: payload.weightG
+    });
     if (!result.success) {
       throw new Error(result.error || 'Local Analysis Failed');
     }
