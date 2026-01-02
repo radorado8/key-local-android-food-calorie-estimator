@@ -1,7 +1,10 @@
 import { classifyImage } from './localClassifier';
 import nutritionDB from '../data/nutritionDB.json';
+import { translations } from '../i18n/translations';
 
-export async function analyzeImageLocal({ imageUri, weightG }) {
+export async function analyzeImageLocal({ imageUri, weightG, language = 'en' }) {
+    const t = translations[language] || translations['en'];
+
     try {
         const { label, confidence } = await classifyImage(imageUri);
         console.log(`Local Classification: ${label} (${(confidence * 100).toFixed(1)}%)`);
@@ -10,7 +13,7 @@ export async function analyzeImageLocal({ imageUri, weightG }) {
         if (confidence < 0.2) {
             return {
                 success: false,
-                error: "Nízka istota detekcie. Skús odfotiť jedlo zblízka.",
+                error: t.localAnalysisLowConfidence || "Low confidence detection.",
                 rawLabel: label
             };
         }
@@ -20,7 +23,7 @@ export async function analyzeImageLocal({ imageUri, weightG }) {
         if (!nutrition) {
             return {
                 success: false,
-                error: `Rozpoznalo sa '${label}', ale nie je pridaná nutričná hodnota.`,
+                error: (t.localAnalysisNoNutrition || "Recognized '{label}', but no nutrition data available.").replace('{label}', label),
                 rawLabel: label
             };
         }
@@ -46,7 +49,7 @@ export async function analyzeImageLocal({ imageUri, weightG }) {
         console.error('Local Analysis Error:', error);
         return {
             success: false,
-            error: "Chyba pri lokálnej analýze: " + error.message
+            error: (t.localAnalysisError || "Local Analysis Error: ") + error.message
         };
     }
 }

@@ -53,6 +53,10 @@ export default function App() {
   );
 }
 
+import * as NavigationBar from 'expo-navigation-bar';
+
+// ...
+
 function AppContent({ startupError }) {
   const insets = useSafeAreaInsets();
   const { theme } = useSettings();
@@ -73,6 +77,15 @@ function AppContent({ startupError }) {
       active: '#2DD4BF',
       inactive: 'rgba(255,255,255,0.6)'
     };
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      const navColor = theme === 'light' ? '#FFFFFF' : '#0B0F14';
+      const iconStyle = theme === 'light' ? 'dark' : 'light';
+      NavigationBar.setBackgroundColorAsync(navColor).catch(() => { });
+      NavigationBar.setButtonStyleAsync(iconStyle).catch(() => { });
+    }
+  }, [theme]);
 
   return (
     <NavigationContainer>
