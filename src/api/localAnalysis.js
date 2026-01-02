@@ -20,7 +20,7 @@ export async function analyzeImageLocal({ imageUri, weightG }) {
         if (!nutrition) {
             return {
                 success: false,
-                error: `Rozpoznali sme '${label}', ale nemáme k nemu nutričné dáta.`,
+                error: `Rozpoznalo sa '${label}', ale nie je pridaná nutričná hodnota.`,
                 rawLabel: label
             };
         }

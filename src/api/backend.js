@@ -12,6 +12,17 @@ export class BackendError extends Error {
 
 export function getFriendlyError(err) {
   const msg = err?.message || 'Unknown error';
+
+  if (msg === 'not_food') {
+    return { title: 'Nerozpoznané', message: 'Toto nevyzerá ako jedlo. Skús to odfotiť znova alebo z iného uhla.' };
+  }
+  if (msg.includes('Invalid format from AI') || msg.includes('Unexpected end of input')) {
+    return { title: 'Chyba AI', message: 'Umelá inteligencia neodpovedala správne. Skús to prosím znova.' };
+  }
+  if (msg.includes('Network request failed')) {
+    return { title: 'Chyba siete', message: 'Skontroluj pripojenie na internet.' };
+  }
+
   return { title: 'Chyba', message: msg };
 }
 
@@ -55,7 +66,8 @@ export async function analyzeFood(payload) {
     // Pass full payload (contains weightG, etc.)
     const result = await analyzeImageLocal({
       imageUri: payload.imageUri,
-      weightG: payload.weightG
+      weightG: payload.weightG,
+      language: payload.language // Pass language for localization
     });
     if (!result.success) {
       throw new Error(result.error || 'Local Analysis Failed');

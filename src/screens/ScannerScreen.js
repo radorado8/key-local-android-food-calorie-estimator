@@ -235,7 +235,7 @@ export default function ScannerScreen({ navigation }) {
 
     } catch (err) {
       console.error('Capture Error:', err);
-      const friendly = getFriendlyError(err, { operation: 'analyze' });
+      const friendly = getFriendlyError(err, t);
       Alert.alert(friendly.title, friendly.message);
       setShowCamera(false);
     } finally {
@@ -266,7 +266,7 @@ export default function ScannerScreen({ navigation }) {
           await pickFromGallery(weightG);
         }
       } catch (err) {
-        const friendly = getFriendlyError(err, { operation: 'analyze' });
+        const friendly = getFriendlyError(err, t);
         Alert.alert(friendly.title, friendly.message);
       }
     }, 150);
@@ -290,7 +290,7 @@ export default function ScannerScreen({ navigation }) {
           await pickFromGallery(null);
         }
       } catch (err) {
-        const friendly = getFriendlyError(err, { operation: 'analyze' });
+        const friendly = getFriendlyError(err, t);
         Alert.alert(friendly.title, friendly.message);
       }
     },

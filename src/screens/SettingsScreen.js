@@ -119,7 +119,7 @@ export default function SettingsScreen() {
 
   const handleSaveKey = async () => {
     await setGeminiKey(apiKey);
-    Alert.alert(t.saved || 'Uložené', 'API kľúč bol uložený.');
+    Alert.alert(t.saved, t.apiKeySavedMsg);
   };
 
   const allowedModels = useMemo(() => MODEL_CATALOG, []);
@@ -177,7 +177,7 @@ export default function SettingsScreen() {
 
       const lines = content.split(/\r?\n/).filter(line => line.trim() !== '');
       if (lines.length < 2) {
-        throw new Error(t.importErrorEmpty || 'Súbor je prázdny alebo neplatný.');
+        throw new Error(t.importErrorEmpty);
       }
 
       // We ignore the header row (index 0) and parse columns by order to support any language headers
@@ -190,7 +190,7 @@ export default function SettingsScreen() {
         if (row.length < 3) continue; // minimal valid row
 
         const dateStr = row[0]?.trim();
-        const name = row[1]?.trim() || 'Imported Meal';
+        const name = row[1]?.trim() || t.importedMealDefault;
         const cals = parseFloat(row[2] || '0');
         const prot = parseFloat(row[3] || '0');
         const carbs = parseFloat(row[4] || '0');
@@ -219,11 +219,11 @@ export default function SettingsScreen() {
         importedCount++;
       }
 
-      Alert.alert(t.success || 'Hotovo', `${t.importedMsg || 'Importovaných záznamov:'} ${importedCount}`);
+      Alert.alert(t.success, `${t.importedMsg} ${importedCount}`);
 
     } catch (e) {
       console.error('Import failed', e);
-      Alert.alert(t.errorTitle, t.importFailed || 'Import zlyhal.');
+      Alert.alert(t.errorTitle, t.importFailed);
     } finally {
       setImporting(false);
     }
@@ -257,9 +257,9 @@ export default function SettingsScreen() {
 
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(fileUri);
-        Alert.alert('Info', t.exportDataSuccess);
+        Alert.alert(t.info, t.exportDataSuccess);
       } else {
-        Alert.alert('Info', 'Sharing not available on this device');
+        Alert.alert(t.info, t.sharingUnavailable);
       }
 
     } catch (e) {
@@ -298,7 +298,7 @@ export default function SettingsScreen() {
 
         {/* 2. API Key */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.label, { color: colors.accent }]}>Gemini {t.apiKey || 'API Key'}</Text>
+          <Text style={[styles.label, { color: colors.accent }]}>Gemini {t.apiKeyLabel}</Text>
           <View style={[styles.inputContainer, { backgroundColor: colors.elemBg, borderColor: colors.elemBorder }]}>
             <TextInput
               value={apiKey}
@@ -314,7 +314,7 @@ export default function SettingsScreen() {
                   color: colors.text
                 }
               ]}
-              placeholder="Paste your Gemini API Key"
+              placeholder={t.apiKeyPlaceholder}
               placeholderTextColor={colors.muted}
             />
             <Pressable onPress={() => setShowKey(!showKey)} style={{ padding: 10 }}>
@@ -329,10 +329,10 @@ export default function SettingsScreen() {
               pressed && styles.pressed
             ]}
           >
-            <Text style={{ color: colors.accent, fontWeight: '700' }}>{t.save || 'Uložiť kľúč'}</Text>
+            <Text style={{ color: colors.accent, fontWeight: '700' }}>{t.save}</Text>
           </Pressable>
           <Text style={[styles.hint, { color: colors.muted, marginTop: 8, fontSize: 12 }]}>
-            {t.apiKeyHint || 'Kľúč bude uložený bezpečne iba v tomto zariadení.'}
+            {t.apiKeyHint}
           </Text>
         </View>
 

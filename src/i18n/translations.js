@@ -143,6 +143,32 @@ export const translations = {
         csvHeaderCarbs: 'Sacharidy (g)',
         csvHeaderFat: 'Tuky (g)',
         csvHeaderWeight: 'Váha (g)',
+
+        // Local Analysis / Import / Settings
+        saved: 'Uložené',
+        apiKeySavedMsg: 'API kľúč bol uložený.',
+        importErrorEmpty: 'Súbor je prázdny alebo neplatný.',
+        importedMealDefault: 'Importované jedlo',
+        success: 'Hotovo',
+        importedMsg: 'Importovaných záznamov:',
+        importFailed: 'Import zlyhal.',
+        info: 'Info',
+        sharingUnavailable: 'Zdieľanie nie je dostupné na tomto zariadení.',
+        apiKeyPlaceholder: 'Vlož svoj Gemini API kľúč',
+        apiKeyLabel: 'API Kľúč',
+
+        // Local Analysis Specific
+        localAnalysisLowConfidence: 'Nízka istota detekcie. Skús odfotiť jedlo zblízka.',
+        localAnalysisNoNutrition: "Rozpoznalo sa '{label}', ale nie je pridaná nutričná hodnota.",
+        localAnalysisError: 'Chyba pri lokálnej analýze: ',
+
+        // Pre-existing errors...
+        errNotFoodTitle: 'Nerozpoznané',
+        errNotFoodMsg: 'Toto nevyzerá ako jedlo. Skús to odfotiť znova alebo z iného uhla.',
+        errAiTitle: 'Chyba AI',
+        errAiMsg: 'Umelá inteligencia neodpovedala správne. Skús to prosím znova.',
+        errNetworkTitle: 'Chyba siete',
+        errNetworkMsg: 'Skontroluj pripojenie na internet.',
     },
     en: {
         tabScanner: 'Scanner',
@@ -263,6 +289,32 @@ export const translations = {
         csvHeaderCarbs: 'Carbs (g)',
         csvHeaderFat: 'Fat (g)',
         csvHeaderWeight: 'Weight (g)',
+
+        // Local Analysis / Import / Settings
+        saved: 'Saved',
+        apiKeySavedMsg: 'API Key has been saved.',
+        importErrorEmpty: 'File is empty or invalid.',
+        importedMealDefault: 'Imported Meal',
+        success: 'Done',
+        importedMsg: 'Imported records:',
+        importFailed: 'Import failed.',
+        info: 'Info',
+        sharingUnavailable: 'Sharing not available on this device.',
+        apiKeyPlaceholder: 'Paste your Gemini API Key',
+        apiKeyLabel: 'API Key',
+
+        // Local Analysis Specific
+        localAnalysisLowConfidence: 'Low confidence detection. Try capturing closer.',
+        localAnalysisNoNutrition: "Recognized '{label}', but no nutrition data available.",
+        localAnalysisError: 'Local analysis error: ',
+
+        // Pre-existing errors...
+        errNotFoodTitle: 'Not Recognized',
+        errNotFoodMsg: 'This does not look like food. Please try capturing it again or from a different angle.',
+        errAiTitle: 'AI Error',
+        errAiMsg: 'Artificial Intelligence did not respond correctly. Please try again.',
+        errNetworkTitle: 'Network Error',
+        errNetworkMsg: 'Check your internet connection.',
     },
     de: {
         tabScanner: 'Scanner',
