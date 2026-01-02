@@ -307,8 +307,8 @@ export default function HistoryScreen() {
                 </View>
 
                 <View style={[styles.sectionRightGroup, { minWidth: 80 }]}>
-                  <Text style={[styles.sectionKcal, { color: '#FB923C' }]}>{totals.calories.toLocaleString()} kcal</Text>
-                  <Text style={[styles.sectionMacros, { color: colors.muted }]}>{`${t.macroShortP}: ${totals.protein.toFixed(1)}g ${t.macroShortC}: ${totals.carbs.toFixed(1)}g ${t.macroShortF}: ${totals.fat.toFixed(1)}g`}</Text>
+                  <Text style={[styles.sectionKcal, { color: '#FB923C' }]}>{Math.round(totals.calories).toLocaleString()} kcal</Text>
+                  <Text style={[styles.sectionMacros, { color: colors.muted }]}>{`${t.macroShortP}: ${Math.round(totals.protein)}g ${t.macroShortC}: ${Math.round(totals.carbs)}g ${t.macroShortF}: ${Math.round(totals.fat)}g`}</Text>
                 </View>
               </Pressable>
 
@@ -344,7 +344,7 @@ export default function HistoryScreen() {
                             </Text>
                           </View>
 
-                          <Text style={{ fontWeight: '800', fontSize: 14, color: '#FB923C' }}>{catCals.toLocaleString()} KCAL</Text>
+                          <Text style={{ fontWeight: '800', fontSize: 14, color: '#FB923C' }}>{Math.round(catCals).toLocaleString()} KCAL</Text>
                         </Pressable>
 
                         {isCatExpanded && (
@@ -450,9 +450,9 @@ const MealItem = ({ item, colors, t, onEdit, onDelete }) => (
     <View style={{ flex: 1, gap: 4 }}>
       <Text style={[styles.itemName, { color: colors.text }]}>{item.name || t.unknownFood}</Text>
       <View style={styles.itemValuesContainer}>
-        <Text style={[styles.itemKcal, { color: '#FB923C' }]}>{Number(item.calories || 0)} kcal</Text>
+        <Text style={[styles.itemKcal, { color: '#FB923C' }]}>{Math.round(Number(item.calories || 0))} kcal</Text>
         <Text style={[styles.itemMacrosText, { color: colors.muted }]}>
-          {t.macroShortP}: {Number(item.protein || 0).toFixed(1)}g • {t.macroShortC}: {Number(item.carbs || 0).toFixed(1)}g • {t.macroShortF}: {Number(item.fat || 0).toFixed(1)}g
+          {t.macroShortP}: {Math.round(Number(item.protein || 0))}g • {t.macroShortC}: {Math.round(Number(item.carbs || 0))}g • {t.macroShortF}: {Math.round(Number(item.fat || 0))}g
           {item.weight_g ? ` • ${item.weight_g}g` : ''}
         </Text>
       </View>

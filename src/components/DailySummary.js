@@ -238,20 +238,20 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
           onPress={onPress}
         >
           <View style={styles.centerRow}>
-            <Text style={[styles.kcalValue, { color: '#FB923C' }]}>{todayCalories.toLocaleString()}</Text>
+            <Text style={[styles.kcalValue, { color: '#FB923C' }]}>{Math.round(todayCalories).toLocaleString()}</Text>
             <Text style={[styles.kcalUnit, { color: '#FB923C' }]}>kcal</Text>
           </View>
           <Text style={[styles.goalText, { color: colors.muted }]}>{t.dailyGoalLabel}: {Number(dailyGoal).toLocaleString()} kcal</Text>
           <Text style={[styles.remainingText, isOverGoal && styles.remainingOver, !isOverGoal && { color: colors.accent }]}>
-            {Math.abs(remaining).toLocaleString()} kcal {isOverGoal ? t.overGoal : t.remainingLabel}
+            {Math.round(Math.abs(remaining)).toLocaleString()} kcal {isOverGoal ? t.overGoal : t.remainingLabel}
           </Text>
         </Pressable>
       </View>
 
       <View style={[styles.macros, { borderTopColor: colors.border }]}>
-        <Macro label={t.protein} value={`${totals.protein.toFixed(1)}g`} colors={colors} />
-        <Macro label={t.carbs} value={`${totals.carbs.toFixed(1)}g`} colors={colors} />
-        <Macro label={t.fat} value={`${totals.fat.toFixed(1)}g`} colors={colors} />
+        <Macro label={t.protein} value={`${Math.round(totals.protein)}g`} colors={colors} />
+        <Macro label={t.carbs} value={`${Math.round(totals.carbs)}g`} colors={colors} />
+        <Macro label={t.fat} value={`${Math.round(totals.fat)}g`} colors={colors} />
       </View>
     </View>
   );

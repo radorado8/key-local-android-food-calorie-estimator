@@ -337,10 +337,10 @@ export default function ScannerScreen({ navigation }) {
                 setSaving(true);
                 const meal = {
                   name: String(result.name || '').trim() || 'Jedlo',
-                  calories: Number(result.calories),
-                  protein: Number(result.protein),
-                  carbs: Number(result.carbs),
-                  fat: Number(result.fat),
+                  calories: Math.round(Number(result.calories)),
+                  protein: Math.round(Number(result.protein)),
+                  carbs: Math.round(Number(result.carbs)),
+                  fat: Math.round(Number(result.fat)),
                   weight_g: Number(result.weight_g),
                   confidence: Number(result.confidence ?? 0.5),
                 };

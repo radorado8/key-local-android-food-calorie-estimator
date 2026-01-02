@@ -13,6 +13,7 @@ import HistoryScreen from './src/screens/HistoryScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { SettingsProvider, useSettings } from './src/state/SettingsContext';
 import { useTranslation } from './src/hooks/useTranslation';
+import * as NavigationBar from 'expo-navigation-bar';
 
 enableScreens(true);
 
@@ -52,10 +53,6 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
-
-import * as NavigationBar from 'expo-navigation-bar';
-
-// ...
 
 function AppContent({ startupError }) {
   const insets = useSafeAreaInsets();

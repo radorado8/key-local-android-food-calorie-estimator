@@ -6,6 +6,7 @@ import { useTranslation } from '../hooks/useTranslation';
 function fmt(n, digits = 0) {
   const v = Number(n);
   if (!Number.isFinite(v)) return '—';
+  // If digits is 0, we want an integer.
   return digits ? v.toFixed(digits) : String(Math.round(v));
 }
 
@@ -67,9 +68,9 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
               <Text style={[styles.label, { color: colors.muted }]}>{t.calories}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
                 <TextInput
-                  value={String(data.calories || '')}
-                  onChangeText={(v) => onChange && onChange({ ...data, calories: v.replace(/[^0-9.]/g, '') })}
-                  keyboardType="numeric"
+                  value={String(Math.round(Number(data.calories || 0)))}
+                  onChangeText={(v) => onChange && onChange({ ...data, calories: v.replace(/[^0-9]/g, '') })}
+                  keyboardType="number-pad"
                   textAlignVertical="bottom"
                   style={[styles.valueLarge, { color: colors.text, padding: 0, paddingVertical: 0, includeFontPadding: false, minWidth: 40 }]}
                   placeholder="0"
@@ -113,8 +114,8 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
         {/* Protein */}
         <StatCard
           label={t.protein}
-          value={String(data.protein || '')}
-          onChangeText={(v) => onChange && onChange({ ...data, protein: v.replace(/[^0-9.]/g, '') })}
+          value={String(Math.round(Number(data.protein || 0)))}
+          onChangeText={(v) => onChange && onChange({ ...data, protein: v.replace(/[^0-9]/g, '') })}
           unit="g"
           icon={<Ionicons name="flash" size={18} color="#2DD4BF" />}
           iconBg="rgba(45, 212, 191, 0.1)"
@@ -127,8 +128,8 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
         {/* Carbs */}
         <StatCard
           label={t.carbs}
-          value={String(data.carbs || '')}
-          onChangeText={(v) => onChange && onChange({ ...data, carbs: v.replace(/[^0-9.]/g, '') })}
+          value={String(Math.round(Number(data.carbs || 0)))}
+          onChangeText={(v) => onChange && onChange({ ...data, carbs: v.replace(/[^0-9]/g, '') })}
           unit="g"
           icon={<Ionicons name="pulse" size={18} color="#F472B6" />}
           iconBg="rgba(244, 114, 182, 0.1)"
@@ -141,8 +142,8 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
         {/* Fat */}
         <StatCard
           label={t.fat}
-          value={String(data.fat || '')}
-          onChangeText={(v) => onChange && onChange({ ...data, fat: v.replace(/[^0-9.]/g, '') })}
+          value={String(Math.round(Number(data.fat || 0)))}
+          onChangeText={(v) => onChange && onChange({ ...data, fat: v.replace(/[^0-9]/g, '') })}
           unit="g"
           icon={<Text style={{ fontWeight: '900', color: colors.text }}>T</Text>}
           iconBg="rgba(150, 150, 150, 0.1)"
