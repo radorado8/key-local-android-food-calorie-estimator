@@ -19,7 +19,7 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
   const foodCals = Number(data.calories) || 0;
   const newTotal = currentTotal + foodCals;
   const isOver = newTotal > goal;
-  const diff = Math.abs(goal - newTotal);
+  const diff = Number(Math.abs(goal - newTotal));
 
   const confidencePct = Number.isFinite(Number(data.confidence)) ? Math.round(Number(data.confidence) * 100) : 0;
 
