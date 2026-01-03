@@ -129,9 +129,7 @@ export const translations = {
         // AI Models
         modelDesc_gemini25flashlite: 'Rýchly, úsporný model (Lite)',
         modelDesc_gemini25flash: 'Vyvážený, rýchly model',
-        modelDesc_gemini25pro: 'Výkonný model pre zložité úlohy',
         modelDesc_gemini3FlashPreview: 'Najnovší experimentálny model',
-        modelDesc_gemini3ProPreview: 'Najvýkonnejší experimentálny model',
 
         // Data Management
         dataManagementTitle: 'Správa dát',
@@ -285,9 +283,7 @@ export const translations = {
 
         modelDesc_gemini25flashlite: 'Fast, lightweight model (Lite)',
         modelDesc_gemini25flash: 'Balanced, fast model',
-        modelDesc_gemini25pro: 'High-performance model',
         modelDesc_gemini3FlashPreview: 'Newest experimental model',
-        modelDesc_gemini3ProPreview: 'Most powerful experimental model',
 
         dataManagementTitle: 'Data Management',
         exportDataBtn: 'Export Data to CSV',
@@ -440,9 +436,7 @@ export const translations = {
 
         modelDesc_gemini25flashlite: 'Schnelles, leichtes Modell (Lite)',
         modelDesc_gemini25flash: 'Ausgewogenes, schnelles Modell',
-        modelDesc_gemini25pro: 'Leistungsstarkes Modell',
         modelDesc_gemini3FlashPreview: 'Neuestes experimentelles Modell',
-        modelDesc_gemini3ProPreview: 'Leistungsstärkstes experimentelles Modell',
 
         dataManagementTitle: 'Datenverwaltung',
         exportDataBtn: 'Daten als CSV exportieren',
@@ -569,9 +563,7 @@ export const translations = {
 
         modelDesc_gemini25flashlite: 'Modelo rápido y ligero (Lite)',
         modelDesc_gemini25flash: 'Modelo rápido y equilibrado',
-        modelDesc_gemini25pro: 'Modelo de alto rendimiento',
         modelDesc_gemini3FlashPreview: 'Modelo experimental más nuevo',
-        modelDesc_gemini3ProPreview: 'Modelo experimental más potente',
 
         dataManagementTitle: 'Gestión de datos',
         exportDataBtn: 'Exportar datos a CSV',
@@ -691,9 +683,7 @@ export const translations = {
 
         modelDesc_gemini25flashlite: 'Modèle rapide et léger (Lite)',
         modelDesc_gemini25flash: 'Modèle rapide et équilibré',
-        modelDesc_gemini25pro: 'Modèle haute performance',
         modelDesc_gemini3FlashPreview: 'Nouveau modèle expérimental',
-        modelDesc_gemini3ProPreview: 'Modèle expérimental le plus puissant',
 
         dataManagementTitle: 'Gestion des données',
         exportDataBtn: 'Exporter vers CSV',
@@ -820,9 +810,7 @@ export const translations = {
 
         modelDesc_gemini25flashlite: 'Szybki, lekki model (Lite)',
         modelDesc_gemini25flash: 'Zrównoważony, szybki model',
-        modelDesc_gemini25pro: 'Model o wysokiej wydajności',
         modelDesc_gemini3FlashPreview: 'Najnowszy model eksperymentalny',
-        modelDesc_gemini3ProPreview: 'Najpotężniejszy model eksperymentalny',
 
         dataManagementTitle: 'Zarządzanie danymi',
         exportDataBtn: 'Eksportuj do CSV',
@@ -949,9 +937,7 @@ export const translations = {
 
         modelDesc_gemini25flashlite: 'Rychlý, úsporný model (Lite)',
         modelDesc_gemini25flash: 'Vyvážený, rychlý model',
-        modelDesc_gemini25pro: 'Výkonný model pro složité úkoly',
         modelDesc_gemini3FlashPreview: 'Nejnovější experimentální model',
-        modelDesc_gemini3ProPreview: 'Nejvýkonnější experimentální model',
 
         dataManagementTitle: 'Správa dat',
         exportDataBtn: 'Exportovat data do CSV',
@@ -1074,9 +1060,7 @@ export const translations = {
         catDinner: 'Cena',
         modelDesc_gemini25flashlite: 'Modello veloce e leggero (Lite)',
         modelDesc_gemini25flash: 'Modello veloce ed equilibrato',
-        modelDesc_gemini25pro: 'Modello ad alte prestazioni',
         modelDesc_gemini3FlashPreview: 'Nuovo modello sperimentale',
-        modelDesc_gemini3ProPreview: 'Modello sperimentale più potente',
         catSnack3: 'Spuntino notte',
         catOther: 'Altro',
 

@@ -13,19 +13,9 @@ export const MODEL_CATALOG = [
     descriptionKey: 'modelDesc_gemini25flash',
   },
   {
-    id: 'gemini-2.5-pro',
-    label: 'Gemini 2.5 Pro',
-    descriptionKey: 'modelDesc_gemini25pro',
-  },
-  {
     id: 'gemini-3-flash-preview',
     label: 'Gemini 3.0 Flash Preview',
     descriptionKey: 'modelDesc_gemini3FlashPreview',
-  },
-  {
-    id: 'gemini-3-pro-preview',
-    label: 'Gemini 3.0 Pro Preview',
-    descriptionKey: 'modelDesc_gemini3ProPreview',
   },
 ];
 
@@ -33,9 +23,7 @@ export const MODEL_CATALOG = [
 export const PUBLIC_MODEL_IDS = [
   'gemini-2.5-flash-lite',
   'gemini-2.5-flash',
-  'gemini-2.5-pro',
   'gemini-3-flash-preview',
-  'gemini-3-pro-preview',
 ];
 
 export const DEFAULT_PUBLIC_MODEL_ID = 'gemini-3-flash-preview';
