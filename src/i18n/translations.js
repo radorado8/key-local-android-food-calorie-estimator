@@ -169,6 +169,13 @@ export const translations = {
         errAiMsg: 'Umelá inteligencia neodpovedala správne. Skús to prosím znova.',
         errNetworkTitle: 'Chyba siete',
         errNetworkMsg: 'Skontroluj pripojenie na internet.',
+
+        // Credits
+        creditsTitle: 'Kredity & Info',
+        modelSource: 'AI Model (Mobilenet V2) od Google Coral:',
+        developerContact: 'Vývojár:',
+        emailSubject: 'Calories AI Support',
+        poweredBy: 'Použité technológie:',
     },
     en: {
         tabScanner: 'Scanner',
@@ -315,6 +322,13 @@ export const translations = {
         errAiMsg: 'Artificial Intelligence did not respond correctly. Please try again.',
         errNetworkTitle: 'Network Error',
         errNetworkMsg: 'Check your internet connection.',
+
+        // Credits
+        creditsTitle: 'Credits & Info',
+        modelSource: 'AI Model (Mobilenet V2) by Google Coral:',
+        developerContact: 'Developer:',
+        emailSubject: 'Calories AI Support',
+        poweredBy: 'Powered by:',
     },
     de: {
         tabScanner: 'Scanner',
@@ -435,6 +449,13 @@ export const translations = {
         csvHeaderCarbs: 'Kohlenhydrate (g)',
         csvHeaderFat: 'Fett (g)',
         csvHeaderWeight: 'Gewicht (g)',
+
+        // Credits
+        creditsTitle: 'Credits & Info',
+        modelSource: 'KI-Modell (MobileNet V2) von Google Coral:',
+        developerContact: 'Entwickler:',
+        emailSubject: 'Calories AI Support',
+        poweredBy: 'Powered by:',
     },
     es: {
         tabScanner: 'Escáner',
@@ -675,6 +696,13 @@ export const translations = {
         csvHeaderCarbs: 'Glucides (g)',
         csvHeaderFat: 'Lipides (g)',
         csvHeaderWeight: 'Poids (g)',
+
+        // Credits
+        creditsTitle: 'Crédits & Infos',
+        modelSource: 'Modèle IA (MobileNet V2) par Google Coral :',
+        developerContact: 'Développeur :',
+        emailSubject: 'Calories AI Support',
+        poweredBy: 'Propulsé par :',
     },
     pl: {
         tabScanner: 'Skaner',
@@ -795,6 +823,13 @@ export const translations = {
         csvHeaderCarbs: 'Węglowodany (g)',
         csvHeaderFat: 'Tłuszcze (g)',
         csvHeaderWeight: 'Waga (g)',
+
+        // Credits
+        creditsTitle: 'Kredyty i Info',
+        modelSource: 'Model AI (MobileNet V2) od Google Coral:',
+        developerContact: 'Deweloper:',
+        emailSubject: 'Calories AI Support',
+        poweredBy: 'Zasilane przez:',
     },
     cs: {
         tabScanner: 'Skener',
@@ -915,6 +950,13 @@ export const translations = {
         csvHeaderCarbs: 'Sacharidy (g)',
         csvHeaderFat: 'Tuky (g)',
         csvHeaderWeight: 'Váha (g)',
+
+        // Credits
+        creditsTitle: 'Kredity & Info',
+        modelSource: 'AI Model (MobileNet V2) od Google Coral:',
+        developerContact: 'Vývojář:',
+        emailSubject: 'Calories AI Support',
+        poweredBy: 'Použité technologie:',
     },
     it: {
         tabScanner: 'Scanner',
@@ -1033,5 +1075,12 @@ export const translations = {
         csvHeaderCarbs: 'Carboidrati (g)',
         csvHeaderFat: 'Grassi (g)',
         csvHeaderWeight: 'Peso (g)',
+
+        // Credits
+        creditsTitle: 'Crediti & Info',
+        modelSource: 'Modello IA (MobileNet V2) di Google Coral:',
+        developerContact: 'Sviluppatore:',
+        emailSubject: 'Calories AI Support',
+        poweredBy: 'Powered by:',
     },
 };

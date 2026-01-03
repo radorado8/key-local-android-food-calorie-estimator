@@ -9,6 +9,7 @@ import {
   Text,
   TextInput,
   View,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MODEL_CATALOG, coerceModelId } from '../config/aiModels';
@@ -412,6 +413,29 @@ export default function SettingsScreen() {
               </Text>
             </Pressable>
           </View>
+        </View>
+
+        {/* 7. Credits */}
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.label, { color: colors.text }]}>{t.creditsTitle || 'Credits'}</Text>
+
+          <Text style={[styles.hint, { color: colors.muted, marginBottom: 4 }]}>{t.developerContact || 'Developer:'}</Text>
+          <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 12 }} onPress={() => Linking.openURL(`mailto:caloriesai@centrum.sk?subject=${t.emailSubject}`)}>
+            caloriesai@centrum.sk
+          </Text>
+
+          <Text style={[styles.hint, { color: colors.muted, marginBottom: 4 }]}>{t.modelSource || 'Model Source:'}</Text>
+          <Text
+            style={{ color: colors.accent, fontSize: 13, textDecorationLine: 'underline' }}
+            onPress={() => Linking.openURL('https://github.com/google-coral/edgetpu/blob/master/test_data/mobilenet_v2_1.0_224_quant.tflite')}
+          >
+            Google Coral (MobileNet V2)
+          </Text>
+
+          <Text style={[styles.hint, { color: colors.muted, marginBottom: 4, marginTop: 12 }]}>{t.poweredBy || 'Powered by:'}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+            Expo • React Native • Fast TFLite • Gemini API
+          </Text>
         </View>
       </ScrollView>
     </View>
