@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   },
   hero: {
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 19,
     marginBottom: 4,
   },
   heroTitle: {
@@ -537,8 +537,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionHeader: {
-    marginTop: 1,
-    marginBottom: 1,
+    marginTop: 0,
+    marginBottom: 0,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
