@@ -153,7 +153,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
   return (
     <View style={styles.container}>
       {/* Header Info inside the Card */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', marginBottom: 12, paddingHorizontal: 4 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', marginBottom: 2, paddingHorizontal: 4 }}>
         <View>
           <Text style={{ color: colors.text, fontSize: 18, fontWeight: '800' }}>{dateStr}</Text>
         </View>
