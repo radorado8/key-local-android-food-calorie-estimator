@@ -5,13 +5,13 @@ import { subscribeToMeals } from '../api/mealService';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSettings } from '../state/SettingsContext';
 
-export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress }) {
+export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress, dateStr, timeStr, mealTypeStr }) {
   const t = useTranslation();
   const { language } = useSettings();
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [loading, setLoading] = useState(true);
 
-
+  // ... (useEffect remains same, omitted for brevity if using replace_file_content carefully)
 
   useEffect(() => {
     // Local mode: always proceed
@@ -152,6 +152,19 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
 
   return (
     <View style={styles.container}>
+      {/* Header Info inside the Card */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', marginBottom: 12, paddingHorizontal: 4 }}>
+        <View>
+          <Text style={{ color: colors.text, fontSize: 18, fontWeight: '800' }}>{dateStr}</Text>
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={{ color: colors.muted, fontSize: 14 }}>{timeStr}</Text>
+            <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '700' }}>{mealTypeStr}</Text>
+          </View>
+        </View>
+      </View>
+
       <View style={styles.ringWrap}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           <Circle

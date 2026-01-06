@@ -413,17 +413,9 @@ export default function ScannerScreen({ navigation }) {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.hero}>
-          {/* New Header Design */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', marginBottom: 10 }}>
-            <View>
-              <Text style={{ color: colors.text, fontSize: 24, fontWeight: '800' }}>{currentDateStr}</Text>
-              <Text style={{ color: colors.muted, fontSize: 14 }}>{t.today}</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ color: colors.accent, fontSize: 24, fontWeight: '800' }}>{currentTimeStr}</Text>
-              <Text style={{ color: colors.muted, fontSize: 14 }}>{mealTypeStr}</Text>
-            </View>
-          </View>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>
+            {t.heroTitle} <Text style={[styles.heroAccent, { color: colors.accent }]}>{t.heroAccent}</Text>
+          </Text>
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -432,6 +424,9 @@ export default function ScannerScreen({ navigation }) {
             colors={colors}
             useLocalStorage={useLocalStorage}
             onPress={() => navigation.navigate('History')}
+            dateStr={currentDateStr}
+            timeStr={currentTimeStr}
+            mealTypeStr={mealTypeStr}
           />
         </View>
 
