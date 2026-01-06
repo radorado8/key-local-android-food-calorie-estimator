@@ -515,35 +515,37 @@ export default function SettingsScreen() {
       {/* Add Custom Model Modal */}
       <Modal visible={addingModel} transparent animationType="fade" onRequestClose={() => setAddingModel(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setAddingModel(false)}>
-          <Pressable style={[styles.modalContent, { backgroundColor: colors.modalBg, borderColor: colors.border, padding: 20, width: '90%' }]} onPress={() => { }}>
-            <Text style={[styles.modalTitle, { color: colors.text, marginBottom: 16 }]}>{t.addCustomModelBtn}</Text>
+          <Pressable style={[styles.modalContent, { backgroundColor: colors.modalBg, borderColor: colors.border, width: '90%' }]} onPress={() => { }}>
+            <ScrollView contentContainerStyle={{ padding: 20 }}>
+              <Text style={[styles.modalTitle, { color: colors.text, marginBottom: 16 }]}>{t.addCustomModelBtn}</Text>
 
-            <Text style={[styles.label, { color: colors.muted, fontSize: 14 }]}>{t.customModelNameLabel}</Text>
-            <TextInput
-              value={newModelName}
-              onChangeText={setNewModelName}
-              style={[styles.input, { flex: 0, minHeight: 60, fontSize: 18, backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text, marginBottom: 16 }]}
-              placeholder={t.customModelNamePlaceholder}
-              placeholderTextColor={colors.muted}
-            />
+              <Text style={[styles.label, { color: colors.muted, fontSize: 14 }]}>{t.customModelNameLabel}</Text>
+              <TextInput
+                value={newModelName}
+                onChangeText={setNewModelName}
+                style={[styles.input, { flex: 0, minHeight: 60, fontSize: 18, backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text, marginBottom: 16 }]}
+                placeholder={t.customModelNamePlaceholder}
+                placeholderTextColor={colors.muted}
+              />
 
-            <Text style={[styles.label, { color: colors.muted, fontSize: 14 }]}>{t.customModelIdLabel}</Text>
-            <TextInput
-              value={newModelId}
-              onChangeText={setNewModelId}
-              style={[styles.input, { flex: 0, minHeight: 60, fontSize: 18, backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text, marginBottom: 24 }]}
-              placeholder={t.customModelIdPlaceholder}
-              placeholderTextColor={colors.muted}
-            />
+              <Text style={[styles.label, { color: colors.muted, fontSize: 14 }]}>{t.customModelIdLabel}</Text>
+              <TextInput
+                value={newModelId}
+                onChangeText={setNewModelId}
+                style={[styles.input, { flex: 0, minHeight: 60, fontSize: 18, backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text, marginBottom: 24 }]}
+                placeholder={t.customModelIdPlaceholder}
+                placeholderTextColor={colors.muted}
+              />
 
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
-              <Pressable onPress={() => setAddingModel(false)} style={{ padding: 10 }}>
-                <Text style={{ color: colors.muted, fontWeight: '700' }}>{t.cancel}</Text>
-              </Pressable>
-              <Pressable onPress={handleAddCustomModel} style={{ padding: 10, backgroundColor: colors.accent, borderRadius: 8 }}>
-                <Text style={{ color: '#fff', fontWeight: '700' }}>{t.confirm}</Text>
-              </Pressable>
-            </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+                <Pressable onPress={() => setAddingModel(false)} style={{ padding: 10 }}>
+                  <Text style={{ color: colors.muted, fontWeight: '700' }}>{t.cancel}</Text>
+                </Pressable>
+                <Pressable onPress={handleAddCustomModel} style={{ padding: 10, backgroundColor: colors.accent, borderRadius: 8 }}>
+                  <Text style={{ color: '#fff', fontWeight: '700' }}>{t.confirm}</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -645,7 +647,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     borderRadius: 24,
-    maxHeight: '80%',
+    maxHeight: '90%',
     borderWidth: 1,
     overflow: 'hidden',
   },

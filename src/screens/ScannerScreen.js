@@ -426,9 +426,6 @@ export default function ScannerScreen({ navigation }) {
             colors={colors}
             useLocalStorage={useLocalStorage}
             onPress={() => navigation.navigate('History')}
-            dateStr={currentDateStr}
-            timeStr={currentTimeStr}
-            mealTypeStr={mealTypeStr}
           />
         </View>
 

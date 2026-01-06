@@ -5,11 +5,46 @@ import { subscribeToMeals } from '../api/mealService';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSettings } from '../state/SettingsContext';
 
-export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress, dateStr, timeStr, mealTypeStr }) {
+export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress }) {
   const t = useTranslation();
   const { language } = useSettings();
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [loading, setLoading] = useState(true);
+
+  // Time & Meal Type Logic
+  const [dateStr, setDateStr] = useState('');
+  const [timeStr, setTimeStr] = useState('');
+  const [mealTypeStr, setMealTypeStr] = useState('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+
+      // Date: "Po, 6. Jan" or "Mon, 6 Jan"
+      const dateOpts = { weekday: 'short', day: 'numeric', month: 'short' };
+      setDateStr(now.toLocaleDateString(language, dateOpts));
+
+      // Time: "11:45"
+      const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: false };
+      setTimeStr(now.toLocaleTimeString(language, timeOpts));
+
+      // Meal Type
+      const hour = now.getHours();
+      let mType = t.catOther;
+      if (hour >= 5 && hour < 10) mType = t.catBreakfast;
+      else if (hour >= 10 && hour < 12) mType = t.catSnack1;
+      else if (hour >= 12 && hour < 15) mType = t.catLunch;
+      else if (hour >= 15 && hour < 18) mType = t.catSnack2;
+      else if (hour >= 18 && hour < 22) mType = t.catDinner;
+      else if (hour >= 22 || hour < 5) mType = t.catSnack3;
+
+      setMealTypeStr(mType);
+    };
+
+    updateTime();
+    const timer = setInterval(updateTime, 10000); // every 10s is enough
+    return () => clearInterval(timer);
+  }, [language, t]);
 
   // ... (useEffect remains same, omitted for brevity if using replace_file_content carefully)
 
@@ -159,8 +194,8 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ color: colors.muted, fontSize: 14 }}>{timeStr}</Text>
-            <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '700' }}>{mealTypeStr}</Text>
+            <Text style={{ color: colors.muted, fontSize: 18 }}>{timeStr}</Text>
+            <Text style={{ color: colors.accent, fontSize: 18, fontWeight: '700' }}>{mealTypeStr}</Text>
           </View>
         </View>
       </View>
