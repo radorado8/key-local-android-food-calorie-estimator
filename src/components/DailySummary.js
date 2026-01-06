@@ -20,8 +20,8 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
     const updateTime = () => {
       const now = new Date();
 
-      // Date: "Po, 6. Jan" or "Mon, 6 Jan"
-      const dateOpts = { weekday: 'short', day: 'numeric', month: 'short' };
+      // Date: "Pondelok, 6. Jan"
+      const dateOpts = { weekday: 'long', day: 'numeric', month: 'short' };
       setDateStr(now.toLocaleDateString(language, dateOpts));
 
       // Time: "11:45"

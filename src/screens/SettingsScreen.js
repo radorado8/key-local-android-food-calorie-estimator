@@ -12,7 +12,11 @@ import {
   Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { MODEL_CATALOG, coerceModelId } from '../config/aiModels';
+import { MODEL_CATALOG, coerceModelId, DEFAULT_PUBLIC_MODEL_ID } from '../config/aiModels';
+// ...
+if (aiModel === modelId) {
+  setAiModel(DEFAULT_PUBLIC_MODEL_ID); // Fallback
+}
 import { useSettings } from '../state/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 import * as FileSystem from 'expo-file-system';
@@ -308,7 +312,7 @@ export default function SettingsScreen() {
             const filtered = customModels.filter(m => m.id !== modelId);
             setCustomModels(filtered);
             if (aiModel === modelId) {
-              setAiModel('gemini-1.5-flash'); // Fallback
+              setAiModel(DEFAULT_PUBLIC_MODEL_ID); // Fallback
             }
             Alert.alert(t.success, t.modelDeletedSuccess);
           }
