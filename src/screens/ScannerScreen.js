@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
   // sectionLine removed
   bigBtn: {
     flex: 1,
-    minHeight: 120,
+    minHeight: 100,
     borderRadius: 16,
     borderWidth: 1,
     alignItems: 'center',
