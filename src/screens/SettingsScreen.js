@@ -522,7 +522,7 @@ export default function SettingsScreen() {
             <TextInput
               value={newModelName}
               onChangeText={setNewModelName}
-              style={[styles.input, { backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text, marginBottom: 16 }]}
+              style={[styles.input, { flex: 0, minHeight: 60, fontSize: 18, backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text, marginBottom: 16 }]}
               placeholder={t.customModelNamePlaceholder}
               placeholderTextColor={colors.muted}
             />
@@ -531,7 +531,7 @@ export default function SettingsScreen() {
             <TextInput
               value={newModelId}
               onChangeText={setNewModelId}
-              style={[styles.input, { backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text, marginBottom: 24 }]}
+              style={[styles.input, { flex: 0, minHeight: 60, fontSize: 18, backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text, marginBottom: 24 }]}
               placeholder={t.customModelIdPlaceholder}
               placeholderTextColor={colors.muted}
             />
