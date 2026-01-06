@@ -143,7 +143,19 @@ export const translations = {
         csvHeaderProt: 'Bielkoviny (g)',
         csvHeaderCarbs: 'Sacharidy (g)',
         csvHeaderFat: 'Tuky (g)',
+        csvHeaderFat: 'Tuky (g)',
         csvHeaderWeight: 'Váha (g)',
+
+        // Custom Models
+        manageModelsTitle: 'Spravovať AI Modely',
+        addCustomModelBtn: 'Pridať vlastný model',
+        customModelIdLabel: 'ID Modelu (napr. gemini-1.5-pro)',
+        customModelNameLabel: 'Názov Modelu',
+        deleteModelConfirm: 'Vymazať tento model?',
+        modelAddedSuccess: 'Model pridaný.',
+        modelDeletedSuccess: 'Model vymazaný.',
+        customModelIdPlaceholder: 'vlož-id-modelu',
+        customModelNamePlaceholder: 'Môj Model',
 
         // Local Analysis / Import / Settings
         saved: 'Uložené',
@@ -296,7 +308,19 @@ export const translations = {
         csvHeaderProt: 'Protein (g)',
         csvHeaderCarbs: 'Carbs (g)',
         csvHeaderFat: 'Fat (g)',
+        csvHeaderFat: 'Fat (g)',
         csvHeaderWeight: 'Weight (g)',
+
+        // Custom Models
+        manageModelsTitle: 'Manage AI Models',
+        addCustomModelBtn: 'Add Custom Model',
+        customModelIdLabel: 'Model ID (e.g. gemini-1.5-pro)',
+        customModelNameLabel: 'Model Name',
+        deleteModelConfirm: 'Delete this model?',
+        modelAddedSuccess: 'Model added.',
+        modelDeletedSuccess: 'Model deleted.',
+        customModelIdPlaceholder: 'paste-model-id',
+        customModelNamePlaceholder: 'My Model',
 
         // Local Analysis / Import / Settings
         saved: 'Saved',
@@ -449,7 +473,19 @@ export const translations = {
         csvHeaderProt: 'Eiweiß (g)',
         csvHeaderCarbs: 'Kohlenhydrate (g)',
         csvHeaderFat: 'Fett (g)',
+        csvHeaderFat: 'Fett (g)',
         csvHeaderWeight: 'Gewicht (g)',
+
+        // Custom Models
+        manageModelsTitle: 'KI-Modelle verwalten',
+        addCustomModelBtn: 'Eigenes Modell hinzufügen',
+        customModelIdLabel: 'Modell-ID (z.B. gemini-1.5-pro)',
+        customModelNameLabel: 'Modellname',
+        deleteModelConfirm: 'Dieses Modell löschen?',
+        modelAddedSuccess: 'Modell hinzugefügt.',
+        modelDeletedSuccess: 'Modell gelöscht.',
+        customModelIdPlaceholder: 'modell-id-einfügen',
+        customModelNamePlaceholder: 'Mein Modell',
 
         // Credits
         creditsTitle: 'Credits & Info',
@@ -576,7 +612,19 @@ export const translations = {
         csvHeaderProt: 'Proteína (g)',
         csvHeaderCarbs: 'Carbohidratos (g)',
         csvHeaderFat: 'Grasas (g)',
+        csvHeaderFat: 'Grasas (g)',
         csvHeaderWeight: 'Peso (g)',
+
+        // Custom Models
+        manageModelsTitle: 'Gestionar modelos IA',
+        addCustomModelBtn: 'Añadir modelo personalizado',
+        customModelIdLabel: 'ID del Modelo (ej. gemini-1.5-pro)',
+        customModelNameLabel: 'Nombre del Modelo',
+        deleteModelConfirm: '¿Eliminar este modelo?',
+        modelAddedSuccess: 'Modelo añadido.',
+        modelDeletedSuccess: 'Modelo eliminado.',
+        customModelIdPlaceholder: 'pegar-id-modelo',
+        customModelNamePlaceholder: 'Mi Modelo',
     },
     fr: {
         tabScanner: 'Scanner',
@@ -696,7 +744,19 @@ export const translations = {
         csvHeaderProt: 'Protéines (g)',
         csvHeaderCarbs: 'Glucides (g)',
         csvHeaderFat: 'Lipides (g)',
+        csvHeaderFat: 'Lipides (g)',
         csvHeaderWeight: 'Poids (g)',
+
+        // Custom Models
+        manageModelsTitle: 'Gérer les modèles IA',
+        addCustomModelBtn: 'Ajouter un modèle personnalisé',
+        customModelIdLabel: 'ID du modèle (ex. gemini-1.5-pro)',
+        customModelNameLabel: 'Nom du modèle',
+        deleteModelConfirm: 'Supprimer ce modèle ?',
+        modelAddedSuccess: 'Modèle ajouté.',
+        modelDeletedSuccess: 'Modèle supprimé.',
+        customModelIdPlaceholder: 'coller-id-modele',
+        customModelNamePlaceholder: 'Mon Modèle',
 
         // Credits
         creditsTitle: 'Crédits & Infos',
@@ -798,6 +858,43 @@ export const translations = {
         startupErrorTitle: 'Błąd startu',
         unknownStartupError: 'Nieznany błąd startu.',
         authStuckError: 'Aplikacja zawiesiła się przy logowaniu.\n\nSkontaktuj się z deweloperem.',
+        overGoal: 'ponad cel',
+
+        catBreakfast: 'Śniadanie',
+        catSnack1: 'Drugie śniadanie',
+        catLunch: 'Obiad',
+        catSnack2: 'Podwieczorek',
+        catDinner: 'Kolacja',
+        catSnack3: 'Późna przekąska',
+        catOther: 'Inne',
+
+        modelDesc_gemini25flashlite: 'Szybki, lekki model (Lite)',
+        modelDesc_gemini25flash: 'Zrównoważony, szybki model',
+        modelDesc_gemini3FlashPreview: 'Najnowszy model eksperymentalny',
+
+        dataManagementTitle: 'Zarządzanie danymi',
+        exportDataBtn: 'Eksportuj do CSV',
+        exportDataSuccess: 'Dane wyeksportowane pomyślnie.',
+        exportDataError: 'Eksport danych nie powiódł się.',
+        exportDataLimitReached: 'Osiągnięto dzienny limit eksportu.',
+        csvHeaderDate: 'Data',
+        csvHeaderName: 'Nazwa',
+        csvHeaderCals: 'Kalorie (kcal)',
+        csvHeaderProt: 'Białko (g)',
+        csvHeaderCarbs: 'Węglowodany (g)',
+        csvHeaderFat: 'Tłuszcze (g)',
+        csvHeaderWeight: 'Waga (g)',
+
+        // Custom Models
+        manageModelsTitle: 'Zarządzaj modelami AI',
+        addCustomModelBtn: 'Dodaj własny model',
+        customModelIdLabel: 'ID Modelu (np. gemini-1.5-pro)',
+        customModelNameLabel: 'Nazwa Modelu',
+        deleteModelConfirm: 'Usunąć ten model?',
+        modelAddedSuccess: 'Model dodany.',
+        modelDeletedSuccess: 'Model usunięty.',
+        customModelIdPlaceholder: 'wklej-id-modelu',
+        customModelNamePlaceholder: 'Mój Model',
         overGoal: 'powyżej celu',
 
         catBreakfast: 'Śniadanie',
@@ -952,6 +1049,17 @@ export const translations = {
         csvHeaderFat: 'Tuky (g)',
         csvHeaderWeight: 'Váha (g)',
 
+        // Custom Models
+        manageModelsTitle: 'Spravovat AI Modely',
+        addCustomModelBtn: 'Přidat vlastní model',
+        customModelIdLabel: 'ID Modelu (např. gemini-1.5-pro)',
+        customModelNameLabel: 'Název Modelu',
+        deleteModelConfirm: 'Smazat tento model?',
+        modelAddedSuccess: 'Model přidán.',
+        modelDeletedSuccess: 'Model smazán.',
+        customModelIdPlaceholder: 'vlož-id-modelu',
+        customModelNamePlaceholder: 'Můj Model',
+
         // Credits
         creditsTitle: 'Kredity & Info',
         modelSource: 'AI Model (MobileNet V2) od Google Coral:',
@@ -1076,6 +1184,17 @@ export const translations = {
         csvHeaderCarbs: 'Carboidrati (g)',
         csvHeaderFat: 'Grassi (g)',
         csvHeaderWeight: 'Peso (g)',
+
+        // Custom Models
+        manageModelsTitle: 'Gestisci Modelli IA',
+        addCustomModelBtn: 'Aggiungi Modello Personalizzato',
+        customModelIdLabel: 'ID Modello (es. gemini-1.5-pro)',
+        customModelNameLabel: 'Nome Modello',
+        deleteModelConfirm: 'Eliminare questo modello?',
+        modelAddedSuccess: 'Modello aggiunto.',
+        modelDeletedSuccess: 'Modello eliminato.',
+        customModelIdPlaceholder: 'incolla-id-modello',
+        customModelNamePlaceholder: 'Il Mio Modello',
 
         // Credits
         creditsTitle: 'Crediti & Info',

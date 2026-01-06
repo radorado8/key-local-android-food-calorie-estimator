@@ -48,6 +48,7 @@ export default function ScannerScreen({ navigation }) {
 
   // Built-in Camera state
   const cameraRef = useRef(null);
+  const analysisActiveRef = useRef(false);
   const [showCamera, setShowCamera] = useState(false);
   const [facing, setFacing] = useState('back');
   const [flash, setFlash] = useState('off');
@@ -146,6 +147,7 @@ export default function ScannerScreen({ navigation }) {
     setCapturedUri(asset.uri);
     setStatus('analyzing');
     setResult(null);
+    analysisActiveRef.current = true;
 
     try {
       const data = await analyzeFood({
@@ -158,13 +160,22 @@ export default function ScannerScreen({ navigation }) {
         imageUri: asset.uri
       });
 
+      if (!analysisActiveRef.current) {
+        console.log('Analysis cancelled, ignoring result.');
+        return;
+      }
+
       setResult(data);
       setStatus('result');
     } catch (err) {
+      if (!analysisActiveRef.current) return;
+
       setStatus('idle');
       setResult(null);
       setCapturedUri(null);
       throw err;
+    } finally {
+      analysisActiveRef.current = false;
     }
   };
 
@@ -305,6 +316,7 @@ export default function ScannerScreen({ navigation }) {
             imageUri={capturedUri}
             t={t}
             onCancel={() => {
+              analysisActiveRef.current = false;
               setStatus('idle');
               setCapturedUri(null);
             }}
@@ -361,14 +373,57 @@ export default function ScannerScreen({ navigation }) {
     );
   }
 
+  // Time & Meal Type Logic
+  const [currentDateStr, setCurrentDateStr] = useState('');
+  const [currentTimeStr, setCurrentTimeStr] = useState('');
+  const [mealTypeStr, setMealTypeStr] = useState('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+
+      // Date: "Po, 6. Jan" or "Mon, 6 Jan"
+      const dateOpts = { weekday: 'short', day: 'numeric', month: 'short' };
+      setCurrentDateStr(now.toLocaleDateString(language, dateOpts));
+
+      // Time: "11:45"
+      const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: false };
+      setCurrentTimeStr(now.toLocaleTimeString(language, timeOpts));
+
+      // Meal Type
+      const hour = now.getHours();
+      let mType = t.catOther;
+      if (hour >= 5 && hour < 10) mType = t.catBreakfast;
+      else if (hour >= 10 && hour < 12) mType = t.catSnack1;
+      else if (hour >= 12 && hour < 15) mType = t.catLunch;
+      else if (hour >= 15 && hour < 18) mType = t.catSnack2;
+      else if (hour >= 18 && hour < 22) mType = t.catDinner;
+      else if (hour >= 22 || hour < 5) mType = t.catSnack3;
+
+      setMealTypeStr(mType);
+    };
+
+    updateTime();
+    const timer = setInterval(updateTime, 10000); // every 10s is enough
+    return () => clearInterval(timer);
+  }, [language, t]);
+
   // Idle state (Dashboard)
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.hero}>
-          <Text style={[styles.heroTitle, { color: colors.text }]}>
-            {t.heroTitle} <Text style={[styles.heroAccent, { color: colors.accent }]}>{t.heroAccent}</Text>
-          </Text>
+          {/* New Header Design */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', marginBottom: 10 }}>
+            <View>
+              <Text style={{ color: colors.text, fontSize: 24, fontWeight: '800' }}>{currentDateStr}</Text>
+              <Text style={{ color: colors.muted, fontSize: 14 }}>{t.today}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ color: colors.accent, fontSize: 24, fontWeight: '800' }}>{currentTimeStr}</Text>
+              <Text style={{ color: colors.muted, fontSize: 14 }}>{mealTypeStr}</Text>
+            </View>
+          </View>
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>

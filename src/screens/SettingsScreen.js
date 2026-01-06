@@ -101,7 +101,7 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, analysisMode, setAnalysisMode } = useSettings();
+  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, analysisMode, setAnalysisMode, customModels, setCustomModels } = useSettings();
 
   const colors = theme === 'light'
     ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)', elemBg: '#F1F5F9', elemBorder: 'rgba(0,0,0,0.05)', modalBg: '#FFFFFF' }
@@ -123,7 +123,9 @@ export default function SettingsScreen() {
     Alert.alert(t.saved, t.apiKeySavedMsg);
   };
 
-  const allowedModels = useMemo(() => MODEL_CATALOG, []);
+  const allowedModels = useMemo(() => {
+    return [...MODEL_CATALOG, ...customModels];
+  }, [customModels]);
 
   const languageOptions = useMemo(
     () => [
@@ -272,6 +274,49 @@ export default function SettingsScreen() {
     }
   };
 
+  // Custom Models Logic
+  const [addingModel, setAddingModel] = useState(false);
+  const [newModelId, setNewModelId] = useState('');
+  const [newModelName, setNewModelName] = useState('');
+
+  const handleAddCustomModel = () => {
+    if (!newModelId.trim() || !newModelName.trim()) {
+      return;
+    }
+    const newModel = {
+      id: newModelId.trim(),
+      label: newModelName.trim(),
+      isCustom: true
+    };
+    setCustomModels([...customModels, newModel]);
+    setNewModelId('');
+    setNewModelName('');
+    setAddingModel(false);
+    Alert.alert(t.success, t.modelAddedSuccess);
+  };
+
+  const handleDeleteModel = (modelId) => {
+    Alert.alert(
+      t.deleteMealTitle,
+      t.deleteModelConfirm,
+      [
+        { text: t.cancel, style: 'cancel' },
+        {
+          text: t.delete,
+          style: 'destructive',
+          onPress: () => {
+            const filtered = customModels.filter(m => m.id !== modelId);
+            setCustomModels(filtered);
+            if (aiModel === modelId) {
+              setAiModel('gemini-1.5-flash'); // Fallback
+            }
+            Alert.alert(t.success, t.modelDeletedSuccess);
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.headerBlock}>
@@ -370,6 +415,34 @@ export default function SettingsScreen() {
           colors={colors}
         />
 
+        {/* Manage Custom Models */}
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.label, { color: colors.text }]}>{t.manageModelsTitle}</Text>
+
+          {customModels.map((m) => (
+            <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: 8, backgroundColor: colors.elemBg, borderRadius: 8 }}>
+              <View>
+                <Text style={{ color: colors.text, fontWeight: '600' }}>{m.label}</Text>
+                <Text style={{ color: colors.muted, fontSize: 12 }}>{m.id}</Text>
+              </View>
+              <Pressable onPress={() => handleDeleteModel(m.id)}>
+                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+              </Pressable>
+            </View>
+          ))}
+
+          <Pressable
+            onPress={() => setAddingModel(true)}
+            style={({ pressed }) => [
+              styles.actionBtn,
+              { backgroundColor: colors.elemBg, borderColor: colors.elemBorder, marginTop: 4 },
+              pressed && styles.pressed
+            ]}
+          >
+            <Text style={{ color: colors.accent, fontWeight: '700' }}>{t.addCustomModelBtn}</Text>
+          </Pressable>
+        </View>
+
         {/* 5. Language */}
         <Dropdown
           label={t.language}
@@ -438,6 +511,43 @@ export default function SettingsScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Add Custom Model Modal */}
+      <Modal visible={addingModel} transparent animationType="fade" onRequestClose={() => setAddingModel(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setAddingModel(false)}>
+          <Pressable style={[styles.modalContent, { backgroundColor: colors.modalBg, borderColor: colors.border, padding: 20, width: '90%' }]} onPress={() => { }}>
+            <Text style={[styles.modalTitle, { color: colors.text, marginBottom: 16 }]}>{t.addCustomModelBtn}</Text>
+
+            <Text style={[styles.label, { color: colors.muted, fontSize: 14 }]}>{t.customModelNameLabel}</Text>
+            <TextInput
+              value={newModelName}
+              onChangeText={setNewModelName}
+              style={[styles.input, { backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text, marginBottom: 16 }]}
+              placeholder={t.customModelNamePlaceholder}
+              placeholderTextColor={colors.muted}
+            />
+
+            <Text style={[styles.label, { color: colors.muted, fontSize: 14 }]}>{t.customModelIdLabel}</Text>
+            <TextInput
+              value={newModelId}
+              onChangeText={setNewModelId}
+              style={[styles.input, { backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text, marginBottom: 24 }]}
+              placeholder={t.customModelIdPlaceholder}
+              placeholderTextColor={colors.muted}
+            />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+              <Pressable onPress={() => setAddingModel(false)} style={{ padding: 10 }}>
+                <Text style={{ color: colors.muted, fontWeight: '700' }}>{t.cancel}</Text>
+              </Pressable>
+              <Pressable onPress={handleAddCustomModel} style={{ padding: 10, backgroundColor: colors.accent, borderRadius: 8 }}>
+                <Text style={{ color: '#fff', fontWeight: '700' }}>{t.confirm}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
     </View>
   );
 }

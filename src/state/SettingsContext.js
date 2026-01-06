@@ -20,6 +20,7 @@ export function SettingsProvider({ children }) {
   const [theme, setTheme] = useState('system');
   const [useLocalStorage, setUseLocalStorage] = useState(true);
   const [analysisMode, setAnalysisMode] = useState('auto'); // 'auto' | 'local' | 'cloud'
+  const [customModels, setCustomModels] = useState([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export function SettingsProvider({ children }) {
           if (typeof parsed?.language === 'string') setLanguage(parsed.language);
           if (typeof parsed?.theme === 'string') setTheme(parsed.theme);
           if (typeof parsed?.analysisMode === 'string') setAnalysisMode(parsed.analysisMode);
+          if (Array.isArray(parsed?.customModels)) setCustomModels(parsed.customModels);
           // Enforce local storage for this version
           setUseLocalStorage(true);
           setHydrated(true);
@@ -57,9 +59,9 @@ export function SettingsProvider({ children }) {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode })
+      JSON.stringify({ dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels })
     ).catch(() => { });
-  }, [dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, hydrated]);
+  }, [dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, hydrated]);
 
   const colorScheme = useColorScheme();
 
@@ -79,9 +81,11 @@ export function SettingsProvider({ children }) {
       useLocalStorage,
       setUseLocalStorage,
       analysisMode,
-      setAnalysisMode
+      setAnalysisMode,
+      customModels,
+      setCustomModels
     };
-  }, [hydrated, dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, colorScheme]);
+  }, [hydrated, dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, colorScheme]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
