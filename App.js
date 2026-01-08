@@ -59,23 +59,41 @@ export default function App() {
 import * as QuickActions from 'expo-quick-actions';
 
 // Fallback if the library is missing or mocking fails
+// Fallback if the library is missing or mocking fails
 const useQuickAction = QuickActions.useQuickAction || (() => null);
+
 function QuickActionHandler() {
   const navigation = useNavigation();
-  const action = useQuickAction();
 
   useEffect(() => {
-    if (action && action.params) {
+    let isMounted = true;
+
+    const handleAction = (action) => {
+      if (!isMounted || !action) return;
+
       // Navigate to Scanner with params
       // We use a small timeout to ensure navigation is ready/mounted if cold start
       setTimeout(() => {
         navigation.navigate('Scanner', {
-          action: action.params.action,
-          timestamp: Date.now() // Force update if same action
+          action: action.params?.action || action.id, // Fallback to ID if params missing
+          timestamp: Date.now()
         });
       }, 500);
+    };
+
+    // 1. Check initial action
+    if (QuickActions.initial) {
+      handleAction(QuickActions.initial);
     }
-  }, [action, navigation]);
+
+    // 2. Listen for subsequent actions (background -> foreground)
+    const subscription = QuickActions.addListener ? QuickActions.addListener(handleAction) : null;
+
+    return () => {
+      isMounted = false;
+      subscription?.remove();
+    };
+  }, [navigation]);
 
   return null;
 }
