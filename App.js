@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
-import * as QuickActions from 'expo-quick-actions';
-import { useQuickAction } from 'expo-quick-actions';
+
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Platform } from 'react-native';
@@ -57,7 +56,10 @@ export default function App() {
 }
 
 
+import * as QuickActions from 'expo-quick-actions';
 
+// Fallback if the library is missing or mocking fails
+const useQuickAction = QuickActions.useQuickAction || (() => null);
 function QuickActionHandler() {
   const navigation = useNavigation();
   const action = useQuickAction();
@@ -85,22 +87,24 @@ function AppContent({ startupError }) {
 
   // Configure Quick Actions
   useEffect(() => {
-    QuickActions.setItems([
-      {
-        title: t.shortcutAddFood || 'Add Food (Photo)',
-        subtitle: t.scannerTitle,
-        icon: Platform.OS === 'ios' ? 'symbol:camera' : 'camera',
-        id: 'add_food_camera',
-        params: { action: 'camera' },
-      },
-      {
-        title: t.shortcutAddFoodWeight || 'Add Food (Weight)',
-        subtitle: t.scannerTitle,
-        icon: Platform.OS === 'ios' ? 'symbol:scalemass' : 'add', // "add" is a common android drawable name
-        id: 'add_food_weight',
-        params: { action: 'camera_weight' },
-      }
-    ]);
+    if (QuickActions.setItems) {
+      QuickActions.setItems([
+        {
+          title: t.shortcutAddFood || 'Add Food (Photo)',
+          subtitle: t.scannerTitle,
+          icon: Platform.OS === 'ios' ? 'symbol:camera' : 'camera',
+          id: 'add_food_camera',
+          params: { action: 'camera' },
+        },
+        {
+          title: t.shortcutAddFoodWeight || 'Add Food (Weight)',
+          subtitle: t.scannerTitle,
+          icon: Platform.OS === 'ios' ? 'symbol:scalemass' : 'add', // "add" is a common android drawable name
+          id: 'add_food_weight',
+          params: { action: 'camera_weight' },
+        }
+      ]);
+    }
   }, [t]);
 
   useEffect(() => {
