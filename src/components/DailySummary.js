@@ -32,10 +32,10 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
       const hour = now.getHours();
       let mType = t.catOther;
       if (hour >= 5 && hour < 10) mType = t.catBreakfast;
-      else if (hour >= 10 && hour < 12) mType = t.catSnack1;
-      else if (hour >= 12 && hour < 15) mType = t.catLunch;
-      else if (hour >= 15 && hour < 18) mType = t.catSnack2;
-      else if (hour >= 18 && hour < 22) mType = t.catDinner;
+      else if (hour >= 10 && hour < 11) mType = t.catSnack1;
+      else if (hour >= 11 && hour < 14) mType = t.catLunch;
+      else if (hour >= 14 && hour < 17) mType = t.catSnack2;
+      else if (hour >= 17 && hour < 22) mType = t.catDinner;
       else if (hour >= 22 || hour < 5) mType = t.catSnack3;
 
       setMealTypeStr(mType);
@@ -190,12 +190,12 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
       {/* Header Info inside the Card */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', marginBottom: 2, paddingHorizontal: 4 }}>
         <View>
-          <Text style={{ color: colors.text, fontSize: 18, fontWeight: '800' }}>{dateStr}</Text>
+          <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800' }}>{dateStr}</Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ color: colors.muted, fontSize: 18 }}>{timeStr}</Text>
-            <Text style={{ color: colors.accent, fontSize: 18, fontWeight: '700' }}>{mealTypeStr}</Text>
+            <Text style={{ color: colors.muted, fontSize: 16 }}>{timeStr}</Text>
+            <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '700' }}>{mealTypeStr}</Text>
           </View>
         </View>
       </View>
