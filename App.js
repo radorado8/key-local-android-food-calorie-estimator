@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import * as QuickActions from 'expo-quick-actions';
+import { useQuickAction } from 'expo-quick-actions';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Platform } from 'react-native';
@@ -54,10 +56,61 @@ export default function App() {
   );
 }
 
+
+
+function QuickActionHandler() {
+  const navigation = useNavigation();
+  const action = useQuickAction();
+
+  useEffect(() => {
+    if (action && action.params) {
+      // Navigate to Scanner with params
+      // We use a small timeout to ensure navigation is ready/mounted if cold start
+      setTimeout(() => {
+        navigation.navigate('Scanner', {
+          action: action.params.action,
+          timestamp: Date.now() // Force update if same action
+        });
+      }, 500);
+    }
+  }, [action, navigation]);
+
+  return null;
+}
+
 function AppContent({ startupError }) {
   const insets = useSafeAreaInsets();
   const { theme } = useSettings();
   const t = useTranslation();
+
+  // Configure Quick Actions
+  useEffect(() => {
+    QuickActions.setItems([
+      {
+        title: t.shortcutAddFood || 'Add Food (Photo)',
+        subtitle: t.scannerTitle,
+        icon: Platform.OS === 'ios' ? 'symbol:camera' : 'camera',
+        id: 'add_food_camera',
+        params: { action: 'camera' },
+      },
+      {
+        title: t.shortcutAddFoodWeight || 'Add Food (Weight)',
+        subtitle: t.scannerTitle,
+        icon: Platform.OS === 'ios' ? 'symbol:scalemass' : 'add', // "add" is a common android drawable name
+        id: 'add_food_weight',
+        params: { action: 'camera_weight' },
+      }
+    ]);
+  }, [t]);
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      const navColor = theme === 'light' ? '#FFFFFF' : '#0B0F14';
+      const iconStyle = theme === 'light' ? 'dark' : 'light';
+      NavigationBar.setBackgroundColorAsync(navColor).catch(() => { });
+      NavigationBar.setButtonStyleAsync(iconStyle).catch(() => { });
+    }
+  }, [theme]);
 
   const colors = theme === 'light'
     ? {
@@ -75,17 +128,9 @@ function AppContent({ startupError }) {
       inactive: 'rgba(255,255,255,0.6)'
     };
 
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      const navColor = theme === 'light' ? '#FFFFFF' : '#0B0F14';
-      const iconStyle = theme === 'light' ? 'dark' : 'light';
-      NavigationBar.setBackgroundColorAsync(navColor).catch(() => { });
-      NavigationBar.setButtonStyleAsync(iconStyle).catch(() => { });
-    }
-  }, [theme]);
-
   return (
     <NavigationContainer>
+      <QuickActionHandler />
       <StatusBar style={theme === 'light' ? 'dark' : 'light'} />
       <Tab.Navigator
         screenOptions={({ route }) => ({

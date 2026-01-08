@@ -25,10 +25,13 @@ import { subscribeToMeals, createMeal } from '../api/mealService';
 import { getAppConfig } from '../config/appConfig';
 import { useTranslation } from '../hooks/useTranslation';
 
-export default function ScannerScreen({ navigation }) {
+export default function ScannerScreen({ navigation, route }) {
   const t = useTranslation();
   const { dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode } = useSettings();
   const insets = useSafeAreaInsets();
+
+  // Track handled actions
+  const lastActionTimestampRef = useRef(0);
 
   const colors = theme === 'light'
     ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)', btn: '#0D94881A', btnText: '#0D9488' }
@@ -56,6 +59,25 @@ export default function ScannerScreen({ navigation }) {
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [weightForCamera, setWeightForCamera] = useState(null);
   const { DAILY_ANALYSIS_LIMIT } = getAppConfig();
+
+  // Handle Quick Actions
+  useEffect(() => {
+    if (route.params?.action && route.params?.timestamp) {
+      const { action, timestamp } = route.params;
+
+      if (lastActionTimestampRef.current === timestamp) return;
+      lastActionTimestampRef.current = timestamp;
+
+      // Small delay to ensure mount/navigation stability
+      setTimeout(() => {
+        if (action === 'camera') {
+          takePhoto(null);
+        } else if (action === 'camera_weight') {
+          openWeightDialog('camera');
+        }
+      }, 600);
+    }
+  }, [route.params]);
 
   // Midnight refresh check
   const [now, setNow] = useState(new Date());

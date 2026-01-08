@@ -23,6 +23,8 @@ export const translations = {
         flashOn: 'Blesk: Zap',
         flashOff: 'Blesk: Vyp',
         addFoodLabel: 'Pridaj jedlo',
+        shortcutAddFood: 'Pridať jedlo (Foto)',
+        shortcutAddFoodWeight: 'Pridať jedlo (Váha)',
 
         // Weight Dialog (Scanner & Edit)
         weightTitle: 'Hmotnosť jedla',
@@ -211,6 +213,8 @@ export const translations = {
         flashOn: 'Flash: On',
         flashOff: 'Flash: Off',
         addFoodLabel: 'Add Food',
+        shortcutAddFood: 'Add Food (Photo)',
+        shortcutAddFoodWeight: 'Add Food (Weight)',
         weightTitle: 'Food Weight',
         weightSubtitle: 'Enter weight in grams (leave empty for AI estimate).',
         weightPlaceholder: 'e.g. 250',
