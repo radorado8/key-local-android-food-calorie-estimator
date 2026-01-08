@@ -61,7 +61,8 @@
       "expo-secure-store",
       "expo-document-picker",
       "expo-file-system",
-      "react-native-fast-tflite"
+      "react-native-fast-tflite",
+      "./plugins/withShortcutIcons"
     ],
     "extra": {
       "allowedEmails": [],

@@ -110,14 +110,14 @@ function AppContent({ startupError }) {
         {
           title: t.shortcutAddFood || 'Add Food (Photo)',
           subtitle: t.scannerTitle,
-          icon: Platform.OS === 'ios' ? 'symbol:camera' : 'camera',
+          icon: Platform.OS === 'ios' ? 'symbol:camera' : 'shortcut_camera',
           id: 'add_food_camera',
           params: { action: 'camera' },
         },
         {
           title: t.shortcutAddFoodWeight || 'Add Food (Weight)',
           subtitle: t.scannerTitle,
-          icon: Platform.OS === 'ios' ? 'symbol:scalemass' : 'add', // "add" is a common android drawable name
+          icon: Platform.OS === 'ios' ? 'symbol:scalemass' : 'shortcut_weight', // Custom drawable
           id: 'add_food_weight',
           params: { action: 'camera_weight' },
         }
