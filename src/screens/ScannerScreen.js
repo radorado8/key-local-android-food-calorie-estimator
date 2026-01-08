@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   View,
+  BackHandler,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -105,40 +106,22 @@ export default function ScannerScreen({ navigation }) {
     }
   }, [status, navigation, theme, insets]);
 
-  // Time & Meal Type Logic
-  const [currentDateStr, setCurrentDateStr] = useState('');
-  const [currentTimeStr, setCurrentTimeStr] = useState('');
-  const [mealTypeStr, setMealTypeStr] = useState('');
 
   useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-
-      // Date: "Po, 6. Jan" or "Mon, 6 Jan"
-      const dateOpts = { weekday: 'short', day: 'numeric', month: 'short' };
-      setCurrentDateStr(now.toLocaleDateString(language, dateOpts));
-
-      // Time: "11:45"
-      const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: false };
-      setCurrentTimeStr(now.toLocaleTimeString(language, timeOpts));
-
-      // Meal Type
-      const hour = now.getHours();
-      let mType = t.catOther;
-      if (hour >= 5 && hour < 10) mType = t.catBreakfast;
-      else if (hour >= 10 && hour < 12) mType = t.catSnack1;
-      else if (hour >= 12 && hour < 15) mType = t.catLunch;
-      else if (hour >= 15 && hour < 18) mType = t.catSnack2;
-      else if (hour >= 18 && hour < 22) mType = t.catDinner;
-      else if (hour >= 22 || hour < 5) mType = t.catSnack3;
-
-      setMealTypeStr(mType);
+    const onBackPress = () => {
+      if (status === 'result' || status === 'analyzing') {
+        setStatus('idle');
+        setResult(null);
+        setCapturedUri(null);
+        analysisActiveRef.current = false;
+        return true;
+      }
+      return false;
     };
 
-    updateTime();
-    const timer = setInterval(updateTime, 10000); // every 10s is enough
-    return () => clearInterval(timer);
-  }, [language, t]);
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [status]);
 
   const checkLimit = () => {
     if (todayMealCount >= DAILY_ANALYSIS_LIMIT) {

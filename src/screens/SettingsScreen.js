@@ -13,10 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MODEL_CATALOG, coerceModelId, DEFAULT_PUBLIC_MODEL_ID } from '../config/aiModels';
-// ...
-if (aiModel === modelId) {
-  setAiModel(DEFAULT_PUBLIC_MODEL_ID); // Fallback
-}
+
 import { useSettings } from '../state/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 import * as FileSystem from 'expo-file-system';
@@ -280,6 +277,7 @@ export default function SettingsScreen() {
 
   // Custom Models Logic
   const [addingModel, setAddingModel] = useState(false);
+  const [editingModel, setEditingModel] = useState(null);
   const [newModelId, setNewModelId] = useState('');
   const [newModelName, setNewModelName] = useState('');
 
@@ -287,16 +285,51 @@ export default function SettingsScreen() {
     if (!newModelId.trim() || !newModelName.trim()) {
       return;
     }
-    const newModel = {
-      id: newModelId.trim(),
-      label: newModelName.trim(),
-      isCustom: true
-    };
-    setCustomModels([...customModels, newModel]);
+
+    const newId = newModelId.trim();
+    const newLabel = newModelName.trim();
+
+    if (editingModel) {
+      // Edit Mode
+      const updatedModels = customModels.map(m =>
+        m.id === editingModel.id ? { ...m, id: newId, label: newLabel } : m
+      );
+      setCustomModels(updatedModels);
+
+      // If ID changed and was selected
+      if (editingModel.id !== newId && aiModel === editingModel.id) {
+        setAiModel(newId);
+      }
+
+      Alert.alert(t.success, t.saved || 'Uložené');
+    } else {
+      // Add Mode
+      // Check duplicate ID
+      if (customModels.some(m => m.id === newId) || MODEL_CATALOG.some(m => m.id === newId)) {
+        Alert.alert(t.errorTitle, 'Model ID already exists');
+        return;
+      }
+
+      const newModel = {
+        id: newId,
+        label: newLabel,
+        isCustom: true
+      };
+      setCustomModels([...customModels, newModel]);
+      Alert.alert(t.success, t.modelAddedSuccess);
+    }
+
     setNewModelId('');
     setNewModelName('');
+    setEditingModel(null);
     setAddingModel(false);
-    Alert.alert(t.success, t.modelAddedSuccess);
+  };
+
+  const handleEditModel = (model) => {
+    setNewModelId(model.id);
+    setNewModelName(model.label);
+    setEditingModel(model);
+    setAddingModel(true);
   };
 
   const handleDeleteModel = (modelId) => {
@@ -319,6 +352,13 @@ export default function SettingsScreen() {
         }
       ]
     );
+  };
+
+  const closeModelModal = () => {
+    setAddingModel(false);
+    setEditingModel(null);
+    setNewModelId('');
+    setNewModelName('');
   };
 
   return (
@@ -425,13 +465,18 @@ export default function SettingsScreen() {
 
           {customModels.map((m) => (
             <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: 8, backgroundColor: colors.elemBg, borderRadius: 8 }}>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.text, fontWeight: '600' }}>{m.label}</Text>
                 <Text style={{ color: colors.muted, fontSize: 12 }}>{m.id}</Text>
               </View>
-              <Pressable onPress={() => handleDeleteModel(m.id)}>
-                <Ionicons name="trash-outline" size={20} color="#EF4444" />
-              </Pressable>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <Pressable onPress={() => handleEditModel(m)}>
+                  <Ionicons name="pencil" size={20} color={colors.accent} />
+                </Pressable>
+                <Pressable onPress={() => handleDeleteModel(m.id)}>
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                </Pressable>
+              </View>
             </View>
           ))}
 
@@ -516,12 +561,14 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
 
-      {/* Add Custom Model Modal */}
-      <Modal visible={addingModel} transparent animationType="fade" onRequestClose={() => setAddingModel(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setAddingModel(false)}>
+      {/* Add/Edit Custom Model Modal */}
+      <Modal visible={addingModel} transparent animationType="fade" onRequestClose={closeModelModal}>
+        <Pressable style={styles.modalOverlay} onPress={closeModelModal}>
           <Pressable style={[styles.modalContent, { backgroundColor: colors.modalBg, borderColor: colors.border, width: '90%' }]} onPress={() => { }}>
             <ScrollView contentContainerStyle={{ padding: 20 }}>
-              <Text style={[styles.modalTitle, { color: colors.text, marginBottom: 16 }]}>{t.addCustomModelBtn}</Text>
+              <Text style={[styles.modalTitle, { color: colors.text, marginBottom: 16 }]}>
+                {editingModel ? (t.editMealTitle ? t.editMealTitle.replace('jedlo', 'model').replace('Meal', 'Model') : 'Edit Model') : t.addCustomModelBtn}
+              </Text>
 
               <Text style={[styles.label, { color: colors.muted, fontSize: 14 }]}>{t.customModelNameLabel}</Text>
               <TextInput
@@ -542,11 +589,11 @@ export default function SettingsScreen() {
               />
 
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
-                <Pressable onPress={() => setAddingModel(false)} style={{ padding: 10 }}>
+                <Pressable onPress={closeModelModal} style={{ padding: 10 }}>
                   <Text style={{ color: colors.muted, fontWeight: '700' }}>{t.cancel}</Text>
                 </Pressable>
                 <Pressable onPress={handleAddCustomModel} style={{ padding: 10, backgroundColor: colors.accent, borderRadius: 8 }}>
-                  <Text style={{ color: '#fff', fontWeight: '700' }}>{t.confirm}</Text>
+                  <Text style={{ color: '#fff', fontWeight: '700' }}>{editingModel ? (t.save || 'Save') : t.confirm}</Text>
                 </Pressable>
               </View>
             </ScrollView>
