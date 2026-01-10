@@ -571,7 +571,7 @@ export default function SettingsScreen() {
           </Text>
 
           <Text style={[styles.hint, { color: colors.muted, marginBottom: 4, marginTop: 12 }]}>{t.poweredBy || 'Powered by:'}</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+          <Text style={{ color: colors.muted, fontSize: 13 }}>
             Expo • React Native • Fast TFLite • Gemini API
           </Text>
         </View>
