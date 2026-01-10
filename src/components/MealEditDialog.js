@@ -6,8 +6,11 @@ import {
   Text,
   TextInput,
   View,
+
   Platform,
+  Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 function toNumber(v) {
@@ -25,6 +28,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
   const [weightG, setWeightG] = useState('');
+  const [imageUri, setImageUri] = useState(null);
 
   // Date state for 'add' mode
   const [date, setDate] = useState(new Date());
@@ -41,6 +45,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
     setCarbs(String(initialMeal?.carbs ?? (mode === 'add' ? '0' : '')));
     setFat(String(initialMeal?.fat ?? (mode === 'add' ? '0' : '')));
     setWeightG(String(initialMeal?.weight_g ?? (mode === 'add' ? '0' : '')));
+    setImageUri(initialMeal?.imageUri || null);
 
     if (initialMeal?.timestamp) {
       const t = initialMeal.timestamp;
@@ -76,8 +81,9 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
       weight_g: toNumber(weightG),
       weight_g: toNumber(weightG),
       timestamp: date.toISOString(), // Always send timestamp (edited or new)
+      imageUri: imageUri,
     };
-  }, [name, calories, protein, carbs, fat, weightG, date, mode]);
+  }, [name, calories, protein, carbs, fat, weightG, date, mode, imageUri]);
 
   const valid =
     parsed.name.length > 0 &&
@@ -99,6 +105,31 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
         <View style={[styles.card, { backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderColor: currentColors.border }]}>
+          {(imageUri) && (
+            <View style={{ marginBottom: 16 }}>
+              <Image
+                source={{ uri: imageUri }}
+                style={{ width: '100%', height: 120, borderRadius: 12, backgroundColor: currentColors.elemBg }}
+                resizeMode="contain"
+              />
+              <Pressable
+                onPress={() => setImageUri(null)}
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  backgroundColor: 'rgba(0,0,0,0.6)',
+                  borderRadius: 20,
+                  padding: 8,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.2)'
+                }}
+              >
+                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+              </Pressable>
+            </View>
+          )}
+
           <Text style={[styles.title, { color: currentColors.text }]}>
             {mode === 'add' ? t.addMealTitle : t.editMealTitle}
           </Text>

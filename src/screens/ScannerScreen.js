@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import AnalysisLoader from '../components/AnalysisLoader';
 import DailySummary from '../components/DailySummary';
@@ -27,7 +28,7 @@ import { useTranslation } from '../hooks/useTranslation';
 
 export default function ScannerScreen({ navigation, route }) {
   const t = useTranslation();
-  const { dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode } = useSettings();
+  const { dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, saveFoodImages } = useSettings();
   const insets = useSafeAreaInsets();
 
   // Track handled actions
@@ -387,6 +388,32 @@ export default function ScannerScreen({ navigation, route }) {
             onSave={async () => {
               try {
                 setSaving(true);
+
+                let finalImageUri = null;
+                if (capturedUri && saveFoodImages) {
+                  const dir = FileSystem.documentDirectory + 'meal_photos/';
+                  const dirInfo = await FileSystem.getInfoAsync(dir);
+                  if (!dirInfo.exists) {
+                    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+                  }
+
+                  // Resize and compress
+                  const manipulated = await manipulateAsync(
+                    capturedUri,
+                    [{ resize: { width: 600 } }],
+                    { compress: 0.7, format: SaveFormat.JPEG }
+                  );
+
+                  const filename = `meal_${Date.now()}.jpg`;
+                  const permPath = dir + filename;
+
+                  await FileSystem.moveAsync({
+                    from: manipulated.uri,
+                    to: permPath
+                  });
+                  finalImageUri = permPath;
+                }
+
                 const meal = {
                   name: String(result.name || '').trim() || 'Jedlo',
                   calories: Math.round(Number(result.calories)),
@@ -395,6 +422,7 @@ export default function ScannerScreen({ navigation, route }) {
                   fat: Math.round(Number(result.fat)),
                   weight_g: Number(result.weight_g),
                   confidence: Number(result.confidence ?? 0.5),
+                  imageUri: finalImageUri,
                 };
                 await createMeal(meal, useLocalStorage);
                 setStatus('idle');

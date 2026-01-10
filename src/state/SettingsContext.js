@@ -22,6 +22,7 @@ export function SettingsProvider({ children }) {
   const [analysisMode, setAnalysisMode] = useState('auto'); // 'auto' | 'local' | 'cloud'
   const [customModels, setCustomModels] = useState([]);
   const [hydrated, setHydrated] = useState(false);
+  const [saveFoodImages, setSaveFoodImages] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,6 +42,7 @@ export function SettingsProvider({ children }) {
           if (typeof parsed?.theme === 'string') setTheme(parsed.theme);
           if (typeof parsed?.analysisMode === 'string') setAnalysisMode(parsed.analysisMode);
           if (Array.isArray(parsed?.customModels)) setCustomModels(parsed.customModels);
+          if (typeof parsed?.saveFoodImages === 'boolean') setSaveFoodImages(parsed.saveFoodImages);
           // Enforce local storage for this version
           setUseLocalStorage(true);
           setHydrated(true);
@@ -59,9 +61,9 @@ export function SettingsProvider({ children }) {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels })
+      JSON.stringify({ dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, saveFoodImages })
     ).catch(() => { });
-  }, [dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, hydrated]);
+  }, [dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, saveFoodImages, hydrated]);
 
   const colorScheme = useColorScheme();
 
@@ -83,9 +85,11 @@ export function SettingsProvider({ children }) {
       analysisMode,
       setAnalysisMode,
       customModels,
-      setCustomModels
+      setCustomModels,
+      saveFoodImages,
+      setSaveFoodImages
     };
-  }, [hydrated, dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, colorScheme]);
+  }, [hydrated, dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, saveFoodImages, colorScheme]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

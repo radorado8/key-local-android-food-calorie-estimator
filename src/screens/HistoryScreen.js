@@ -9,8 +9,10 @@ import {
   Text,
   useWindowDimensions,
   View,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
 import { deleteMeal, updateMeal, subscribeToMeals, createMeal } from '../api/mealService';
 import MealEditDialog from '../components/MealEditDialog';
 import { useSettings } from '../state/SettingsContext';
@@ -408,6 +410,15 @@ export default function HistoryScreen() {
         }}
         onSave={async (patch) => {
           try {
+            // Delete old image if removed
+            if (editMeal?.imageUri && patch.imageUri === null) {
+              try {
+                await FileSystem.deleteAsync(editMeal.imageUri, { idempotent: true });
+              } catch (err) {
+                console.warn('Failed to delete old image', err);
+              }
+            }
+
             await updateMeal(editMeal.id, {
               ...patch,
               confidence: Number(editMeal?.confidence ?? 0.5),
@@ -447,6 +458,14 @@ export default function HistoryScreen() {
 
 const MealItem = ({ item, colors, t, onEdit, onDelete }) => (
   <View style={[styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    {item.imageUri && (
+      <View style={{ marginRight: 5 }}>
+        <Image
+          source={{ uri: item.imageUri }}
+          style={{ width: 56, height: 56, borderRadius: 5, backgroundColor: colors.border }}
+        />
+      </View>
+    )}
     <View style={{ flex: 1, gap: 4 }}>
       <Text style={[styles.itemName, { color: colors.text }]}>{item.name || t.unknownFood}</Text>
       <View style={styles.itemValuesContainer}>
