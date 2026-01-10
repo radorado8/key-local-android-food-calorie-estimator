@@ -10,8 +10,10 @@ import {
   useWindowDimensions,
   View,
   Image,
-  Modal,
+  View,
+  Image,
 } from 'react-native';
+import ImageView from "react-native-image-viewing";
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import { deleteMeal, updateMeal, subscribeToMeals, createMeal } from '../api/mealService';
@@ -457,26 +459,15 @@ export default function HistoryScreen() {
       />
 
       {/* Full Screen Image Modal */}
-      <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={() => setSelectedImage(null)}>
-        <View style={styles.imageModalBackdrop}>
-          <Pressable style={styles.imageModalCloseArea} onPress={() => setSelectedImage(null)} />
-          {selectedImage && (
-            <View style={styles.imageModalContent}>
-              <Image
-                source={{ uri: selectedImage }}
-                style={{ width: '100%', height: '100%', borderRadius: 12 }}
-                resizeMode="contain"
-              />
-              <Pressable
-                onPress={() => setSelectedImage(null)}
-                style={styles.imageModalCloseBtn}
-              >
-                <Ionicons name="close" size={28} color="#FFF" />
-              </Pressable>
-            </View>
-          )}
-        </View>
-      </Modal>
+      {/* Full Screen Image Zoom Viewer */}
+      <ImageView
+        images={[{ uri: selectedImage }]}
+        imageIndex={0}
+        visible={!!selectedImage}
+        onRequestClose={() => setSelectedImage(null)}
+        swipeToCloseEnabled={true}
+        doubleTapToZoomEnabled={true}
+      />
     </View>
   );
 }
@@ -644,31 +635,8 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.95 }],
     opacity: 0.7,
   },
-  imageModalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imageModalCloseArea: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  imageModalContent: {
-    width: '100%',
-    height: '70%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imageModalCloseBtn: {
-    position: 'absolute',
-    top: -50,
-    right: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 20,
-    padding: 8,
+  actionBtnPressed: {
+    transform: [{ scale: 0.95 }],
+    opacity: 0.7,
   },
 });
