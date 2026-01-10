@@ -10,8 +10,6 @@ import {
   useWindowDimensions,
   View,
   Image,
-  View,
-  Image,
 } from 'react-native';
 import ImageView from "react-native-image-viewing";
 import { Ionicons } from '@expo/vector-icons';
