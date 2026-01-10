@@ -459,10 +459,10 @@ export default function HistoryScreen() {
 const MealItem = ({ item, colors, t, onEdit, onDelete }) => (
   <View style={[styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
     {item.imageUri && (
-      <View style={{ marginRight: 3 }}>
+      <View style={{ marginRight: 2 }}>
         <Image
           source={{ uri: item.imageUri }}
-          style={{ width: 56, height: 56, borderRadius: 3, backgroundColor: colors.border }}
+          style={{ width: 56, height: 56, borderRadius: 2, backgroundColor: colors.border }}
         />
       </View>
     )}
