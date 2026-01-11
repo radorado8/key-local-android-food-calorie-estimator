@@ -88,7 +88,7 @@ function formatDateLabelLong(dateObj, t, language, now) {
 
 export default function HistoryScreen() {
   const t = useTranslation();
-  const { theme, useLocalStorage, language, dailyGoal } = useSettings();
+  const { theme, useLocalStorage, language, dailyGoal, showImagesInHistory } = useSettings();
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = React.useRef(null);
@@ -383,6 +383,7 @@ export default function HistoryScreen() {
                                     ]);
                                   }}
                                   onImagePress={() => setSelectedImage(item.imageUri)}
+                                  showImage={showImagesInHistory}
                                 />
                               ))}
                           </View>
@@ -470,9 +471,9 @@ export default function HistoryScreen() {
   );
 }
 
-const MealItem = ({ item, colors, t, onEdit, onDelete, onImagePress }) => (
+const MealItem = ({ item, colors, t, onEdit, onDelete, onImagePress, showImage }) => (
   <View style={[styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-    {item.imageUri && (
+    {showImage && item.imageUri && (
       <Pressable onPress={onImagePress} style={{ marginRight: 2 }}>
         <Image
           source={{ uri: item.imageUri }}
@@ -612,12 +613,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   itemActions: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: 8,
   },
   miniAction: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.04)',
     alignItems: 'center',

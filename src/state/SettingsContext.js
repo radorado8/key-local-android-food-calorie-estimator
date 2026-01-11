@@ -23,6 +23,7 @@ export function SettingsProvider({ children }) {
   const [customModels, setCustomModels] = useState([]);
   const [hydrated, setHydrated] = useState(false);
   const [saveFoodImages, setSaveFoodImages] = useState(true);
+  const [showImagesInHistory, setShowImagesInHistory] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +44,7 @@ export function SettingsProvider({ children }) {
           if (typeof parsed?.analysisMode === 'string') setAnalysisMode(parsed.analysisMode);
           if (Array.isArray(parsed?.customModels)) setCustomModels(parsed.customModels);
           if (typeof parsed?.saveFoodImages === 'boolean') setSaveFoodImages(parsed.saveFoodImages);
+          if (typeof parsed?.showImagesInHistory === 'boolean') setShowImagesInHistory(parsed.showImagesInHistory);
           // Enforce local storage for this version
           setUseLocalStorage(true);
           setHydrated(true);
@@ -61,9 +63,9 @@ export function SettingsProvider({ children }) {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, saveFoodImages })
+      JSON.stringify({ dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, saveFoodImages, showImagesInHistory })
     ).catch(() => { });
-  }, [dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, saveFoodImages, hydrated]);
+  }, [dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, saveFoodImages, showImagesInHistory, hydrated]);
 
   const colorScheme = useColorScheme();
 
@@ -87,9 +89,11 @@ export function SettingsProvider({ children }) {
       customModels,
       setCustomModels,
       saveFoodImages,
-      setSaveFoodImages
+      setSaveFoodImages,
+      showImagesInHistory,
+      setShowImagesInHistory
     };
-  }, [hydrated, dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, saveFoodImages, colorScheme]);
+  }, [hydrated, dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, saveFoodImages, showImagesInHistory, colorScheme]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

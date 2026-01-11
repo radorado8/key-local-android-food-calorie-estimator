@@ -114,6 +114,8 @@ export const translations = {
         languageHint: 'Ovplyvní prompt, ktorým sa jedlo analyzuje.',
         saveFoodImagesTitle: 'Ukladať fotky jedál',
         saveFoodImagesHint: 'Fotky sa uložia do galérie aplikácie (zaberajú miesto).',
+        showImagesInHistoryTitle: 'Zobraziť fotky v histórii',
+        showImagesInHistoryHint: 'Ak vypnuté, v zozname jedál sa zobrazia len texty.',
 
         startupErrorTitle: 'Chyba pri štarte',
         unknownStartupError: 'Neznáma chyba pri štarte aplikácie.',
@@ -173,6 +175,7 @@ export const translations = {
         sharingUnavailable: 'Zdieľanie nie je dostupné na tomto zariadení.',
         apiKeyPlaceholder: 'Vlož svoj Gemini API kľúč',
         apiKeyLabel: 'API Kľúč',
+        apiKeyHint: 'Kľúč sa uloží bezpečne do zariadenia.',
 
         // Local Analysis Specific
         localAnalysisLowConfidence: 'Nízka istota detekcie. Skús odfotiť jedlo zblízka.',
@@ -287,6 +290,8 @@ export const translations = {
         languageHint: 'Affects the prompt used for analysis.',
         saveFoodImagesTitle: 'Save Food Photos',
         saveFoodImagesHint: 'Photos will be saved to app gallery (takes up space).',
+        showImagesInHistoryTitle: 'Show Photos in History',
+        showImagesInHistoryHint: 'If disabled, only text will be shown in the list.',
         saveSettings: 'Save Settings',
         startupErrorTitle: 'Startup Error',
         unknownStartupError: 'Unknown startup error.',
@@ -342,6 +347,7 @@ export const translations = {
         sharingUnavailable: 'Sharing not available on this device.',
         apiKeyPlaceholder: 'Paste your Gemini API Key',
         apiKeyLabel: 'API Key',
+        apiKeyHint: 'Key is securely stored on device.',
 
         // Local Analysis Specific
         localAnalysisLowConfidence: 'Low confidence detection. Try capturing closer.',
@@ -454,6 +460,8 @@ export const translations = {
         languageHint: 'Beeinflusst den Analyse-Prompt.',
         saveFoodImagesTitle: 'Essensfotos speichern',
         saveFoodImagesHint: 'Fotos werden in der App-Galerie gespeichert (belegt Speicherplatz).',
+        showImagesInHistoryTitle: 'Fotos im Verlauf anzeigen',
+        showImagesInHistoryHint: 'Wenn deaktiviert, wird nur Text angezeigt.',
         saveSettings: 'Einstellungen speichern',
         startupErrorTitle: 'Startfehler',
         unknownStartupError: 'Unbekannter Startfehler.',
