@@ -6,7 +6,6 @@ import {
   Text,
   TextInput,
   View,
-
   Platform,
   Image,
 } from 'react-native';
@@ -106,10 +105,10 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
       <View style={styles.backdrop}>
         <View style={[styles.card, { backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderColor: currentColors.border }]}>
           {(imageUri) && (
-            <View style={{ marginBottom: 16 }}>
+            <View style={{ marginBottom: 4 }}>
               <Image
                 source={{ uri: imageUri }}
-                style={{ width: '100%', height: 120, borderRadius: 12, backgroundColor: currentColors.elemBg }}
+                style={{ width: '100%', height: 100, borderRadius: 12, backgroundColor: currentColors.elemBg }}
                 resizeMode="contain"
               />
               <Pressable
@@ -135,14 +134,14 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
           </Text>
 
           {(mode === 'add' || mode === 'edit') && (
-            <View style={{ marginBottom: 12 }}>
+            <View style={{ marginBottom: 8 }}>
               <Text style={[styles.label, { color: currentColors.muted, marginBottom: 4 }]}>{t.dateLabel || 'Date & Time'}</Text>
 
               {Platform.OS === 'android' && (
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <Pressable
                     onPress={() => setShowDatePicker('date')}
-                    style={[styles.input, { flex: 1, backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, paddingVertical: 12, alignItems: 'center' }]}
+                    style={[styles.input, { flex: 1, backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, paddingVertical: 8, alignItems: 'center' }]}
                   >
                     <Text style={{ color: currentColors.text, fontWeight: '700' }}>
                       {date.toLocaleDateString()}
@@ -150,7 +149,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
                   </Pressable>
                   <Pressable
                     onPress={() => setShowDatePicker('time')}
-                    style={[styles.input, { flex: 1, backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, paddingVertical: 12, alignItems: 'center' }]}
+                    style={[styles.input, { flex: 1, backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, paddingVertical: 8, alignItems: 'center' }]}
                   >
                     <Text style={{ color: currentColors.text, fontWeight: '700' }}>
                       {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -252,9 +251,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#0B0F14',
     borderRadius: 18,
     padding: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
-    gap: 8,
+    gap: 6,
   },
   title: {
     color: 'white',
@@ -269,8 +269,8 @@ const styles = StyleSheet.create({
   },
   input: {
     width: '100%',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
@@ -281,21 +281,21 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 8,
+    gap: 8,
+    marginTop: 2,
   },
   gridItem: {
     width: '48%',
-    gap: 6,
+    gap: 2,
   },
   actions: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 10,
+    gap: 8,
+    marginTop: 8,
   },
   btn: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
