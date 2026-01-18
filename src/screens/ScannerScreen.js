@@ -178,6 +178,8 @@ export default function ScannerScreen({ navigation, route }) {
     }
   };
 
+  const [isRetrying, setIsRetrying] = useState(false);
+
   const analyzePickedImage = async (asset, weightG) => {
     if (!asset?.base64) {
       throw new Error('Chýba base64 obrázka (ImagePicker).');
@@ -187,36 +189,60 @@ export default function ScannerScreen({ navigation, route }) {
 
     setCapturedUri(asset.uri);
     setStatus('analyzing');
+    setIsRetrying(false);
     setResult(null);
     analysisActiveRef.current = true;
 
-    try {
-      const data = await analyzeFood({
-        base64Data: asset.base64,
-        mimeType,
-        aiModel,
-        weightG,
-        language,
-        analysisMode,
-        imageUri: asset.uri
-      });
+    let attempts = 0;
+    const maxAttempts = 2; // Try once, then retry once
 
-      if (!analysisActiveRef.current) {
-        console.log('Analysis cancelled, ignoring result.');
-        return;
+    while (attempts < maxAttempts) {
+      attempts++;
+      try {
+        const data = await analyzeFood({
+          base64Data: asset.base64,
+          mimeType,
+          aiModel,
+          weightG,
+          language,
+          analysisMode,
+          imageUri: asset.uri
+        });
+
+        if (!analysisActiveRef.current) {
+          console.log('Analysis cancelled, ignoring result.');
+          return; // pickingRef is cleared by the caller (helper/hook) or manually if needed? 
+          // actually, pickFromGallery and handleCapture handle pickingRef.
+          // But if we return here, we are good.
+          return;
+        }
+
+        setResult(data);
+        setStatus('result');
+        return; // Success, exit function
+      } catch (err) {
+        if (!analysisActiveRef.current) return;
+
+        // Check if we should retry
+        const isJsonError = err.message && (err.message.includes('JSON Parse error') || err.message.includes('Unexpected token'));
+        const isNetworkError = err.message && (err.message.includes('Network') || err.message.includes('fetch'));
+
+        if ((isJsonError || isNetworkError) && attempts < maxAttempts) {
+          console.log(`Attempt ${attempts} failed, retrying... Error: ${err.message}`);
+          setIsRetrying(true);
+          // Wait a bit before retrying
+          await new Promise(r => setTimeout(r, 1500));
+          if (!analysisActiveRef.current) return;
+          continue; // Retry loop
+        }
+
+        // If we ran out of attempts or it's a fatal error
+        setStatus('idle');
+        setResult(null);
+        setCapturedUri(null);
+        setIsRetrying(false);
+        throw err; // Re-throw to be caught by calling function which clears pickingRef
       }
-
-      setResult(data);
-      setStatus('result');
-    } catch (err) {
-      if (!analysisActiveRef.current) return;
-
-      setStatus('idle');
-      setResult(null);
-      setCapturedUri(null);
-      throw err;
-    } finally {
-      analysisActiveRef.current = false;
     }
   };
 
@@ -356,10 +382,14 @@ export default function ScannerScreen({ navigation, route }) {
           <AnalysisLoader
             imageUri={capturedUri}
             t={t}
+            isRetrying={isRetrying}
             onCancel={() => {
               analysisActiveRef.current = false;
               setStatus('idle');
               setCapturedUri(null);
+              setIsRetrying(false);
+              // Force clear lock just in case
+              pickingRef.current = false;
             }}
           />
         </View>

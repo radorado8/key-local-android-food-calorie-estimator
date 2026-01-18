@@ -13,6 +13,7 @@ export const translations = {
         analyzeLimitTitle: 'Limit dosiahnutý',
         analyzeLimitMsg: 'Dnes si už vykonal 70 analýz. Skús to znova zajtra!',
         analyzing: 'Analyzujem...',
+        analyzingRetrying: 'Chyba, skúšam znova...',
         analyzingSubtitle: 'Umelá inteligencia rozpoznáva jedlo...',
         analysisResult: 'Výsledok analýzy',
         heroTitle: 'Tvoj dnešný',

@@ -4,7 +4,7 @@ import { useSettings } from '../state/SettingsContext';
 
 const { width } = Dimensions.get('window');
 
-export default function AnalysisLoader({ imageUri, onCancel, t }) {
+export default function AnalysisLoader({ imageUri, onCancel, t, isRetrying }) {
     const { theme } = useSettings();
 
     const colors = theme === 'light'
@@ -29,7 +29,7 @@ export default function AnalysisLoader({ imageUri, onCancel, t }) {
 
             {/* Loading Text */}
             <View style={styles.textContainer}>
-                <Text style={[styles.title, { color: '#2DD4BF' }]}>{t.analyzing}</Text>
+                <Text style={[styles.title, { color: '#2DD4BF' }]}>{isRetrying ? t.analyzingRetrying : t.analyzing}</Text>
                 <Text style={[styles.desc, { color: colors.muted }]}>{t.analyzingSubtitle || t.analyzingDesc}</Text>
             </View>
 
