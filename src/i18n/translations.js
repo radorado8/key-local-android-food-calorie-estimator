@@ -371,6 +371,8 @@ export const translations = {
         modelSource: 'AI Model (Mobilenet V2) by Google Coral:',
         developerContact: 'Developer:',
         emailSubject: 'Calories AI Support',
+        errServerBusyMsg: 'Try again later or use another model.',
+        buyMeCoffee: 'Buy me a coffee',
         poweredBy: 'Powered by:',
     },
     de: {
@@ -514,6 +516,8 @@ export const translations = {
         modelSource: 'KI-Modell (MobileNet V2) von Google Coral:',
         developerContact: 'Entwickler:',
         emailSubject: 'Calories AI Support',
+        errServerBusyMsg: 'Versuchen Sie es später erneut oder nutzen Sie ein anderes Modell.',
+        buyMeCoffee: 'Kauf mir einen Kaffee',
         poweredBy: 'Powered by:',
     },
     es: {

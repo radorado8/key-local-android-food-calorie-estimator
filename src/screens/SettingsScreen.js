@@ -578,7 +578,7 @@ export default function SettingsScreen() {
           </Text>
 
           <Text style={[styles.hint, { color: colors.muted, marginBottom: 4 }]}>Support:</Text>
-          <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 12 }} onPress={() => Linking.openURL('https://ko-fi.com/radoslavotipka')}>
+          <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 12 }} onPress={() => Linking.openURL('https://ko-fi.com/caloriesai')}>
             ☕ {t.buyMeCoffee}
           </Text>
 
