@@ -225,7 +225,7 @@ export default function ScannerScreen({ navigation, route }) {
 
         // Check if we should retry
         const isJsonError = err.message && (err.message.includes('JSON Parse error') || err.message.includes('Unexpected token'));
-        const isNetworkError = err.message && (err.message.includes('Network') || err.message.includes('fetch'));
+        const isNetworkError = err.message && (err.message.includes('Network') || err.message.includes('fetch') || err.message.includes('Empty response'));
 
         if ((isJsonError || isNetworkError) && attempts < maxAttempts) {
           console.log(`Attempt ${attempts} failed, retrying... Error: ${err.message}`);

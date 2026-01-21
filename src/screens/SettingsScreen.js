@@ -577,6 +577,11 @@ export default function SettingsScreen() {
             caloriesai@centrum.sk
           </Text>
 
+          <Text style={[styles.hint, { color: colors.muted, marginBottom: 4 }]}>Support:</Text>
+          <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 12 }} onPress={() => Linking.openURL('https://ko-fi.com/radoslavotipka')}>
+            ☕ {t.buyMeCoffee}
+          </Text>
+
           <Text style={[styles.hint, { color: colors.muted, marginBottom: 4 }]}>{t.modelSource || 'Model Source:'}</Text>
           <Text
             style={{ color: colors.accent, fontSize: 13, textDecorationLine: 'underline' }}

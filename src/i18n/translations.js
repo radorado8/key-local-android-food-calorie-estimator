@@ -196,6 +196,9 @@ export const translations = {
         modelSource: 'AI Model (Mobilenet V2) od Google Coral:',
         developerContact: 'Vývojár:',
         emailSubject: 'Calories AI Support',
+        errServerBusyTitle: 'Server je zaneprázdnený',
+        errServerBusyMsg: 'Skúste neskôr alebo iný model (Gemini).',
+        buyMeCoffee: 'Kúp mi kávu',
         poweredBy: 'Použité technológie:',
     },
     en: {
@@ -402,7 +405,7 @@ export const translations = {
         carbs: 'Kohlenhydrate',
         fat: 'Fett',
         calories: 'kcal',
-        historyTitle: 'Ernährungstagebuch',
+        historyTitle: 'Esstagebuch',
         today: 'Heute',
         yesterday: 'Gestern',
         emptyHistory: 'Noch keine Mahlzeiten.',
@@ -786,6 +789,9 @@ export const translations = {
         modelSource: 'Modèle IA (MobileNet V2) par Google Coral :',
         developerContact: 'Développeur :',
         emailSubject: 'Calories AI Support',
+        errServerBusyTitle: 'El servidor está ocupado',
+        errServerBusyMsg: 'Inténtelo de nuevo más tarde o use otro modelo.',
+        buyMeCoffee: 'Cómprame un café',
         poweredBy: 'Propulsé par :',
     },
     pl: {
