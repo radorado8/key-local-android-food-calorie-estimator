@@ -96,6 +96,7 @@ export async function analyzeFood(payload) {
     return result;
   } else {
     // Call Cloud Gemini Service
+    // Pass signal for abortion if provided
     return await analyzeImage(payload);
   }
 }

@@ -1,7 +1,7 @@
 import { getGeminiKey } from '../utils/secureStorage';
 import { PROMPTS } from '../config/prompts';
 
-export async function analyzeImage({ base64Data, mimeType, weightG, language = 'en', aiModel }) {
+export async function analyzeImage({ base64Data, mimeType, weightG, language = 'en', aiModel, signal }) {
     const apiKey = await getGeminiKey();
     if (!apiKey) {
         throw new Error('Chýba API kľúč. Nastav ho v nastaveniach.');
@@ -50,6 +50,10 @@ export async function analyzeImage({ base64Data, mimeType, weightG, language = '
     while (attempts < maxAttempts) {
         attempts++;
         try {
+            if (signal?.aborted) {
+                throw new Error('Aborted'); // Throw generic to be caught
+            }
+
             console.log(`Gemini API Request (Attempt ${attempts}/${maxAttempts})...`);
 
             const response = await fetch(url, {
@@ -57,7 +61,8 @@ export async function analyzeImage({ base64Data, mimeType, weightG, language = '
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(requestBody),
+                signal // Pass abort signal
             });
 
             if (!response.ok) {

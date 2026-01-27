@@ -180,10 +180,25 @@ export default function ScannerScreen({ navigation, route }) {
 
   const [isRetrying, setIsRetrying] = useState(false);
 
+  // Track active analysis ID to prevent race conditions
+  const currentAnalysisIdRef = useRef(null);
+  const abortControllerRef = useRef(null); // Controller for network cancellation
+
   const analyzePickedImage = async (asset, weightG) => {
     if (!asset?.base64) {
       throw new Error('Chýba base64 obrázka (ImagePicker).');
     }
+
+    // Generate unique ID for this session
+    const analysisId = Date.now().toString();
+    currentAnalysisIdRef.current = analysisId;
+
+    // Create new abort controller
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort(); // Abort any previous
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     const mimeType = asset.mimeType || 'image/jpeg';
 
@@ -206,14 +221,13 @@ export default function ScannerScreen({ navigation, route }) {
           weightG,
           language,
           analysisMode,
-          imageUri: asset.uri
+          imageUri: asset.uri,
+          signal: controller.signal // Pass signal
         });
 
-        if (!analysisActiveRef.current) {
-          console.log('Analysis cancelled, ignoring result.');
-          return; // pickingRef is cleared by the caller (helper/hook) or manually if needed? 
-          // actually, pickFromGallery and handleCapture handle pickingRef.
-          // But if we return here, we are good.
+        // Race condition check: Ensure this is still the active analysis
+        if (currentAnalysisIdRef.current !== analysisId || !analysisActiveRef.current) {
+          console.log('Analysis cancelled or superseded, ignoring result.');
           return;
         }
 
@@ -221,7 +235,14 @@ export default function ScannerScreen({ navigation, route }) {
         setStatus('result');
         return; // Success, exit function
       } catch (err) {
-        if (!analysisActiveRef.current) return;
+        // Race condition check OR Abort check
+        if (currentAnalysisIdRef.current !== analysisId || !analysisActiveRef.current) return;
+
+        // If aborted, stop
+        if (err.name === 'AbortError' || err.message === 'Aborted') {
+          console.log('Analysis aborted.');
+          return;
+        }
 
         // Check if we should retry
         const isJsonError = err.message && (err.message.includes('JSON Parse error') || err.message.includes('Unexpected token'));
@@ -232,7 +253,9 @@ export default function ScannerScreen({ navigation, route }) {
           setIsRetrying(true);
           // Wait a bit before retrying
           await new Promise(r => setTimeout(r, 1500));
-          if (!analysisActiveRef.current) return;
+
+          // Re-check after wait
+          if (currentAnalysisIdRef.current !== analysisId || !analysisActiveRef.current) return;
           continue; // Retry loop
         }
 
@@ -384,6 +407,10 @@ export default function ScannerScreen({ navigation, route }) {
             t={t}
             isRetrying={isRetrying}
             onCancel={() => {
+              // Abort network request immediately
+              if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+              }
               analysisActiveRef.current = false;
               setStatus('idle');
               setCapturedUri(null);
