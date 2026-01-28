@@ -551,6 +551,8 @@ export const translations = {
         errServerBusyMsg: 'Versuchen Sie es später erneut oder nutzen Sie ein anderes Modell.',
         buyMeCoffee: 'Kauf mir einen Kaffee',
         poweredBy: 'Powered by:',
+        website: 'Webseite',
+        termsConditions: 'AGB',
     },
     es: {
         tabScanner: 'Escáner',
@@ -731,6 +733,8 @@ export const translations = {
         developerContact: 'Desarrollador:',
         emailSubject: 'Soporte Calories AI',
         poweredBy: 'Con tecnología de:',
+        website: 'Sitio web',
+        termsConditions: 'Términos y condiciones',
     },
     fr: {
         tabScanner: 'Scanner',
@@ -913,6 +917,8 @@ export const translations = {
         errAiMsg: 'L\'IA a échoué.',
         errNetworkTitle: 'Erreur réseau',
         errNetworkMsg: 'Vérifiez la connexion.',
+        website: 'Site web',
+        termsConditions: 'Conditions générales',
     },
     pl: {
         tabScanner: 'Skaner',
@@ -1116,6 +1122,8 @@ export const translations = {
         developerContact: 'Deweloper:',
         emailSubject: 'Calories AI Support',
         poweredBy: 'Zasilane przez:',
+        website: 'Strona internetowa',
+        termsConditions: 'Regulamin',
     },
     cs: {
         tabScanner: 'Skener',
@@ -1295,6 +1303,8 @@ export const translations = {
         developerContact: 'Vývojář:',
         emailSubject: 'Calories AI Support',
         poweredBy: 'Použité technologie:',
+        website: 'Webová stránka',
+        termsConditions: 'Obchodní podmínky',
     },
     it: {
         tabScanner: 'Scanner',
@@ -1346,7 +1356,10 @@ export const translations = {
         aiModel: 'Modello IA',
         language: 'Lingua app',
         theme: 'Tema',
+        theme: 'Tema',
         themeDark: 'Scuro',
+        website: 'Sito web',
+        termsConditions: 'Termini e condizioni',
         themeLight: 'Chiaro',
         themeSystem: 'Predefinito di sistema',
         logout: 'Disconnettersi',
