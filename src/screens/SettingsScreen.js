@@ -577,6 +577,14 @@ export default function SettingsScreen() {
             caloriesai@centrum.sk
           </Text>
 
+          <Text style={[styles.hint, { color: colors.muted, marginBottom: 4 }]}>Info:</Text>
+          <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 6 }} onPress={() => Linking.openURL('https://kalorie-jedlo-web-rot.web.app/')}>
+            🌐 {t.website}
+          </Text>
+          <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 12 }} onPress={() => Linking.openURL('https://kalorie-jedlo-web-rot.web.app/terms.html')}>
+            📄 {t.termsConditions}
+          </Text>
+
           <Text style={[styles.hint, { color: colors.muted, marginBottom: 4 }]}>Support:</Text>
           <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 12 }} onPress={() => Linking.openURL('https://ko-fi.com/caloriesai')}>
             ☕ {t.buyMeCoffee}

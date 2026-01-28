@@ -200,6 +200,8 @@ export const translations = {
         errServerBusyMsg: 'Skúste neskôr alebo iný model (Gemini).',
         buyMeCoffee: 'Kúp mi kávu',
         poweredBy: 'Použité technológie:',
+        website: 'Webstránka',
+        termsConditions: 'Obchodné podmienky',
     },
     en: {
         tabScanner: 'Scanner',
@@ -374,6 +376,8 @@ export const translations = {
         errServerBusyMsg: 'Try again later or use another model.',
         buyMeCoffee: 'Buy me a coffee',
         poweredBy: 'Powered by:',
+        website: 'Website',
+        termsConditions: 'Terms & Conditions',
     },
     de: {
         tabScanner: 'Scanner',
