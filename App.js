@@ -98,9 +98,11 @@ function QuickActionHandler() {
   return null;
 }
 
+import TermsModal from './src/components/TermsModal';
+
 function AppContent({ startupError }) {
   const insets = useSafeAreaInsets();
-  const { theme } = useSettings();
+  const { theme, termsAccepted, hydrated } = useSettings();
   const t = useTranslation();
 
   // Configure Quick Actions
@@ -150,10 +152,16 @@ function AppContent({ startupError }) {
       inactive: 'rgba(255,255,255,0.6)'
     };
 
+  if (!hydrated) {
+    return null; // Or a splash screen
+  }
+
   return (
     <NavigationContainer>
       <QuickActionHandler />
       <StatusBar style={theme === 'light' ? 'dark' : 'light'} />
+      <TermsModal visible={!termsAccepted} mode="onboarding" />
+
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,

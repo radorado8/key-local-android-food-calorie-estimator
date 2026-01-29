@@ -22,11 +22,20 @@ import * as DocumentPicker from 'expo-document-picker';
 import { exportUserData, getFriendlyError } from '../api/backend';
 import { getAllMeals, createMeal } from '../api/mealService';
 import { getGeminiKey, setGeminiKey } from '../utils/secureStorage';
+import TermsModal from '../components/TermsModal';
 
 function clampDailyGoal(value) {
   if (!Number.isFinite(value)) return 2100;
   return Math.max(500, Math.min(10000, Math.round(value)));
 }
+
+// ... Dropdown component ... (omitted for brevity in replace, but context match will find the right place)
+// Actually, I'll target the top of SettingsScreen component to add state, and top of file for import.
+// This call handles BOTH if I can match multiple blocks? No, replace_file_content is single block.
+// I'll do the import first, then the state.
+// Wait, I can do this in TWO separate replace_file_content calls or one multi_replace.
+// I'll use multi_replace for safety and efficiency.
+
 
 const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
   const t = useTranslation();
@@ -111,6 +120,7 @@ export default function SettingsScreen() {
   const [dailyGoalInput, setDailyGoalInput] = useState(String(dailyGoal));
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   useEffect(() => {
     // Load API Key
@@ -581,9 +591,11 @@ export default function SettingsScreen() {
           <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 6 }} onPress={() => Linking.openURL('https://kalorie-jedlo-web-rot.web.app/')}>
             🌐 {t.website}
           </Text>
-          <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 12 }} onPress={() => Linking.openURL('https://kalorie-jedlo-web-rot.web.app/terms.html')}>
-            📄 {t.termsConditions}
-          </Text>
+          <Pressable onPress={() => setShowTerms(true)}>
+            <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 12 }}>
+              📄 {t.termsConditions}
+            </Text>
+          </Pressable>
 
           <Text style={[styles.hint, { color: colors.muted, marginBottom: 4 }]}>Support:</Text>
           <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 12 }} onPress={() => Linking.openURL('https://ko-fi.com/caloriesai')}>
@@ -645,6 +657,7 @@ export default function SettingsScreen() {
         </Pressable>
       </Modal>
 
+      <TermsModal visible={showTerms} onClose={() => setShowTerms(false)} mode="view" />
     </View>
   );
 }

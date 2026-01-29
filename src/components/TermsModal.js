@@ -1,0 +1,104 @@
+import React from 'react';
+import { Modal, View, Text, ScrollView, Pressable, StyleSheet, BackHandler, Platform } from 'react-native';
+import { useTranslation } from '../hooks/useTranslation';
+import { useSettings } from '../state/SettingsContext';
+
+export default function TermsModal({ visible, onClose, mode = 'onboarding' }) {
+    const t = useTranslation();
+    const { setTermsAccepted, theme } = useSettings();
+
+    const isDark = theme !== 'light';
+    const colors = isDark
+        ? { bg: '#161B22', text: '#FFFFFF', muted: '#A1A1AA', card: '#0B0F14', border: '#30363D', accent: '#2DD4BF' }
+        : { bg: '#FFFFFF', text: '#0F172A', muted: '#64748B', card: '#F8FAFC', border: '#E2E8F0', accent: '#0D9488' };
+
+    const handleAccept = () => {
+        if (mode === 'onboarding') {
+            setTermsAccepted(true);
+        }
+        if (onClose) onClose();
+    };
+
+    const handleDecline = () => {
+        if (mode === 'onboarding') {
+            BackHandler.exitApp();
+        } else {
+            if (onClose) onClose();
+        }
+    };
+
+    return (
+        <Modal visible={visible} transparent animationType="slide" onRequestClose={() => { if (mode !== 'onboarding') onClose(); }}>
+            <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
+                <View style={[styles.container, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+                    <Text style={[styles.title, { color: colors.text }]}>{t.termsTitle}</Text>
+
+                    <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 20 }}>
+                        <Text style={[styles.body, { color: colors.text }]}>{t.termsBody}</Text>
+                    </ScrollView>
+
+                    <View style={styles.footer}>
+                        {mode === 'onboarding' ? (
+                            <>
+                                <Pressable onPress={handleDecline} style={[styles.btn, { backgroundColor: 'transparent', borderColor: colors.border, borderWidth: 1 }]}>
+                                    <Text style={{ color: colors.muted, fontWeight: '600' }}>{t.termsDecline}</Text>
+                                </Pressable>
+                                <Pressable onPress={handleAccept} style={[styles.btn, { backgroundColor: colors.accent }]}>
+                                    <Text style={{ color: isDark ? '#000' : '#fff', fontWeight: 'bold' }}>{t.termsAccept}</Text>
+                                </Pressable>
+                            </>
+                        ) : (
+                            <Pressable onPress={onClose} style={[styles.btn, { backgroundColor: colors.card, width: '100%' }]}>
+                                <Text style={{ color: colors.text, fontWeight: '600' }}>{t.cancel || 'Close'}</Text>
+                            </Pressable>
+                        )}
+                    </View>
+                </View>
+            </View>
+        </Modal>
+    );
+}
+
+const styles = StyleSheet.create({
+    overlay: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: 20,
+    },
+    container: {
+        maxHeight: '80%',
+        borderRadius: 24,
+        borderWidth: 1,
+        padding: 24,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: '800',
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    scroll: {
+        marginBottom: 20,
+    },
+    body: {
+        fontSize: 16,
+        lineHeight: 24,
+    },
+    footer: {
+        flexDirection: 'row',
+        gap: 12,
+        justifyContent: 'space-between',
+    },
+    btn: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
