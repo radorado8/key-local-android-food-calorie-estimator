@@ -53,7 +53,7 @@ export default function TermsModal({ visible, onClose, mode = 'onboarding' }) {
                 <View style={[styles.container, { backgroundColor: colors.bg, borderColor: colors.border }]}>
                     <Text style={[styles.title, { color: colors.text }]}>{t.termsTitle}</Text>
 
-                    <ScrollView style={styles.scroll} contentContainerStyle={{ flexGrow: 1 }}>
+                    <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 0 }}>
                         <Text style={[styles.body, { color: colors.text }]}>{renderTextWithLinks(t.termsBody)}</Text>
                     </ScrollView>
 
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     },
     container: {
         width: '100%',
-        maxHeight: '90%', // Increased slightly
+        maxHeight: '75%', // Reduced as requested
         borderRadius: 24,
         borderWidth: 1,
         padding: 24,
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 20,
         elevation: 10,
-        display: 'flex', // Explicit flex display
+        display: 'flex',
         flexDirection: 'column',
     },
     title: {
@@ -104,11 +104,11 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         marginBottom: 16,
         textAlign: 'center',
-        flexShrink: 0, // Title shouldn't shrink
+        flexShrink: 0,
     },
     scroll: {
         marginBottom: 20,
-        flexShrink: 1, // Allow scrollview to shrink if needed, preventing overflow
+        flexShrink: 1, // Key fix: shrink scrollview if needed
     },
     body: {
         fontSize: 16,
@@ -118,8 +118,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 12,
         justifyContent: 'space-between',
-        marginTop: 'auto', // Push to bottom if space allows
-        flexShrink: 0, // Footer shouldn't shrink
+        flexShrink: 0,
+        marginTop: 'auto',
     },
     btn: {
         flex: 1,
