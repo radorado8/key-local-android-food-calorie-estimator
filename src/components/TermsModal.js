@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Text, ScrollView, Pressable, StyleSheet, BackHandler, Platform } from 'react-native';
+import { Modal, View, Text, ScrollView, Pressable, StyleSheet, BackHandler, Linking } from 'react-native';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSettings } from '../state/SettingsContext';
 
@@ -9,8 +9,8 @@ export default function TermsModal({ visible, onClose, mode = 'onboarding' }) {
 
     const isDark = theme !== 'light';
     const colors = isDark
-        ? { bg: '#161B22', text: '#FFFFFF', muted: '#A1A1AA', card: '#0B0F14', border: '#30363D', accent: '#2DD4BF' }
-        : { bg: '#FFFFFF', text: '#0F172A', muted: '#64748B', card: '#F8FAFC', border: '#E2E8F0', accent: '#0D9488' };
+        ? { bg: '#161B22', text: '#FFFFFF', muted: '#A1A1AA', card: '#0B0F14', border: '#30363D', accent: '#2DD4BF', link: '#58A6FF' }
+        : { bg: '#FFFFFF', text: '#0F172A', muted: '#64748B', card: '#F8FAFC', border: '#E2E8F0', accent: '#0D9488', link: '#0969DA' };
 
     const handleAccept = () => {
         if (mode === 'onboarding') {
@@ -27,14 +27,34 @@ export default function TermsModal({ visible, onClose, mode = 'onboarding' }) {
         }
     };
 
+    const renderTextWithLinks = (text) => {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const parts = text.split(urlRegex);
+
+        return parts.map((part, index) => {
+            if (part.match(urlRegex)) {
+                return (
+                    <Text
+                        key={index}
+                        style={{ color: colors.link, textDecorationLine: 'underline' }}
+                        onPress={() => Linking.openURL(part)}
+                    >
+                        {part}
+                    </Text>
+                );
+            }
+            return <Text key={index}>{part}</Text>;
+        });
+    };
+
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={() => { if (mode !== 'onboarding') onClose(); }}>
             <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
                 <View style={[styles.container, { backgroundColor: colors.bg, borderColor: colors.border }]}>
                     <Text style={[styles.title, { color: colors.text }]}>{t.termsTitle}</Text>
 
-                    <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 20 }}>
-                        <Text style={[styles.body, { color: colors.text }]}>{t.termsBody}</Text>
+                    <ScrollView style={styles.scroll} contentContainerStyle={{ flexGrow: 1 }}>
+                        <Text style={[styles.body, { color: colors.text }]}>{renderTextWithLinks(t.termsBody)}</Text>
                     </ScrollView>
 
                     <View style={styles.footer}>
@@ -66,7 +86,8 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     container: {
-        maxHeight: '80%',
+        width: '100%',
+        maxHeight: '90%', // Increased slightly
         borderRadius: 24,
         borderWidth: 1,
         padding: 24,
@@ -75,16 +96,19 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 20,
         elevation: 10,
+        display: 'flex', // Explicit flex display
+        flexDirection: 'column',
     },
     title: {
         fontSize: 24,
         fontWeight: '800',
         marginBottom: 16,
         textAlign: 'center',
+        flexShrink: 0, // Title shouldn't shrink
     },
     scroll: {
         marginBottom: 20,
-        flex: 1, // Added to ensure scrollview takes available space but allows footer to be visible
+        flexShrink: 1, // Allow scrollview to shrink if needed, preventing overflow
     },
     body: {
         fontSize: 16,
@@ -94,6 +118,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 12,
         justifyContent: 'space-between',
+        marginTop: 'auto', // Push to bottom if space allows
+        flexShrink: 0, // Footer shouldn't shrink
     },
     btn: {
         flex: 1,
