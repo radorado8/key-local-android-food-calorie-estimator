@@ -84,6 +84,7 @@ const styles = StyleSheet.create({
     },
     scroll: {
         marginBottom: 20,
+        flex: 1, // Added to ensure scrollview takes available space but allows footer to be visible
     },
     body: {
         fontSize: 16,
