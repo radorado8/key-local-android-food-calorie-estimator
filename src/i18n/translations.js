@@ -198,7 +198,7 @@ export const translations = {
         emailSubject: 'Calories AI Support',
         errServerBusyTitle: 'Server je zaneprázdnený',
         errServerBusyMsg: 'Skúste neskôr alebo iný model (Gemini).',
-        buyMeCoffee: 'Ak chceš ma podporiť, kúp mi kávu',
+        buyMeCoffee: 'Ak ma chceš podporiť, kúp mi kávu',
         poweredBy: 'Použité technológie:',
         website: 'Webstránka',
         termsConditions: 'Obchodné podmienky',

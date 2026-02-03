@@ -1,11 +1,14 @@
 import React from 'react';
-import { Modal, View, Text, ScrollView, Pressable, StyleSheet, BackHandler, Linking } from 'react-native';
+import { Modal, View, Text, ScrollView, Pressable, StyleSheet, BackHandler, Linking, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSettings } from '../state/SettingsContext';
 
 export default function TermsModal({ visible, onClose, mode = 'onboarding' }) {
     const t = useTranslation();
     const { setTermsAccepted, theme } = useSettings();
+    const insets = useSafeAreaInsets();
+    const screenHeight = Dimensions.get('window').height;
 
     const isDark = theme !== 'light';
     const colors = isDark
@@ -47,10 +50,13 @@ export default function TermsModal({ visible, onClose, mode = 'onboarding' }) {
         });
     };
 
+    // Calculate max height safely (e.g. 70% of screen height)
+    const maxHeight = screenHeight * 0.7;
+
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={() => { if (mode !== 'onboarding') onClose(); }}>
-            <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
-                <View style={[styles.container, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+            <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.8)', paddingBottom: insets.bottom + 20 }]}>
+                <View style={[styles.container, { backgroundColor: colors.bg, borderColor: colors.border, maxHeight: maxHeight }]}>
                     <Text style={[styles.title, { color: colors.text }]}>{t.termsTitle}</Text>
 
                     <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 0 }}>
@@ -87,7 +93,7 @@ const styles = StyleSheet.create({
     },
     container: {
         width: '100%',
-        maxHeight: '75%', // Reduced as requested
+        // maxHeight set dynamically now
         borderRadius: 24,
         borderWidth: 1,
         padding: 24,
@@ -108,7 +114,7 @@ const styles = StyleSheet.create({
     },
     scroll: {
         marginBottom: 20,
-        flexShrink: 1, // Key fix: shrink scrollview if needed
+        flexShrink: 1,
     },
     body: {
         fontSize: 16,
