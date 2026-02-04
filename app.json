@@ -39,6 +39,11 @@
             "targetSdkVersion": 35,
             "gradleProperties": {
               "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g"
+            },
+            "packagingOptions": {
+              "jniLibs": {
+                "useLegacyPackaging": true
+              }
             }
           }
         }
