@@ -68,7 +68,8 @@
       "expo-file-system",
       "react-native-fast-tflite",
       "./plugins/withShortcutIcons",
-      "./plugins/withGmsVersion"
+      "./plugins/withGmsVersion",
+      "./plugins/withExtractNativeLibs"
     ],
     "extra": {
       "allowedEmails": [],
