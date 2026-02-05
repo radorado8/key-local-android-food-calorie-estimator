@@ -4,7 +4,7 @@
     "slug": "android-food-calorie-estimator",
     "scheme": "keylocalfoodestimator",
     "version": "1.0.3",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon_key_fire.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
@@ -38,7 +38,8 @@
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
             "gradleProperties": {
-              "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g"
+              "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g",
+              "expo.useLegacyPackaging": "true"
             },
             "packagingOptions": {
               "jniLibs": {
