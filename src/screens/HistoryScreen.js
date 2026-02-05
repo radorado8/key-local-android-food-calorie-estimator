@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ImageView from "react-native-image-viewing";
 import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { deleteMeal, updateMeal, subscribeToMeals, createMeal } from '../api/mealService';
 import MealEditDialog from '../components/MealEditDialog';
 import { useSettings } from '../state/SettingsContext';

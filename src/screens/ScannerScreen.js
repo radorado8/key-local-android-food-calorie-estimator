@@ -8,10 +8,11 @@ import {
   Text,
   View,
   BackHandler,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import AnalysisLoader from '../components/AnalysisLoader';

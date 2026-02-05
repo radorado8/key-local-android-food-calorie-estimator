@@ -17,7 +17,7 @@ import { MODEL_CATALOG, coerceModelId, DEFAULT_PUBLIC_MODEL_ID } from '../config
 
 import { useSettings } from '../state/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { exportUserData, getFriendlyError } from '../api/backend';
