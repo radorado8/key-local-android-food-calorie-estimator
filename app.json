@@ -37,7 +37,7 @@
           "android": {
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
-            "ndkVersion": "28.0.12433566",
+            "ndkVersion": "27.2.12479018",
             "gradleProperties": {
               "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g",
               "expo.useLegacyPackaging": "true"
