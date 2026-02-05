@@ -51,7 +51,7 @@ export async function classifyImage(imageUri) {
     );
 
     // 2. Decode with Skia to get pixels
-    const data = await FileSystem.readAsStringAsync(manipResult.uri, { encoding: FileSystem.EncodingType.Base64 });
+    const data = await FileSystem.readAsStringAsync(manipResult.uri, { encoding: 'base64' });
     const skData = Skia.Data.fromBase64(data);
     const skImage = Skia.Image.MakeImageFromEncoded(skData);
 

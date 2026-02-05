@@ -291,7 +291,7 @@ export default function ScannerScreen({ navigation, route }) {
       if (!res.canceled && res.assets?.[0]) {
         const asset = res.assets[0];
         const base64 = await FileSystem.readAsStringAsync(asset.uri, {
-          encoding: FileSystem.EncodingType.Base64,
+          encoding: 'base64',
         });
         await analyzePickedImage({ ...asset, base64 }, weightG);
       }
@@ -329,7 +329,7 @@ export default function ScannerScreen({ navigation, route }) {
       setShowCamera(false);
 
       const base64 = await FileSystem.readAsStringAsync(photo.uri, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: 'base64',
       });
 
       await analyzePickedImage({ ...photo, base64 }, weightForCamera);
