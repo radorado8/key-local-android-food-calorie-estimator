@@ -70,7 +70,8 @@
       "react-native-fast-tflite",
       "./plugins/withShortcutIcons",
       "./plugins/withGmsVersion",
-      "./plugins/withExtractNativeLibs"
+      "./plugins/withExtractNativeLibs",
+      "./plugins/withGradlePropertiesFix"
     ],
     "extra": {
       "allowedEmails": [],
