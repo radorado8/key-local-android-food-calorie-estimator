@@ -13,12 +13,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
+import { useTranslation } from '../hooks/useTranslation';
+
 function toNumber(v) {
   const n = Number(String(v).replace(',', '.'));
   return Number.isFinite(n) ? n : NaN;
 }
-
-import { useTranslation } from '../hooks/useTranslation';
 
 export default function MealEditDialog({ visible, initialMeal, onCancel, onSave, colors, mode = 'edit' }) {
   const t = useTranslation();
@@ -255,7 +255,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#0B0F14',
     borderRadius: 18,
     padding: 16,
-    padding: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
     gap: 6,
