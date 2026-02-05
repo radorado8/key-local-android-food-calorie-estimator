@@ -502,7 +502,7 @@ export default function ScannerScreen({ navigation, route }) {
   // Idle state (Dashboard)
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.container}>
         <View style={styles.hero}>
           <Text style={[styles.heroTitle, { color: colors.text }]}>
             {t.heroTitle} <Text style={[styles.heroAccent, { color: colors.accent }]}>{t.heroAccent}</Text>
@@ -542,7 +542,7 @@ export default function ScannerScreen({ navigation, route }) {
           </Pressable>
         </View>
         <View style={{ height: 40 }} />
-      </ScrollView>
+      </View>
 
       <Modal
         visible={showCamera}
