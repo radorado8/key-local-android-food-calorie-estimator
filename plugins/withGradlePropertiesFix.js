@@ -2,29 +2,20 @@ const { withGradleProperties } = require('expo/config-plugins');
 
 const withGradlePropertiesFix = (config) => {
     return withGradleProperties(config, (config) => {
-        // Force expo.useLegacyPackaging to true
-        const legacyPackaging = config.modResults.find(item => item.key === 'expo.useLegacyPackaging');
-        if (legacyPackaging) {
-            legacyPackaging.value = 'true';
-        } else {
-            config.modResults.push({
-                type: 'property',
-                key: 'expo.useLegacyPackaging',
-                value: 'true',
-            });
-        }
+        // 1. Remove ANY existing entries for expo.useLegacyPackaging to avoid conflicts
+        // Also remove the deprecated android.bundle.enableUncompressedNativeLibs if present (just to be clean)
+        config.modResults = config.modResults.filter(
+            item => item.key !== 'expo.useLegacyPackaging' && item.key !== 'android.bundle.enableUncompressedNativeLibs'
+        );
 
-        // Force android.bundle.enableUncompressedNativeLibs to false (to force compression -> extraction)
-        const uncompressedLibs = config.modResults.find(item => item.key === 'android.bundle.enableUncompressedNativeLibs');
-        if (uncompressedLibs) {
-            uncompressedLibs.value = 'false';
-        } else {
-            config.modResults.push({
-                type: 'property',
-                key: 'android.bundle.enableUncompressedNativeLibs',
-                value: 'false',
-            });
-        }
+        // 2. Add the correct values
+        config.modResults.push({
+            type: 'property',
+            key: 'expo.useLegacyPackaging',
+            value: 'true',
+        });
+
+        // NOTE: android.bundle.enableUncompressedNativeLibs is deprecated/removed in newer AGP, so we do NOT set it.
 
         return config;
     });
