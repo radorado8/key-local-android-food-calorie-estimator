@@ -541,7 +541,7 @@ export default function ScannerScreen({ navigation, route }) {
             <Text style={[styles.bigBtnText, { color: colors.btnText }]}>{t.cameraShort}</Text>
           </Pressable>
         </View>
-        <View style={{ height: 40 }} />
+
       </ScrollView>
 
       <Modal
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
   },
   hero: {
     alignItems: 'center',
-    marginTop: 19,
+    marginTop: 1,
     marginBottom: 4,
   },
   heroTitle: {

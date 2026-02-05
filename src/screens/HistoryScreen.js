@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     paddingHorizontal: 16,
-    paddingTop: 50,
+    paddingTop: 3,
     paddingBottom: 12,
     alignItems: 'center',
   },
