@@ -1,5 +1,5 @@
 import { loadTensorflowModel } from 'react-native-fast-tflite';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Asset } from 'expo-asset';
 import { Image, Skia } from '@shopify/react-native-skia';
 import * as ImageManipulator from 'expo-image-manipulator';

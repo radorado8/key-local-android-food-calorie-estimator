@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import ImageView from "react-native-image-viewing";
 import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { deleteMeal, updateMeal, subscribeToMeals, createMeal } from '../api/mealService';
 import MealEditDialog from '../components/MealEditDialog';
 import { useSettings } from '../state/SettingsContext';
