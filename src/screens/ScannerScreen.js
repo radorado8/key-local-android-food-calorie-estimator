@@ -501,7 +501,7 @@ export default function ScannerScreen({ navigation, route }) {
 
   // Idle state (Dashboard)
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.hero}>
           <Text style={[styles.heroTitle, { color: colors.text }]}>
