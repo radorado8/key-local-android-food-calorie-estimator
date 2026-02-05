@@ -7,7 +7,7 @@
     "orientation": "default",
     "icon": "./assets/icon_key_fire.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
