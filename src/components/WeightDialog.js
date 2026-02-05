@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
+  KeyboardAvoidingView,
 } from 'react-native';
 
 import { useTranslation } from '../hooks/useTranslation';
@@ -41,7 +43,10 @@ export default function WeightDialog({ visible, onCancel, onConfirm, colors }) {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.backdrop}
+      >
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
         <View style={[styles.card, { backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderColor: currentColors.border }]}>
           <Text style={[styles.title, { color: currentColors.text }]}>{t.weightTitle}</Text>
@@ -74,7 +79,7 @@ export default function WeightDialog({ visible, onCancel, onConfirm, colors }) {
             </Pressable>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

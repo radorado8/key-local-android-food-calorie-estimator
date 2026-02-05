@@ -11,6 +11,7 @@ import {
   View,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import ImageView from "react-native-image-viewing";
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -234,7 +235,8 @@ export default function HistoryScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
       <View style={[styles.headerBlock, { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }]}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t.historyTitle}</Text>
         <Pressable
@@ -467,7 +469,8 @@ export default function HistoryScreen() {
         swipeToCloseEnabled={true}
         doubleTapToZoomEnabled={true}
       />
-    </View>
+
+    </SafeAreaView>
   );
 }
 

@@ -8,6 +8,7 @@ import {
   View,
   Platform,
   Image,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -102,7 +103,10 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.backdrop}
+      >
         <View style={[styles.card, { backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderColor: currentColors.border }]}>
           {(imageUri) && (
             <View style={{ marginBottom: 4 }}>
@@ -232,7 +236,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
 
           {!valid ? <Text style={[styles.hint, { color: currentColors.muted }]}>{t.validationError}</Text> : null}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

@@ -11,6 +11,7 @@ import {
   View,
   Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { MODEL_CATALOG, coerceModelId, DEFAULT_PUBLIC_MODEL_ID } from '../config/aiModels';
 
@@ -372,7 +373,8 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
       <View style={styles.headerBlock}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t.settingsTitle}</Text>
       </View>
@@ -658,7 +660,7 @@ export default function SettingsScreen() {
       </Modal>
 
       <TermsModal visible={showTerms} onClose={() => setShowTerms(false)} mode="view" />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -805,5 +807,6 @@ const styles = StyleSheet.create({
   btnText: {
     color: 'rgba(255,255,255,0.85)',
     fontWeight: '800',
+    textAlign: 'center',
   },
 });
