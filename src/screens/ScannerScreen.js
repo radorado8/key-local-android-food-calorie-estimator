@@ -599,6 +599,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 16,
+    paddingBottom: 100,
     gap: 12,
   },
   hero: {
