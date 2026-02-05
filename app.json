@@ -39,13 +39,7 @@
             "targetSdkVersion": 35,
             "ndkVersion": "27.2.12479018",
             "gradleProperties": {
-              "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g",
-              "expo.useLegacyPackaging": "true"
-            },
-            "packagingOptions": {
-              "jniLibs": {
-                "useLegacyPackaging": true
-              }
+              "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g"
             }
           }
         }
@@ -71,8 +65,7 @@
       "react-native-fast-tflite",
       "./plugins/withShortcutIcons",
       "./plugins/withGmsVersion",
-      "./plugins/withExtractNativeLibs",
-      "./plugins/withHardcodedLegacyPackaging"
+      "./plugins/withExtractNativeLibs"
     ],
     "extra": {
       "allowedEmails": [],
