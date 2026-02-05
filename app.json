@@ -72,7 +72,7 @@
       "./plugins/withShortcutIcons",
       "./plugins/withGmsVersion",
       "./plugins/withExtractNativeLibs",
-      "./plugins/withGradlePropertiesFix"
+      "./plugins/withHardcodedLegacyPackaging"
     ],
     "extra": {
       "allowedEmails": [],
