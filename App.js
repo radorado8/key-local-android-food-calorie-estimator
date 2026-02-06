@@ -192,9 +192,14 @@ function AppContent({ startupError }) {
           tabBarButton: (props) => (
             <Pressable
               {...props}
-              android_ripple={{ color: theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)', borderless: false }}
+              android_ripple={{
+                color: theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                borderless: false,
+                foreground: true
+              }}
               style={({ pressed }) => [
                 props.style,
+                { alignItems: 'center', justifyContent: 'center' }, // Ensure centering
                 Platform.OS === 'ios' && pressed && { opacity: 0.6 }
               ]}
             />
