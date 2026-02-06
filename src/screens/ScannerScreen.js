@@ -330,29 +330,19 @@ export default function ScannerScreen({ navigation, route }) {
     setShowCamera(true);
   };
 
-  const shutterOpacity = useRef(new Animated.Value(0)).current;
+
 
   const handleCapture = async () => {
     if (!cameraRef.current || pickingRef.current) return;
 
     try {
       pickingRef.current = true;
-
-      // Manual Shutter Animation
-      Animated.sequence([
-        Animated.timing(shutterOpacity, { toValue: 1, duration: 50, useNativeDriver: true }),
-        Animated.timing(shutterOpacity, { toValue: 0, duration: 150, useNativeDriver: true })
-      ]).start();
-
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.5,
         shutterSound: false,
       });
 
-      // Small delay to let animation finish before closing
-      setTimeout(() => {
-        setShowCamera(false);
-      }, 200);
+      setShowCamera(false);
 
       const base64 = await FileSystem.readAsStringAsync(photo.uri, {
         encoding: 'base64',
@@ -584,12 +574,7 @@ export default function ScannerScreen({ navigation, route }) {
             facing={facing}
             flash={flash}
           >
-            <Animated.View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: 'black', opacity: shutterOpacity, pointerEvents: 'none', zIndex: 1 }
-              ]}
-            />
+
             <View style={styles.cameraControls}>
               <Pressable
                 style={styles.camBtnSecondary}

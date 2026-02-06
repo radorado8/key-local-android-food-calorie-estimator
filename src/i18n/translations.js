@@ -1,7 +1,7 @@
 export const translations = {
     sk: {
         // App / Navigation
-        tabScanner: 'Scanner',
+        tabScanner: 'Domov',
         tabHistory: 'História',
         tabSettings: 'Nastavenia',
 
@@ -208,7 +208,7 @@ export const translations = {
         termsDecline: 'Odmietnuť',
     },
     en: {
-        tabScanner: 'Scanner',
+        tabScanner: 'Home',
         tabHistory: 'History',
         tabSettings: 'Settings',
         scannerTitle: 'Scanner',
@@ -388,7 +388,7 @@ export const translations = {
         termsDecline: 'Decline',
     },
     de: {
-        tabScanner: 'Scanner',
+        tabScanner: 'Home',
         tabHistory: 'Verlauf',
         tabSettings: 'Einstellungen',
         scannerTitle: 'Scanner',
@@ -567,7 +567,7 @@ export const translations = {
         termsDecline: 'Ablehnen',
     },
     es: {
-        tabScanner: 'Escáner',
+        tabScanner: 'Inicio',
         tabHistory: 'Historial',
         tabSettings: 'Ajustes',
         scannerTitle: 'Escáner',
@@ -753,7 +753,7 @@ export const translations = {
         termsDecline: 'Rechazar',
     },
     fr: {
-        tabScanner: 'Scanner',
+        tabScanner: 'Accueil',
         tabHistory: 'Historique',
         tabSettings: 'Paramètres',
         scannerTitle: 'Scanner',
@@ -941,7 +941,7 @@ export const translations = {
         termsDecline: 'Refuser',
     },
     pl: {
-        tabScanner: 'Skaner',
+        tabScanner: 'Start',
         tabHistory: 'Historia',
         tabSettings: 'Ustawienia',
         scannerTitle: 'Skaner',
@@ -1150,7 +1150,7 @@ export const translations = {
         termsDecline: 'Odrzuć',
     },
     cs: {
-        tabScanner: 'Skener',
+        tabScanner: 'Domů',
         tabHistory: 'Historie',
         tabSettings: 'Nastavení',
         scannerTitle: 'Skener',
@@ -1335,7 +1335,7 @@ export const translations = {
         termsDecline: 'Odmítnout',
     },
     it: {
-        tabScanner: 'Scanner',
+        tabScanner: 'Home',
         tabHistory: 'Cronologia',
         tabSettings: 'Impostazioni',
         scannerTitle: 'Scanner',
