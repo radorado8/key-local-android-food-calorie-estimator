@@ -75,7 +75,7 @@ export default function TermsModal({ visible, onClose, mode = 'onboarding' }) {
                             </>
                         ) : (
                             <Pressable onPress={onClose} style={[styles.btn, { backgroundColor: colors.card, width: '100%' }]}>
-                                <Text style={{ color: colors.text, fontWeight: '600' }}>{t.cancel || 'Close'}</Text>
+                                <Text style={{ color: colors.text, fontWeight: '600', textAlign: 'center' }}>{t.cancel || 'Close'}</Text>
                             </Pressable>
                         )}
                     </View>
