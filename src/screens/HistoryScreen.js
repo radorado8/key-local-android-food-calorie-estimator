@@ -268,7 +268,7 @@ export default function HistoryScreen() {
         ref={scrollRef}
         sections={sections}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 5, paddingBottom: 100 }}
         stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section }) => {
           const isDayExpanded = expandedDays[section.dateKey] === true;
@@ -333,7 +333,7 @@ export default function HistoryScreen() {
               </Pressable>
 
               {isDayExpanded && (
-                <View style={{ marginTop: 6 }}>
+                <View style={{ marginTop: 5 }}>
                   {[...MEAL_CATEGORIES].reverse().map(cat => {
                     const catId = cat.id;
                     const catLabel = t[cat.labelKey]; // Just label for display
