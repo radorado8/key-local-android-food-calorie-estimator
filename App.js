@@ -4,7 +4,7 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Platform } from 'react-native';
+import { Platform, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
@@ -189,6 +189,16 @@ function AppContent({ startupError }) {
             fontSize: 11,
             marginTop: -4,
           },
+          tabBarButton: (props) => (
+            <Pressable
+              {...props}
+              android_ripple={{ color: colors.active + '20', borderless: true, radius: 50 }}
+              style={({ pressed }) => [
+                props.style,
+                Platform.OS === 'ios' && pressed && { opacity: 0.6 }
+              ]}
+            />
+          ),
         })}
       >
         <Tab.Screen name="Scanner" component={ScannerScreen} options={{ title: t.tabScanner }} />
