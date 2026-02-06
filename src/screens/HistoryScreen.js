@@ -269,6 +269,7 @@ export default function HistoryScreen() {
         sections={sections}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 5, paddingBottom: 100 }}
+        indicatorStyle={theme === 'light' ? 'black' : 'white'}
         stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section }) => {
           const isDayExpanded = expandedDays[section.dateKey] === true;

@@ -128,7 +128,7 @@ function AppContent({ startupError }) {
   }, [t]);
 
   useEffect(() => {
-    if (Platform.OS === 'android' && Platform.Version < 35) {
+    if (Platform.OS === 'android') {
       const navColor = theme === 'light' ? '#FFFFFF' : '#0B0F14';
       const iconStyle = theme === 'light' ? 'dark' : 'light';
       NavigationBar.setBackgroundColorAsync(navColor).catch(() => { });

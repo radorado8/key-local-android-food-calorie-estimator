@@ -516,7 +516,7 @@ export default function ScannerScreen({ navigation, route }) {
   // Idle state (Dashboard)
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} indicatorStyle={theme === 'light' ? 'black' : 'white'}>
         <View style={styles.hero}>
           <Text style={[styles.heroTitle, { color: colors.text }]}>
             {t.heroTitle} <Text style={[styles.heroAccent, { color: colors.accent }]}>{t.heroAccent}</Text>
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
   },
   cameraControls: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 80,
     left: 0,
     right: 0,
     flexDirection: 'row',
