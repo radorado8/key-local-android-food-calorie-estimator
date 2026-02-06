@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   View,
   Image,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ImageView from "react-native-image-viewing";
@@ -120,7 +121,20 @@ export default function HistoryScreen() {
         setNow(current);
       }
     }, 60000); // Check every minute
-    return () => clearInterval(timer);
+
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'active') {
+        const current = new Date();
+        if (current.getDate() !== now.getDate()) {
+          setNow(current);
+        }
+      }
+    });
+
+    return () => {
+      clearInterval(timer);
+      subscription.remove();
+    };
   }, [now]);
 
   useEffect(() => {
@@ -241,7 +255,7 @@ export default function HistoryScreen() {
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t.historyTitle}</Text>
         <Pressable
           style={({ pressed }) => [
-            { position: 'absolute', right: 16, top: 5, padding: 8, borderRadius: 20, backgroundColor: colors.elemBg || 'rgba(255,255,255,0.1)' },
+            { position: 'absolute', right: 16, top: 8, padding: 8, borderRadius: 20, backgroundColor: colors.elemBg || 'rgba(255,255,255,0.1)' },
             pressed && { opacity: 0.7 }
           ]}
           onPress={() => setAddOpen(true)}
@@ -319,7 +333,7 @@ export default function HistoryScreen() {
               </Pressable>
 
               {isDayExpanded && (
-                <View style={{ marginTop: 10 }}>
+                <View style={{ marginTop: 6 }}>
                   {[...MEAL_CATEGORIES].reverse().map(cat => {
                     const catId = cat.id;
                     const catLabel = t[cat.labelKey]; // Just label for display
@@ -527,7 +541,7 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     paddingHorizontal: 16,
-    paddingTop: 3,
+    paddingTop: 6,
     paddingBottom: 12,
     alignItems: 'center',
   },
@@ -561,7 +575,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   categoryBlock: {
-    marginVertical: 4,
+    marginVertical: 3,
   },
   categoryHeader: {
     flexDirection: 'row',

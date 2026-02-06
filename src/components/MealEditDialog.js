@@ -234,7 +234,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
             </Pressable>
           </View>
 
-          {!valid ? <Text style={[styles.hint, { color: currentColors.muted }]}>{t.validationError}</Text> : null}
+          {/* {!valid ? <Text style={[styles.hint, { color: currentColors.muted }]}>{t.validationError}</Text> : null} */}
         </View>
       </KeyboardAvoidingView>
     </Modal>

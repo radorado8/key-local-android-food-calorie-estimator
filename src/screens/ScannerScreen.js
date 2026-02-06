@@ -9,6 +9,7 @@ import {
   View,
   BackHandler,
   ScrollView,
+  AppState,
 } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -88,7 +89,20 @@ export default function ScannerScreen({ navigation, route }) {
         setNow(current);
       }
     }, 60000);
-    return () => clearInterval(timer);
+
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'active') {
+        const current = new Date();
+        if (current.getDate() !== now.getDate()) {
+          setNow(current);
+        }
+      }
+    });
+
+    return () => {
+      clearInterval(timer);
+      subscription.remove();
+    };
   }, [now]);
 
   useEffect(() => {
@@ -604,7 +618,7 @@ const styles = StyleSheet.create({
   },
   hero: {
     alignItems: 'center',
-    marginTop: 1,
+    marginTop: 3,
     marginBottom: 4,
   },
   heroTitle: {

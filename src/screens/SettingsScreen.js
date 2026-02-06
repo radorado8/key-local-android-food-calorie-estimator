@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     paddingHorizontal: 16,
-    paddingTop: 3,
+    paddingTop: 6,
     paddingBottom: 12,
     alignItems: 'center',
   },
