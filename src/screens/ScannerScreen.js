@@ -60,6 +60,8 @@ export default function ScannerScreen({ navigation, route }) {
   const [flash, setFlash] = useState('off');
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [weightForCamera, setWeightForCamera] = useState(null);
+
+  const shutterOpacity = useRef(new Animated.Value(0)).current;
   const { DAILY_ANALYSIS_LIMIT } = getAppConfig();
 
   // Handle Quick Actions
@@ -337,6 +339,13 @@ export default function ScannerScreen({ navigation, route }) {
 
     try {
       pickingRef.current = true;
+
+      // Gentle Shutter Animation (No waiting)
+      Animated.sequence([
+        Animated.timing(shutterOpacity, { toValue: 1, duration: 20, useNativeDriver: true }),
+        Animated.timing(shutterOpacity, { toValue: 0, duration: 100, useNativeDriver: true })
+      ]).start();
+
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.5,
         shutterSound: false,
@@ -574,7 +583,12 @@ export default function ScannerScreen({ navigation, route }) {
             facing={facing}
             flash={flash}
           >
-
+            <Animated.View
+              style={[
+                StyleSheet.absoluteFill,
+                { backgroundColor: 'black', opacity: shutterOpacity, pointerEvents: 'none', zIndex: 1 }
+              ]}
+            />
             <View style={styles.cameraControls}>
               <Pressable
                 style={styles.camBtnSecondary}
