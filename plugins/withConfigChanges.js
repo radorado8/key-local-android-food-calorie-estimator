@@ -21,7 +21,7 @@ const withConfigChanges = (config) => {
         );
 
         if (mainActivity) {
-            // Add comprehensive configChanges to handle all configuration changes
+            // Add standard configChanges to handle configuration changes
             // that could cause activity recreation
             const configChanges = [
                 'keyboard',
@@ -31,11 +31,7 @@ const withConfigChanges = (config) => {
                 'screenLayout',
                 'uiMode',
                 'navigation',
-                'navigationHidden',
-                'fontScale',
-                'locale',
-                'layoutDirection',
-                'density',
+                'smallestScreenSize',
             ].join('|');
 
             mainActivity.$['android:configChanges'] = configChanges;
