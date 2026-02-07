@@ -44,9 +44,9 @@ export default function WeightDialog({ visible, onCancel, onConfirm, colors }) {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel} statusBarTranslucent={true}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.backdrop}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
