@@ -24,8 +24,7 @@
         "foregroundImage": "./assets/icon_key_fire.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "launchMode": "singleTask"
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -66,8 +65,7 @@
       "react-native-fast-tflite",
       "./plugins/withShortcutIcons",
       "./plugins/withGmsVersion",
-      "./plugins/withExtractNativeLibs",
-      "./plugins/withConfigChanges"
+      "./plugins/withExtractNativeLibs"
     ],
     "extra": {
       "allowedEmails": [],
