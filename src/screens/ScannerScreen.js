@@ -108,6 +108,35 @@ export default function ScannerScreen({ navigation, route }) {
     };
   }, [now]);
 
+  // Check for pending ImagePicker results (handles activity recreation)
+  useEffect(() => {
+    const checkPending = async () => {
+      try {
+        const pendingResult = await ImagePicker.getPendingResultAsync();
+        if (pendingResult && pendingResult.assets?.[0]) {
+          const asset = pendingResult.assets[0];
+          const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+            encoding: 'base64',
+          });
+          await analyzePickedImage({ ...asset, base64 }, null);
+        }
+      } catch (err) {
+        // Ignore - no pending result
+      }
+    };
+
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        checkPending();
+      }
+    });
+
+    // Also check on mount
+    checkPending();
+
+    return () => sub.remove();
+  }, []);
+
   useEffect(() => {
     return subscribeToMeals(useLocalStorage, (meals) => {
       const today = new Date(); // Re-evaluated when 'now' triggers re-run
