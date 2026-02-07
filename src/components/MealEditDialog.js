@@ -24,9 +24,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MealEditDialog({ visible, initialMeal, onCancel, onSave, colors, mode = 'edit' }) {
   const t = useTranslation();
-  const insets = useSafeAreaInsets();
-  const hasNavBar = Platform.OS === 'android' && insets.bottom > 30;
-
   const [name, setName] = useState('');
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
@@ -109,7 +106,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : (hasNavBar ? 'height' : undefined)}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.backdrop}
       >
         <View style={[styles.card, { backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderColor: currentColors.border }]}>
