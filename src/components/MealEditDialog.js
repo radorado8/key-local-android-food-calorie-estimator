@@ -8,7 +8,9 @@ import {
   View,
   Platform,
   Image,
-  KeyboardAvoidingView,
+  Animated,
+  Keyboard,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -19,8 +21,6 @@ function toNumber(v) {
   const n = Number(String(v).replace(',', '.'));
   return Number.isFinite(n) ? n : NaN;
 }
-
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MealEditDialog({ visible, initialMeal, onCancel, onSave, colors, mode = 'edit' }) {
   const t = useTranslation();
@@ -37,6 +37,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const nameRef = useRef(null);
+  const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!visible) return;
@@ -48,11 +49,12 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
     setFat(String(initialMeal?.fat ?? (mode === 'add' ? '0' : '')));
     setWeightG(String(initialMeal?.weight_g ?? (mode === 'add' ? '0' : '')));
     setImageUri(initialMeal?.imageUri || null);
+    translateY.setValue(0);
 
     if (initialMeal?.timestamp) {
-      const t = initialMeal.timestamp;
+      const ts = initialMeal.timestamp;
       // Handle Firestore Timestamp (has toDate) or ISO string/number
-      const d = t.toDate ? t.toDate() : new Date(t);
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
       if (!isNaN(d.getTime())) {
         setDate(d);
       } else {
@@ -62,7 +64,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
       setDate(new Date()); // Reset to now
     }
 
-    const t = setTimeout(() => {
+    const focusTimeout = setTimeout(() => {
       try {
         nameRef.current?.focus?.();
       } catch {
@@ -70,7 +72,35 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
       }
     }, 250);
 
-    return () => clearTimeout(t);
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onKeyboardShow = (e) => {
+      const keyboardHeight = e.endCoordinates.height;
+      // Move dialog up by half of keyboard height
+      Animated.timing(translateY, {
+        toValue: -keyboardHeight / 2,
+        duration: Platform.OS === 'ios' ? 250 : 150,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const onKeyboardHide = () => {
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: Platform.OS === 'ios' ? 250 : 150,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const subShow = Keyboard.addListener(showEvent, onKeyboardShow);
+    const subHide = Keyboard.addListener(hideEvent, onKeyboardHide);
+
+    return () => {
+      clearTimeout(focusTimeout);
+      subShow.remove();
+      subHide.remove();
+    };
   }, [visible, initialMeal]);
 
   const parsed = useMemo(() => {
@@ -80,7 +110,6 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
       protein: toNumber(protein),
       carbs: toNumber(carbs),
       fat: toNumber(fat),
-      weight_g: toNumber(weightG),
       weight_g: toNumber(weightG),
       timestamp: date.toISOString(), // Always send timestamp (edited or new)
       imageUri: imageUri,
@@ -105,140 +134,137 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel} statusBarTranslucent={true}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.backdrop}
-      >
-        <View style={[styles.card, { backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderColor: currentColors.border }]}>
-          {(imageUri) && (
-            <View style={{ marginBottom: 4 }}>
-              <Image
-                source={{ uri: imageUri }}
-                style={{ width: '100%', height: 100, borderRadius: 12, backgroundColor: currentColors.elemBg }}
-                resizeMode="contain"
-              />
+      <View style={styles.backdrop}>
+        <Animated.View style={[styles.card, { backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderColor: currentColors.border, transform: [{ translateY }] }]}>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            {(imageUri) && (
+              <View style={{ marginBottom: 4 }}>
+                <Image
+                  source={{ uri: imageUri }}
+                  style={{ width: '100%', height: 100, borderRadius: 12, backgroundColor: currentColors.elemBg }}
+                  resizeMode="contain"
+                />
+                <Pressable
+                  onPress={() => setImageUri(null)}
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    backgroundColor: 'rgba(0,0,0,0.6)',
+                    borderRadius: 20,
+                    padding: 8,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.2)'
+                  }}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                </Pressable>
+              </View>
+            )}
+
+            <Text style={[styles.title, { color: currentColors.text }]}>
+              {mode === 'add' ? t.addMealTitle : t.editMealTitle}
+            </Text>
+
+            {(mode === 'add' || mode === 'edit') && (
+              <View style={{ marginBottom: 8 }}>
+                <Text style={[styles.label, { color: currentColors.muted, marginBottom: 4 }]}>{t.dateLabel || 'Date & Time'}</Text>
+
+                {Platform.OS === 'android' && (
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <Pressable
+                      onPress={() => setShowDatePicker('date')}
+                      style={[styles.input, { flex: 1, backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, paddingVertical: 8, alignItems: 'center' }]}
+                    >
+                      <Text style={{ color: currentColors.text, fontWeight: '700' }}>
+                        {date.toLocaleDateString()}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setShowDatePicker('time')}
+                      style={[styles.input, { flex: 1, backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, paddingVertical: 8, alignItems: 'center' }]}
+                    >
+                      <Text style={{ color: currentColors.text, fontWeight: '700' }}>
+                        {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    </Pressable>
+
+                    {!!showDatePicker && (
+                      <DateTimePicker
+                        value={date}
+                        mode={showDatePicker} // 'date' or 'time'
+                        display="default"
+                        is24Hour={true}
+                        onChange={(event, selectedDate) => {
+                          setShowDatePicker(false);
+                          if (selectedDate) {
+                            // Merge existing date/time with selected part
+                            const newDate = new Date(date);
+                            if (showDatePicker === 'date') {
+                              newDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+                            } else {
+                              newDate.setHours(selectedDate.getHours(), selectedDate.getMinutes());
+                            }
+                            setDate(newDate);
+                          }
+                        }}
+                      />
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
+
+            <Text style={[styles.label, { color: currentColors.muted }]}>{t.nameLabel}</Text>
+            <TextInput
+              ref={nameRef}
+              value={name}
+              onChangeText={setName}
+              style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]}
+              placeholder={t.mealNamePlaceholder}
+              placeholderTextColor={currentColors.muted}
+            />
+
+            <View style={styles.grid}>
+              <View style={styles.gridItem}>
+                <Text style={[styles.label, { color: currentColors.muted }]}>{t.calories}</Text>
+                <TextInput value={calories} onChangeText={setCalories} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
+              </View>
+              <View style={styles.gridItem}>
+                <Text style={[styles.label, { color: currentColors.muted }]}>{t.protein} (g)</Text>
+                <TextInput value={protein} onChangeText={setProtein} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
+              </View>
+              <View style={styles.gridItem}>
+                <Text style={[styles.label, { color: currentColors.muted }]}>{t.carbs} (g)</Text>
+                <TextInput value={carbs} onChangeText={setCarbs} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
+              </View>
+              <View style={styles.gridItem}>
+                <Text style={[styles.label, { color: currentColors.muted }]}>{t.fat} (g)</Text>
+                <TextInput value={fat} onChangeText={setFat} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
+              </View>
+              <View style={styles.gridItem}>
+                <Text style={[styles.label, { color: currentColors.muted }]}>{t.weightLabel} (g)</Text>
+                <TextInput value={weightG} onChangeText={setWeightG} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
+              </View>
+            </View>
+
+            <View style={styles.actions}>
+              <Pressable style={({ pressed }) => [styles.btn, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, borderWidth: 1 }, pressed && styles.btnPressed]} onPress={onCancel}>
+                <Text style={[styles.btnGhostText, { color: currentColors.text }]}>{t.cancel}</Text>
+              </Pressable>
               <Pressable
-                onPress={() => setImageUri(null)}
-                style={{
-                  position: 'absolute',
-                  top: 8,
-                  right: 8,
-                  backgroundColor: 'rgba(0,0,0,0.6)',
-                  borderRadius: 20,
-                  padding: 8,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.2)'
-                }}
+                disabled={!valid}
+                style={({ pressed }) => [styles.btn, { backgroundColor: currentColors.accent }, pressed && styles.btnPressed, !valid && styles.btnDisabled]}
+                onPress={() => onSave(parsed)}
               >
-                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                <Text style={[styles.btnPrimaryText, { color: currentColors.card === '#FFFFFF' ? '#FFF' : '#000' }]}>
+                  {mode === 'add' ? t.add : t.save}
+                </Text>
               </Pressable>
             </View>
-          )}
-
-          <Text style={[styles.title, { color: currentColors.text }]}>
-            {mode === 'add' ? t.addMealTitle : t.editMealTitle}
-          </Text>
-
-          {(mode === 'add' || mode === 'edit') && (
-            <View style={{ marginBottom: 8 }}>
-              <Text style={[styles.label, { color: currentColors.muted, marginBottom: 4 }]}>{t.dateLabel || 'Date & Time'}</Text>
-
-              {Platform.OS === 'android' && (
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Pressable
-                    onPress={() => setShowDatePicker('date')}
-                    style={[styles.input, { flex: 1, backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, paddingVertical: 8, alignItems: 'center' }]}
-                  >
-                    <Text style={{ color: currentColors.text, fontWeight: '700' }}>
-                      {date.toLocaleDateString()}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => setShowDatePicker('time')}
-                    style={[styles.input, { flex: 1, backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, paddingVertical: 8, alignItems: 'center' }]}
-                  >
-                    <Text style={{ color: currentColors.text, fontWeight: '700' }}>
-                      {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                  </Pressable>
-
-                  {!!showDatePicker && (
-                    <DateTimePicker
-                      value={date}
-                      mode={showDatePicker} // 'date' or 'time'
-                      display="default"
-                      is24Hour={true}
-                      onChange={(event, selectedDate) => {
-                        setShowDatePicker(false);
-                        if (selectedDate) {
-                          // Merge existing date/time with selected part
-                          const newDate = new Date(date);
-                          if (showDatePicker === 'date') {
-                            newDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
-                          } else {
-                            newDate.setHours(selectedDate.getHours(), selectedDate.getMinutes());
-                          }
-                          setDate(newDate);
-                        }
-                      }}
-                    />
-                  )}
-                </View>
-              )}
-            </View>
-          )}
-
-          <Text style={[styles.label, { color: currentColors.muted }]}>{t.nameLabel}</Text>
-          <TextInput
-            ref={nameRef}
-            value={name}
-            onChangeText={setName}
-            style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]}
-            placeholder={t.mealNamePlaceholder}
-            placeholderTextColor={currentColors.muted}
-          />
-
-          <View style={styles.grid}>
-            <View style={styles.gridItem}>
-              <Text style={[styles.label, { color: currentColors.muted }]}>{t.calories}</Text>
-              <TextInput value={calories} onChangeText={setCalories} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
-            </View>
-            <View style={styles.gridItem}>
-              <Text style={[styles.label, { color: currentColors.muted }]}>{t.protein} (g)</Text>
-              <TextInput value={protein} onChangeText={setProtein} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
-            </View>
-            <View style={styles.gridItem}>
-              <Text style={[styles.label, { color: currentColors.muted }]}>{t.carbs} (g)</Text>
-              <TextInput value={carbs} onChangeText={setCarbs} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
-            </View>
-            <View style={styles.gridItem}>
-              <Text style={[styles.label, { color: currentColors.muted }]}>{t.fat} (g)</Text>
-              <TextInput value={fat} onChangeText={setFat} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
-            </View>
-            <View style={styles.gridItem}>
-              <Text style={[styles.label, { color: currentColors.muted }]}>{t.weightLabel} (g)</Text>
-              <TextInput value={weightG} onChangeText={setWeightG} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
-            </View>
-          </View>
-
-          <View style={styles.actions}>
-            <Pressable style={({ pressed }) => [styles.btn, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, borderWidth: 1 }, pressed && styles.btnPressed]} onPress={onCancel}>
-              <Text style={[styles.btnGhostText, { color: currentColors.text }]}>{t.cancel}</Text>
-            </Pressable>
-            <Pressable
-              disabled={!valid}
-              style={({ pressed }) => [styles.btn, { backgroundColor: currentColors.accent }, pressed && styles.btnPressed, !valid && styles.btnDisabled]}
-              onPress={() => onSave(parsed)}
-            >
-              <Text style={[styles.btnPrimaryText, { color: currentColors.card === '#FFFFFF' ? '#FFF' : '#000' }]}>
-                {mode === 'add' ? t.add : t.save}
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* {!valid ? <Text style={[styles.hint, { color: currentColors.muted }]}>{t.validationError}</Text> : null} */}
-        </View>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
@@ -254,6 +280,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 520,
+    maxHeight: '90%',
     backgroundColor: '#0B0F14',
     borderRadius: 18,
     padding: 16,

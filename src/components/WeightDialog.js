@@ -7,23 +7,53 @@ import {
   Text,
   TextInput,
   View,
-  KeyboardAvoidingView,
+  Animated,
+  Keyboard,
 } from 'react-native';
 
 import { useTranslation } from '../hooks/useTranslation';
-
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function WeightDialog({ visible, onCancel, onConfirm, colors }) {
   const t = useTranslation();
   const [value, setValue] = useState('');
   const inputRef = useRef(null);
+  const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!visible) return;
     setValue('');
-    const t = setTimeout(() => inputRef.current?.focus(), 150);
-    return () => clearTimeout(t);
+    translateY.setValue(0);
+    const focusTimeout = setTimeout(() => inputRef.current?.focus(), 150);
+
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onKeyboardShow = (e) => {
+      const keyboardHeight = e.endCoordinates.height;
+      // Move dialog up by half of keyboard height (adjust as needed)
+      Animated.timing(translateY, {
+        toValue: -keyboardHeight / 2.5,
+        duration: Platform.OS === 'ios' ? 250 : 150,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const onKeyboardHide = () => {
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: Platform.OS === 'ios' ? 250 : 150,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const subShow = Keyboard.addListener(showEvent, onKeyboardShow);
+    const subHide = Keyboard.addListener(hideEvent, onKeyboardHide);
+
+    return () => {
+      clearTimeout(focusTimeout);
+      subShow.remove();
+      subHide.remove();
+    };
   }, [visible]);
 
   const submit = () => {
@@ -45,12 +75,9 @@ export default function WeightDialog({ visible, onCancel, onConfirm, colors }) {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel} statusBarTranslucent={true}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.backdrop}
-      >
+      <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
-        <View style={[styles.card, { backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderColor: currentColors.border }]}>
+        <Animated.View style={[styles.card, { backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderColor: currentColors.border, transform: [{ translateY }] }]}>
           <Text style={[styles.title, { color: currentColors.text }]}>{t.weightTitle}</Text>
           <Text style={[styles.subtitle, { color: currentColors.muted }]}>
             {t.weightSubtitle}
@@ -80,8 +107,8 @@ export default function WeightDialog({ visible, onCancel, onConfirm, colors }) {
               <Text style={[styles.btnText, { color: currentColors.card === '#FFFFFF' ? '#FFF' : '#000' }]}>{t.confirm}</Text>
             </Pressable>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
