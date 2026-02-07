@@ -12,8 +12,13 @@ import {
 
 import { useTranslation } from '../hooks/useTranslation';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 export default function WeightDialog({ visible, onCancel, onConfirm, colors }) {
   const t = useTranslation();
+  const insets = useSafeAreaInsets();
+  const hasNavBar = Platform.OS === 'android' && insets.bottom > 30;
+
   const [value, setValue] = useState('');
   const inputRef = useRef(null);
 
@@ -44,7 +49,7 @@ export default function WeightDialog({ visible, onCancel, onConfirm, colors }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : (hasNavBar ? 'height' : undefined)}
         style={styles.backdrop}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
