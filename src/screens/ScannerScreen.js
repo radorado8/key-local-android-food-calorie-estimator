@@ -340,6 +340,20 @@ export default function ScannerScreen({ navigation, route }) {
         });
         await analyzePickedImage({ ...asset, base64 }, weightG);
       }
+    } catch (err) {
+      // Handle ActivityResultLauncher error (occurs after Android config changes)
+      const errMsg = String(err?.message || err || '');
+      if (errMsg.includes('ActivityResultLauncher') || errMsg.includes('unregistered')) {
+        Alert.alert(
+          t.restartRequiredTitle || 'Reštart potrebný',
+          t.restartRequiredMessage || 'Prosím, reštartujte aplikáciu a skúste znova.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        // Re-throw other errors
+        console.error('Gallery error:', err);
+        Alert.alert(t.error || 'Chyba', errMsg);
+      }
     } finally {
       clearTimeout(timeoutId);
       pickingRef.current = false;
