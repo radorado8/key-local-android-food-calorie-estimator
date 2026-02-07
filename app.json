@@ -24,8 +24,7 @@
         "foregroundImage": "./assets/icon_key_fire.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "launchMode": "singleTask"
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
