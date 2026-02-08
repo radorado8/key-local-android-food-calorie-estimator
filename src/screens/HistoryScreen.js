@@ -483,18 +483,21 @@ export default function HistoryScreen() {
         onRequestClose={() => setSelectedImage(null)}
         swipeToCloseEnabled={true}
         doubleTapToZoomEnabled={true}
+        backgroundColor={colors.bg}
         HeaderComponent={({ imageIndex }) => (
           <SafeAreaView edges={['top']} style={{ alignItems: 'flex-end', padding: 16 }}>
             <Pressable
               onPress={() => setSelectedImage(null)}
               style={({ pressed }) => ({
                 padding: 8,
-                backgroundColor: 'rgba(0,0,0,0.5)',
+                backgroundColor: colors.card,
                 borderRadius: 20,
+                borderWidth: 1,
+                borderColor: colors.border,
                 opacity: pressed ? 0.7 : 1
               })}
             >
-              <Ionicons name="close" size={24} color="white" />
+              <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </SafeAreaView>
         )}
