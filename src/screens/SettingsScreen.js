@@ -379,7 +379,7 @@ export default function SettingsScreen() {
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t.settingsTitle}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} indicatorStyle={theme === 'light' ? 'black' : 'white'}>
+      <ScrollView contentContainerStyle={styles.content} indicatorStyle={theme === 'light' ? 'black' : 'white'} keyboardShouldPersistTaps="handled">
         {/* 1. Daily Goal */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.label, { color: colors.text }]}>{t.dailyGoal}</Text>
