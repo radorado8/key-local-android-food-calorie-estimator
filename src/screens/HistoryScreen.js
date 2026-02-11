@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     paddingHorizontal: 16,
-    paddingTop: 6,
+    paddingTop: 14,
     paddingBottom: 12,
     alignItems: 'center',
   },
