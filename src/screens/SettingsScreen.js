@@ -681,8 +681,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: '900',
+    fontSize: 22,
+    fontWeight: '800',
     textAlign: 'center',
   },
   card: {
