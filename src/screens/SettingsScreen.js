@@ -670,13 +670,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#0B0F14',
   },
   content: {
-    padding: 16,
+    padding: 12,
     gap: 12,
     paddingBottom: 40,
   },
   headerBlock: {
     paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingTop: 16,
     paddingBottom: 12,
     alignItems: 'center',
   },

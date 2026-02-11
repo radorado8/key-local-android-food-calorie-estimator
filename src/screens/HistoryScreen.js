@@ -255,7 +255,7 @@ export default function HistoryScreen() {
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t.historyTitle}</Text>
         <Pressable
           style={({ pressed }) => [
-            { position: 'absolute', right: 16, top: 13, padding: 8, borderRadius: 20, backgroundColor: colors.elemBg || 'rgba(255,255,255,0.1)' },
+            { position: 'absolute', right: 16, top: 15, padding: 8, borderRadius: 20, backgroundColor: colors.elemBg || 'rgba(255,255,255,0.1)' },
             pressed && { opacity: 0.7 }
           ]}
           onPress={() => setAddOpen(true)}
@@ -268,7 +268,7 @@ export default function HistoryScreen() {
         ref={scrollRef}
         sections={sections}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 5, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 1, paddingBottom: 100 }}
         indicatorStyle={theme === 'light' ? 'black' : 'white'}
         stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section }) => {
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingTop: 16,
     paddingBottom: 12,
     alignItems: 'center',
   },
