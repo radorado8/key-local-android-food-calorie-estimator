@@ -255,7 +255,7 @@ export default function HistoryScreen() {
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t.historyTitle}</Text>
         <Pressable
           style={({ pressed }) => [
-            { position: 'absolute', right: 16, top: 14, padding: 8, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
+            { position: 'absolute', right: 16, top: 13, padding: 7, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
             pressed && { opacity: 0.7 }
           ]}
           onPress={() => setAddOpen(true)}
