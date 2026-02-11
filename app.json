@@ -65,7 +65,6 @@
       "expo-file-system",
       "react-native-fast-tflite",
       "./plugins/withShortcutIcons",
-      "./plugins/withGmsVersion",
       "./plugins/withExtractNativeLibs",
       [
         "expo-splash-screen",
