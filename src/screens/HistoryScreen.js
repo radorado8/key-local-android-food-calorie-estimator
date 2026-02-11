@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   headerBlock: {
     paddingHorizontal: 16,
     paddingTop: 18,
-    paddingBottom: 12,
+    paddingBottom: 8,
     alignItems: 'center',
   },
   headerTitle: {
