@@ -192,9 +192,9 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
         <View>
           <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800' }}>{dateStr}</Text>
         </View>
-        <View style={{ alignItems: 'flex-end' }}>
+        <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ color: colors.muted, fontSize: 16 }}>{timeStr}</Text>
+            <Text style={{ color: colors.muted, fontSize: 16, minWidth: 46 }}>{timeStr}</Text>
             <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '700' }}>{mealTypeStr}</Text>
           </View>
         </View>
