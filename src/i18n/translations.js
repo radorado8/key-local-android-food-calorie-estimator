@@ -136,9 +136,12 @@ export const translations = {
 
         // AI Models
         // AI Models
-        modelDesc_gemini25flashlite: 'Rýchly, úsporný model (Lite)',
-        modelDesc_gemini25flash: 'Vyvážený, rýchly model',
-        modelDesc_gemini3FlashPreview: 'Najnovší experimentálny model',
+        modelDesc_flashLiteLatest: 'Najrýchlejší, úsporný (najnovšia verzia)',
+        modelDesc_flashLite: 'Rýchly, úsporný model',
+        modelDesc_flash: 'Vyvážený, rýchly model',
+        modelDesc_flashLatest: 'Vyvážený, rýchly (najnovšia verzia)',
+        modelDesc_pro: 'Najpresnejší, pomalší model',
+        modelDesc_proLatest: 'Najpresnejší (najnovšia verzia)',
 
         // Data Management
         dataManagementTitle: 'Správa dát',
@@ -320,9 +323,12 @@ export const translations = {
         catSnack3: 'Late Snack',
         catOther: 'Other',
 
-        modelDesc_gemini25flashlite: 'Fast, lightweight model (Lite)',
-        modelDesc_gemini25flash: 'Balanced, fast model',
-        modelDesc_gemini3FlashPreview: 'Newest experimental model',
+        modelDesc_flashLiteLatest: 'Fastest, lightweight (latest version)',
+        modelDesc_flashLite: 'Fast, lightweight model',
+        modelDesc_flash: 'Balanced, fast model',
+        modelDesc_flashLatest: 'Balanced, fast (latest version)',
+        modelDesc_pro: 'Most accurate, slower model',
+        modelDesc_proLatest: 'Most accurate (latest version)',
 
         dataManagementTitle: 'Data Management',
         exportDataBtn: 'Export Data to CSV',
@@ -500,9 +506,12 @@ export const translations = {
         catSnack3: 'Späthsmahlzeit',
         catOther: 'Andere',
 
-        modelDesc_gemini25flashlite: 'Schnelles, leichtes Modell (Lite)',
-        modelDesc_gemini25flash: 'Ausgewogenes, schnelles Modell',
-        modelDesc_gemini3FlashPreview: 'Neuestes experimentelles Modell',
+        modelDesc_flashLiteLatest: 'Schnellstes, leichtes (neueste Version)',
+        modelDesc_flashLite: 'Schnelles, leichtes Modell',
+        modelDesc_flash: 'Ausgewogenes, schnelles Modell',
+        modelDesc_flashLatest: 'Ausgewogen, schnell (neueste Version)',
+        modelDesc_pro: 'Genauestes, langsameres Modell',
+        modelDesc_proLatest: 'Genauestes (neueste Version)',
 
         dataManagementTitle: 'Datenverwaltung',
         exportDataBtn: 'Daten als CSV exportieren',
@@ -679,9 +688,12 @@ export const translations = {
         catSnack3: 'Merienda noche',
         catOther: 'Otro',
 
-        modelDesc_gemini25flashlite: 'Modelo rápido y ligero (Lite)',
-        modelDesc_gemini25flash: 'Modelo rápido y equilibrado',
-        modelDesc_gemini3FlashPreview: 'Modelo experimental más nuevo',
+        modelDesc_flashLiteLatest: 'Más rápido, ligero (última versión)',
+        modelDesc_flashLite: 'Modelo rápido y ligero',
+        modelDesc_flash: 'Modelo rápido y equilibrado',
+        modelDesc_flashLatest: 'Equilibrado, rápido (última versión)',
+        modelDesc_pro: 'Modelo más preciso, más lento',
+        modelDesc_proLatest: 'Más preciso (última versión)',
 
         dataManagementTitle: 'Gestión de datos',
         exportDataBtn: 'Exportar datos a CSV',
@@ -867,9 +879,12 @@ export const translations = {
         catSnack3: 'Collation soir',
         catOther: 'Autre',
 
-        modelDesc_gemini25flashlite: 'Modèle rapide et léger (Lite)',
-        modelDesc_gemini25flash: 'Modèle rapide et équilibré',
-        modelDesc_gemini3FlashPreview: 'Nouveau modèle expérimental',
+        modelDesc_flashLiteLatest: 'Plus rapide, léger (dernière version)',
+        modelDesc_flashLite: 'Modèle rapide et léger',
+        modelDesc_flash: 'Modèle rapide et équilibré',
+        modelDesc_flashLatest: 'Équilibré, rapide (dernière version)',
+        modelDesc_pro: 'Modèle le plus précis, plus lent',
+        modelDesc_proLatest: 'Plus précis (dernière version)',
 
         dataManagementTitle: 'Gestion des données',
         exportDataBtn: 'Exporter vers CSV',
@@ -1055,9 +1070,12 @@ export const translations = {
         catSnack3: 'Późna przekąska',
         catOther: 'Inne',
 
-        modelDesc_gemini25flashlite: 'Szybki, lekki model (Lite)',
-        modelDesc_gemini25flash: 'Zrównoważony, szybki model',
-        modelDesc_gemini3FlashPreview: 'Najnowszy model eksperymentalny',
+        modelDesc_flashLiteLatest: 'Najszybszy, lekki (najnowsza wersja)',
+        modelDesc_flashLite: 'Szybki, lekki model',
+        modelDesc_flash: 'Zrównoważony, szybki model',
+        modelDesc_flashLatest: 'Zrównoważony, szybki (najnowsza wersja)',
+        modelDesc_pro: 'Najdokładniejszy, wolniejszy model',
+        modelDesc_proLatest: 'Najdokładniejszy (najnowsza wersja)',
 
         dataManagementTitle: 'Zarządzanie danymi',
         exportDataBtn: 'Eksportuj do CSV',
@@ -1092,9 +1110,12 @@ export const translations = {
         catSnack3: 'Późna przekąska',
         catOther: 'Inne',
 
-        modelDesc_gemini25flashlite: 'Szybki, lekki model (Lite)',
-        modelDesc_gemini25flash: 'Zrównoważony, szybki model',
-        modelDesc_gemini3FlashPreview: 'Najnowszy model eksperymentalny',
+        modelDesc_flashLiteLatest: 'Najszybszy, lekki (najnowsza wersja)',
+        modelDesc_flashLite: 'Szybki, lekki model',
+        modelDesc_flash: 'Zrównoważony, szybki model',
+        modelDesc_flashLatest: 'Zrównoważony, szybki (najnowsza wersja)',
+        modelDesc_pro: 'Najdokładniejszy, wolniejszy model',
+        modelDesc_proLatest: 'Najdokładniejszy (najnowsza wersja)',
 
         dataManagementTitle: 'Zarządzanie danymi',
         exportDataBtn: 'Eksportuj do CSV',
@@ -1266,9 +1287,12 @@ export const translations = {
         catSnack3: 'Noční svačina',
         catOther: 'Jiné',
 
-        modelDesc_gemini25flashlite: 'Rychlý, úsporný model (Lite)',
-        modelDesc_gemini25flash: 'Vyvážený, rychlý model',
-        modelDesc_gemini3FlashPreview: 'Nejnovější experimentální model',
+        modelDesc_flashLiteLatest: 'Nejrychlejší, úsporný (nejnovější verze)',
+        modelDesc_flashLite: 'Rychlý, úsporný model',
+        modelDesc_flash: 'Vyvážený, rychlý model',
+        modelDesc_flashLatest: 'Vyvážený, rychlý (nejnovější verze)',
+        modelDesc_pro: 'Nejpřesnější, pomalejší model',
+        modelDesc_proLatest: 'Nejpřesnější (nejnovější verze)',
 
         dataManagementTitle: 'Správa dat',
         exportDataBtn: 'Exportovat data do CSV',
@@ -1449,9 +1473,12 @@ export const translations = {
         catLunch: 'Pranzo',
         catSnack2: 'Merenda',
         catDinner: 'Cena',
-        modelDesc_gemini25flashlite: 'Modello veloce e leggero (Lite)',
-        modelDesc_gemini25flash: 'Modello veloce ed equilibrato',
-        modelDesc_gemini3FlashPreview: 'Nuovo modello sperimentale',
+        modelDesc_flashLiteLatest: 'Più veloce, leggero (ultima versione)',
+        modelDesc_flashLite: 'Modello veloce e leggero',
+        modelDesc_flash: 'Modello veloce ed equilibrato',
+        modelDesc_flashLatest: 'Equilibrato, veloce (ultima versione)',
+        modelDesc_pro: 'Modello più preciso, più lento',
+        modelDesc_proLatest: 'Più preciso (ultima versione)',
         catSnack3: 'Spuntino notte',
         catOther: 'Altro',
 

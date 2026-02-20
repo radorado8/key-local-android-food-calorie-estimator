@@ -3,31 +3,49 @@ export const ADMIN_EMAIL = 'radkoradko@gmail.com';
 // Central catalog of supported models. Add/remove here.
 export const MODEL_CATALOG = [
   {
-    id: 'gemini-2.5-flash-lite',
-    label: 'Gemini 2.5 Flash-Lite',
-    descriptionKey: 'modelDesc_gemini25flashlite',
+    id: 'gemini-flash-lite-latest',
+    label: 'Gemini Flash Lite (Latest)',
+    descriptionKey: 'modelDesc_flashLiteLatest',
   },
   {
-    id: 'gemini-2.5-flash',
-    label: 'Gemini 2.5 Flash',
-    descriptionKey: 'modelDesc_gemini25flash',
+    id: 'gemini-flash-lite',
+    label: 'Gemini Flash Lite',
+    descriptionKey: 'modelDesc_flashLite',
   },
   {
-    id: 'gemini-3-flash-preview',
-    label: 'Gemini 3.0 Flash Preview',
-    descriptionKey: 'modelDesc_gemini3FlashPreview',
+    id: 'gemini-flash',
+    label: 'Gemini Flash',
+    descriptionKey: 'modelDesc_flash',
+  },
+  {
+    id: 'gemini-flash-latest',
+    label: 'Gemini Flash (Latest)',
+    descriptionKey: 'modelDesc_flashLatest',
+  },
+  {
+    id: 'gemini-pro',
+    label: 'Gemini Pro',
+    descriptionKey: 'modelDesc_pro',
+  },
+  {
+    id: 'gemini-pro-latest',
+    label: 'Gemini Pro (Latest)',
+    descriptionKey: 'modelDesc_proLatest',
   },
 ];
 
 // Models available to non-admin users.
 export const PUBLIC_MODEL_IDS = [
-  'gemini-2.5-flash-lite',
-  'gemini-2.5-flash',
-  'gemini-3-flash-preview',
+  'gemini-flash-lite-latest',
+  'gemini-flash-lite',
+  'gemini-flash',
+  'gemini-flash-latest',
+  'gemini-pro',
+  'gemini-pro-latest',
 ];
 
-export const DEFAULT_PUBLIC_MODEL_ID = 'gemini-3-flash-preview';
-export const DEFAULT_ADMIN_MODEL_ID = 'gemini-3-flash-preview';
+export const DEFAULT_PUBLIC_MODEL_ID = 'gemini-flash-latest';
+export const DEFAULT_ADMIN_MODEL_ID = 'gemini-flash-latest';
 
 export function isAdminEmail(email) {
   return String(email || '').toLowerCase() === ADMIN_EMAIL;
