@@ -137,10 +137,11 @@ export const translations = {
         // AI Models
         // AI Models
         modelDesc_flashLiteLatest: 'Najrýchlejší, úsporný (najnovšia verzia)',
-        modelDesc_flashLite: 'Rýchly, úsporný model',
-        modelDesc_flash: 'Vyvážený, rýchly model',
+        modelDesc_25flashLite: 'Rýchly, úsporný model',
+        modelDesc_25flash: 'Vyvážený, rýchly model',
         modelDesc_flashLatest: 'Vyvážený, rýchly (najnovšia verzia)',
-        modelDesc_pro: 'Najpresnejší, pomalší model',
+        modelDesc_3flashPreview: 'Nový Flash 3.0 (preview)',
+        modelDesc_25pro: 'Najpresnejší, pomalší model',
         modelDesc_proLatest: 'Najpresnejší (najnovšia verzia)',
 
         // Data Management
@@ -324,10 +325,11 @@ export const translations = {
         catOther: 'Other',
 
         modelDesc_flashLiteLatest: 'Fastest, lightweight (latest version)',
-        modelDesc_flashLite: 'Fast, lightweight model',
-        modelDesc_flash: 'Balanced, fast model',
+        modelDesc_25flashLite: 'Fast, lightweight model',
+        modelDesc_25flash: 'Balanced, fast model',
         modelDesc_flashLatest: 'Balanced, fast (latest version)',
-        modelDesc_pro: 'Most accurate, slower model',
+        modelDesc_3flashPreview: 'New Flash 3.0 (preview)',
+        modelDesc_25pro: 'Most accurate, slower model',
         modelDesc_proLatest: 'Most accurate (latest version)',
 
         dataManagementTitle: 'Data Management',
@@ -507,10 +509,11 @@ export const translations = {
         catOther: 'Andere',
 
         modelDesc_flashLiteLatest: 'Schnellstes, leichtes (neueste Version)',
-        modelDesc_flashLite: 'Schnelles, leichtes Modell',
-        modelDesc_flash: 'Ausgewogenes, schnelles Modell',
+        modelDesc_25flashLite: 'Schnelles, leichtes Modell',
+        modelDesc_25flash: 'Ausgewogenes, schnelles Modell',
         modelDesc_flashLatest: 'Ausgewogen, schnell (neueste Version)',
-        modelDesc_pro: 'Genauestes, langsameres Modell',
+        modelDesc_3flashPreview: 'Neues Flash 3.0 (Vorschau)',
+        modelDesc_25pro: 'Genauestes, langsameres Modell',
         modelDesc_proLatest: 'Genauestes (neueste Version)',
 
         dataManagementTitle: 'Datenverwaltung',
@@ -689,10 +692,11 @@ export const translations = {
         catOther: 'Otro',
 
         modelDesc_flashLiteLatest: 'Más rápido, ligero (última versión)',
-        modelDesc_flashLite: 'Modelo rápido y ligero',
-        modelDesc_flash: 'Modelo rápido y equilibrado',
+        modelDesc_25flashLite: 'Modelo rápido y ligero',
+        modelDesc_25flash: 'Modelo rápido y equilibrado',
         modelDesc_flashLatest: 'Equilibrado, rápido (última versión)',
-        modelDesc_pro: 'Modelo más preciso, más lento',
+        modelDesc_3flashPreview: 'Nuevo Flash 3.0 (preview)',
+        modelDesc_25pro: 'Modelo más preciso, más lento',
         modelDesc_proLatest: 'Más preciso (última versión)',
 
         dataManagementTitle: 'Gestión de datos',
@@ -880,10 +884,11 @@ export const translations = {
         catOther: 'Autre',
 
         modelDesc_flashLiteLatest: 'Plus rapide, léger (dernière version)',
-        modelDesc_flashLite: 'Modèle rapide et léger',
-        modelDesc_flash: 'Modèle rapide et équilibré',
+        modelDesc_25flashLite: 'Modèle rapide et léger',
+        modelDesc_25flash: 'Modèle rapide et équilibré',
         modelDesc_flashLatest: 'Équilibré, rapide (dernière version)',
-        modelDesc_pro: 'Modèle le plus précis, plus lent',
+        modelDesc_3flashPreview: 'Nouveau Flash 3.0 (aperçu)',
+        modelDesc_25pro: 'Modèle le plus précis, plus lent',
         modelDesc_proLatest: 'Plus précis (dernière version)',
 
         dataManagementTitle: 'Gestion des données',
@@ -1071,10 +1076,11 @@ export const translations = {
         catOther: 'Inne',
 
         modelDesc_flashLiteLatest: 'Najszybszy, lekki (najnowsza wersja)',
-        modelDesc_flashLite: 'Szybki, lekki model',
-        modelDesc_flash: 'Zrównoważony, szybki model',
+        modelDesc_25flashLite: 'Szybki, lekki model',
+        modelDesc_25flash: 'Zrównoważony, szybki model',
         modelDesc_flashLatest: 'Zrównoważony, szybki (najnowsza wersja)',
-        modelDesc_pro: 'Najdokładniejszy, wolniejszy model',
+        modelDesc_3flashPreview: 'Nowy Flash 3.0 (podgląd)',
+        modelDesc_25pro: 'Najdokładniejszy, wolniejszy model',
         modelDesc_proLatest: 'Najdokładniejszy (najnowsza wersja)',
 
         dataManagementTitle: 'Zarządzanie danymi',
@@ -1111,10 +1117,11 @@ export const translations = {
         catOther: 'Inne',
 
         modelDesc_flashLiteLatest: 'Najszybszy, lekki (najnowsza wersja)',
-        modelDesc_flashLite: 'Szybki, lekki model',
-        modelDesc_flash: 'Zrównoważony, szybki model',
+        modelDesc_25flashLite: 'Szybki, lekki model',
+        modelDesc_25flash: 'Zrównoważony, szybki model',
         modelDesc_flashLatest: 'Zrównoważony, szybki (najnowsza wersja)',
-        modelDesc_pro: 'Najdokładniejszy, wolniejszy model',
+        modelDesc_3flashPreview: 'Nowy Flash 3.0 (podgląd)',
+        modelDesc_25pro: 'Najdokładniejszy, wolniejszy model',
         modelDesc_proLatest: 'Najdokładniejszy (najnowsza wersja)',
 
         dataManagementTitle: 'Zarządzanie danymi',
@@ -1288,10 +1295,11 @@ export const translations = {
         catOther: 'Jiné',
 
         modelDesc_flashLiteLatest: 'Nejrychlejší, úsporný (nejnovější verze)',
-        modelDesc_flashLite: 'Rychlý, úsporný model',
-        modelDesc_flash: 'Vyvážený, rychlý model',
+        modelDesc_25flashLite: 'Rychlý, úsporný model',
+        modelDesc_25flash: 'Vyvážený, rychlý model',
         modelDesc_flashLatest: 'Vyvážený, rychlý (nejnovější verze)',
-        modelDesc_pro: 'Nejpřesnější, pomalejší model',
+        modelDesc_3flashPreview: 'Nový Flash 3.0 (preview)',
+        modelDesc_25pro: 'Nejpřesnější, pomalejší model',
         modelDesc_proLatest: 'Nejpřesnější (nejnovější verze)',
 
         dataManagementTitle: 'Správa dat',
@@ -1474,10 +1482,11 @@ export const translations = {
         catSnack2: 'Merenda',
         catDinner: 'Cena',
         modelDesc_flashLiteLatest: 'Più veloce, leggero (ultima versione)',
-        modelDesc_flashLite: 'Modello veloce e leggero',
-        modelDesc_flash: 'Modello veloce ed equilibrato',
+        modelDesc_25flashLite: 'Modello veloce e leggero',
+        modelDesc_25flash: 'Modello veloce ed equilibrato',
         modelDesc_flashLatest: 'Equilibrato, veloce (ultima versione)',
-        modelDesc_pro: 'Modello più preciso, più lento',
+        modelDesc_3flashPreview: 'Nuovo Flash 3.0 (anteprima)',
+        modelDesc_25pro: 'Modello più preciso, più lento',
         modelDesc_proLatest: 'Più preciso (ultima versione)',
         catSnack3: 'Spuntino notte',
         catOther: 'Altro',

@@ -8,14 +8,14 @@ export const MODEL_CATALOG = [
     descriptionKey: 'modelDesc_flashLiteLatest',
   },
   {
-    id: 'gemini-flash-lite',
-    label: 'Gemini Flash Lite',
-    descriptionKey: 'modelDesc_flashLite',
+    id: 'gemini-2.5-flash-lite',
+    label: 'Gemini 2.5 Flash Lite',
+    descriptionKey: 'modelDesc_25flashLite',
   },
   {
-    id: 'gemini-flash',
-    label: 'Gemini Flash',
-    descriptionKey: 'modelDesc_flash',
+    id: 'gemini-2.5-flash',
+    label: 'Gemini 2.5 Flash',
+    descriptionKey: 'modelDesc_25flash',
   },
   {
     id: 'gemini-flash-latest',
@@ -23,9 +23,14 @@ export const MODEL_CATALOG = [
     descriptionKey: 'modelDesc_flashLatest',
   },
   {
-    id: 'gemini-pro',
-    label: 'Gemini Pro',
-    descriptionKey: 'modelDesc_pro',
+    id: 'gemini-3-flash-preview',
+    label: 'Gemini 3 Flash (Preview)',
+    descriptionKey: 'modelDesc_3flashPreview',
+  },
+  {
+    id: 'gemini-2.5-pro',
+    label: 'Gemini 2.5 Pro',
+    descriptionKey: 'modelDesc_25pro',
   },
   {
     id: 'gemini-pro-latest',
@@ -37,10 +42,11 @@ export const MODEL_CATALOG = [
 // Models available to non-admin users.
 export const PUBLIC_MODEL_IDS = [
   'gemini-flash-lite-latest',
-  'gemini-flash-lite',
-  'gemini-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-flash',
   'gemini-flash-latest',
-  'gemini-pro',
+  'gemini-3-flash-preview',
+  'gemini-2.5-pro',
   'gemini-pro-latest',
 ];
 
