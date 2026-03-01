@@ -547,7 +547,7 @@ const MealItem = ({ item, colors, t, onEdit, onDelete, onFavorite, onImagePress,
         </Pressable>
       )}
       <Pressable
-        style={({ pressed }) => [styles.miniAction, pressed && styles.actionBtnPressed]}
+        style={({ pressed }) => [styles.miniAction, styles.editAction, pressed && styles.actionBtnPressed]}
         onPress={onEdit}
       >
         <Ionicons name="pencil" size={16} color={colors.muted} />
@@ -686,6 +686,10 @@ const styles = StyleSheet.create({
   favoriteAction: {
     borderColor: 'rgba(239, 68, 123, 0.2)',
     backgroundColor: 'rgba(239, 68, 123, 0.05)',
+  },
+  editAction: {
+    borderColor: 'rgba(59, 130, 246, 0.25)',
+    backgroundColor: 'rgba(59, 130, 246, 0.07)',
   },
   actionBtnPressed: {
     transform: [{ scale: 0.95 }],

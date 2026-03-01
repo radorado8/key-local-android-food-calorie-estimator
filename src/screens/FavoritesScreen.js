@@ -213,7 +213,7 @@ const FavoriteMealItem = ({ item, colors, t, onAddToLog, onEdit, onDelete, onIma
                 <Ionicons name="add" size={16} color={colors.accent} />
             </Pressable>
             <Pressable
-                style={({ pressed }) => [styles.miniAction, pressed && styles.actionBtnPressed]}
+                style={({ pressed }) => [styles.miniAction, styles.editAction, pressed && styles.actionBtnPressed]}
                 onPress={onEdit}
             >
                 <Ionicons name="pencil" size={16} color={colors.muted} />
@@ -300,6 +300,10 @@ const styles = StyleSheet.create({
     addToLogAction: {
         borderColor: 'rgba(45, 212, 191, 0.3)',
         backgroundColor: 'rgba(45, 212, 191, 0.08)',
+    },
+    editAction: {
+        borderColor: 'rgba(59, 130, 246, 0.25)',
+        backgroundColor: 'rgba(59, 130, 246, 0.07)',
     },
     actionBtnPressed: {
         transform: [{ scale: 0.95 }],
