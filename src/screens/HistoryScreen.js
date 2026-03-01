@@ -17,6 +17,7 @@ import ImageView from "react-native-image-viewing";
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 import { deleteMeal, updateMeal, subscribeToMeals, createMeal } from '../api/mealService';
+import { addFavorite } from '../api/favoritesService';
 import MealEditDialog from '../components/MealEditDialog';
 import { useSettings } from '../state/SettingsContext';
 
@@ -382,6 +383,14 @@ export default function HistoryScreen() {
                                     setEditMeal(item);
                                     setEditOpen(true);
                                   }}
+                                  onFavorite={async () => {
+                                    try {
+                                      await addFavorite(item);
+                                      Alert.alert(t.addedToFavorites || '❤️', t.addedToFavoritesMsg || item.name);
+                                    } catch (e) {
+                                      Alert.alert(t.errorTitle, e.message || t.errorTitle);
+                                    }
+                                  }}
                                   onDelete={async () => {
                                     Alert.alert(t.deleteMealTitle, t.deleteMealMsg, [
                                       { text: t.cancel, style: 'cancel' },
@@ -507,7 +516,7 @@ export default function HistoryScreen() {
   );
 }
 
-const MealItem = ({ item, colors, t, onEdit, onDelete, onImagePress, showImage }) => (
+const MealItem = ({ item, colors, t, onEdit, onDelete, onFavorite, onImagePress, showImage }) => (
   <View style={[styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
     {showImage && item.imageUri && (
       <Pressable onPress={onImagePress} style={{ marginRight: 2 }}>
@@ -529,6 +538,14 @@ const MealItem = ({ item, colors, t, onEdit, onDelete, onImagePress, showImage }
     </View>
 
     <View style={styles.itemActions}>
+      {onFavorite && (
+        <Pressable
+          style={({ pressed }) => [styles.miniAction, styles.favoriteAction, pressed && styles.actionBtnPressed]}
+          onPress={onFavorite}
+        >
+          <Ionicons name="heart-outline" size={16} color="rgba(239, 68, 123, 0.8)" />
+        </Pressable>
+      )}
       <Pressable
         style={({ pressed }) => [styles.miniAction, pressed && styles.actionBtnPressed]}
         onPress={onEdit}
@@ -665,6 +682,10 @@ const styles = StyleSheet.create({
   deleteAction: {
     borderColor: 'rgba(239, 68, 68, 0.2)',
     backgroundColor: 'rgba(239, 68, 68, 0.05)',
+  },
+  favoriteAction: {
+    borderColor: 'rgba(239, 68, 123, 0.2)',
+    backgroundColor: 'rgba(239, 68, 123, 0.05)',
   },
   actionBtnPressed: {
     transform: [{ scale: 0.95 }],
