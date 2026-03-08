@@ -4,29 +4,45 @@ const LOCAL_FAVORITES_KEY = 'favorites.v1';
 
 let localFavoritesCache = [];
 let localListeners = [];
+let cacheInitialized = false;
+let initPromise = null;
 
 async function initLocalCache() {
-    try {
-        const raw = await AsyncStorage.getItem(LOCAL_FAVORITES_KEY);
-        localFavoritesCache = raw ? JSON.parse(raw) : [];
-    } catch (e) {
-        console.error('Failed to init favorites cache', e);
-        localFavoritesCache = [];
-    }
+    if (cacheInitialized) return;
+    if (initPromise) return initPromise;
+
+    initPromise = (async () => {
+        try {
+            const raw = await AsyncStorage.getItem(LOCAL_FAVORITES_KEY);
+            localFavoritesCache = raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            console.error('Failed to init favorites cache', e);
+            // Keep existing cache instead of wiping to empty
+            if (localFavoritesCache.length === 0) {
+                localFavoritesCache = [];
+            }
+        }
+        cacheInitialized = true;
+    })();
+
+    return initPromise;
 }
 
 function notifyLocalListeners() {
-    localListeners.forEach(cb => cb(localFavoritesCache));
+    localListeners.forEach(cb => cb([...localFavoritesCache]));
 }
 
 function saveLocalCache() {
-    AsyncStorage.setItem(LOCAL_FAVORITES_KEY, JSON.stringify(localFavoritesCache)).catch(err => {
+    const dataToSave = JSON.stringify(localFavoritesCache);
+    AsyncStorage.setItem(LOCAL_FAVORITES_KEY, dataToSave).catch(err => {
         console.error('Failed to save favorites locally', err);
     });
     notifyLocalListeners();
 }
 
 export async function addFavorite(meal) {
+    await initLocalCache();
+
     const favorite = {
         id: Date.now().toString(),
         name: meal.name,
@@ -44,18 +60,20 @@ export async function addFavorite(meal) {
 }
 
 export async function updateFavorite(id, patch) {
+    await initLocalCache();
     localFavoritesCache = localFavoritesCache.map(f => f.id === id ? { ...f, ...patch } : f);
     saveLocalCache();
 }
 
 export async function removeFavorite(id) {
+    await initLocalCache();
     localFavoritesCache = localFavoritesCache.filter(f => f.id !== id);
     saveLocalCache();
 }
 
 export function subscribeFavorites(callback) {
     initLocalCache().then(() => {
-        callback(localFavoritesCache);
+        callback([...localFavoritesCache]);
     });
 
     localListeners.push(callback);
