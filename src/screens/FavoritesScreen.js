@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { subscribeFavorites, removeFavorite, updateFavorite, addFavorite } from '../api/favoritesService';
 import { createMeal } from '../api/mealService';
 import MealEditDialog from '../components/MealEditDialog';
+import WeightDialog from '../components/WeightDialog';
 import { useSettings } from '../state/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -25,6 +26,8 @@ export default function FavoritesScreen() {
     const [addOpen, setAddOpen] = useState(false);
     const [editItem, setEditItem] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null);
+    const [weightDialogOpen, setWeightDialogOpen] = useState(false);
+    const [weightItem, setWeightItem] = useState(null);
 
     const colors = theme === 'light'
         ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)' }
@@ -46,6 +49,29 @@ export default function FavoritesScreen() {
                 carbs: item.carbs,
                 fat: item.fat,
                 weight_g: item.weight_g,
+                imageUri: item.imageUri,
+                confidence: 1.0,
+                timestamp: new Date().toISOString(),
+            }, useLocalStorage);
+            Alert.alert(t.addedToLog || '✅', t.addedToLogMsg || item.name);
+        } catch (e) {
+            Alert.alert(t.errorTitle, e.message || t.errorTitle);
+        }
+    };
+
+    const handleAddToLogWithWeight = async (item, newWeightG) => {
+        try {
+            const origWeight = Number(item.weight_g);
+            const hasOrigWeight = origWeight > 0;
+            const ratio = hasOrigWeight ? newWeightG / origWeight : 1;
+
+            await createMeal({
+                name: item.name,
+                calories: hasOrigWeight ? Math.round(Number(item.calories || 0) * ratio) : Number(item.calories || 0),
+                protein: hasOrigWeight ? Math.round(Number(item.protein || 0) * ratio * 10) / 10 : Number(item.protein || 0),
+                carbs: hasOrigWeight ? Math.round(Number(item.carbs || 0) * ratio * 10) / 10 : Number(item.carbs || 0),
+                fat: hasOrigWeight ? Math.round(Number(item.fat || 0) * ratio * 10) / 10 : Number(item.fat || 0),
+                weight_g: newWeightG,
                 imageUri: item.imageUri,
                 confidence: 1.0,
                 timestamp: new Date().toISOString(),
@@ -99,6 +125,10 @@ export default function FavoritesScreen() {
                         t={t}
                         showImage={showImagesInHistory}
                         onAddToLog={() => handleAddToLog(item)}
+                        onAddToLogLongPress={() => {
+                            setWeightItem(item);
+                            setWeightDialogOpen(true);
+                        }}
                         onEdit={() => {
                             setEditItem(item);
                             setEditOpen(true);
@@ -153,6 +183,23 @@ export default function FavoritesScreen() {
                 }}
             />
 
+            {/* Weight Dialog for long-press add */}
+            <WeightDialog
+                visible={weightDialogOpen}
+                colors={colors}
+                onCancel={() => {
+                    setWeightDialogOpen(false);
+                    setWeightItem(null);
+                }}
+                onConfirm={(grams) => {
+                    setWeightDialogOpen(false);
+                    if (weightItem && grams && grams > 0) {
+                        handleAddToLogWithWeight(weightItem, grams);
+                    }
+                    setWeightItem(null);
+                }}
+            />
+
             {/* Full Screen Image Zoom Viewer */}
             <ImageView
                 images={[{ uri: selectedImage }]}
@@ -184,7 +231,7 @@ export default function FavoritesScreen() {
     );
 }
 
-const FavoriteMealItem = ({ item, colors, t, onAddToLog, onEdit, onDelete, onImagePress, showImage }) => (
+const FavoriteMealItem = ({ item, colors, t, onAddToLog, onAddToLogLongPress, onEdit, onDelete, onImagePress, showImage }) => (
     <View style={[styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         {showImage && item.imageUri && (
             <Pressable onPress={onImagePress} style={{ marginRight: 2 }}>
@@ -209,6 +256,7 @@ const FavoriteMealItem = ({ item, colors, t, onAddToLog, onEdit, onDelete, onIma
             <Pressable
                 style={({ pressed }) => [styles.miniAction, styles.addToLogAction, pressed && styles.actionBtnPressed]}
                 onPress={onAddToLog}
+                onLongPress={onAddToLogLongPress}
             >
                 <Ionicons name="add" size={16} color={colors.accent} />
             </Pressable>
