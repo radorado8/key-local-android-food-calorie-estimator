@@ -22,7 +22,7 @@ function toNumber(v) {
   return Number.isFinite(n) ? n : NaN;
 }
 
-export default function MealEditDialog({ visible, initialMeal, onCancel, onSave, colors, mode = 'edit' }) {
+export default function MealEditDialog({ visible, initialMeal, onCancel, onSave, colors, mode = 'edit', categories = [] }) {
   const t = useTranslation();
   const [name, setName] = useState('');
   const [calories, setCalories] = useState('');
@@ -35,6 +35,8 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
   // Date state for 'add' mode
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [categoryId, setCategoryId] = useState(null);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
   const nameRef = useRef(null);
   const translateY = useRef(new Animated.Value(0)).current;
@@ -49,6 +51,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
     setFat(String(initialMeal?.fat ?? (mode === 'add' ? '0' : '')));
     setWeightG(String(initialMeal?.weight_g ?? (mode === 'add' ? '0' : '')));
     setImageUri(initialMeal?.imageUri || null);
+    setCategoryId(initialMeal?.categoryId || null);
     translateY.setValue(0);
 
     if (initialMeal?.timestamp) {
@@ -111,10 +114,11 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
       carbs: toNumber(carbs),
       fat: toNumber(fat),
       weight_g: toNumber(weightG),
-      timestamp: date.toISOString(), // Always send timestamp (edited or new)
+      timestamp: date.toISOString(),
       imageUri: imageUri,
+      categoryId: categoryId || null,
     };
-  }, [name, calories, protein, carbs, fat, weightG, date, mode, imageUri]);
+  }, [name, calories, protein, carbs, fat, weightG, date, mode, imageUri, categoryId]);
 
   const valid =
     parsed.name.length > 0 &&
@@ -246,6 +250,20 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
                 <Text style={[styles.label, { color: currentColors.muted }]}>{t.weightLabel} (g)</Text>
                 <TextInput value={weightG} onChangeText={setWeightG} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
               </View>
+              {categories.length > 0 && (
+                <View style={styles.gridItem}>
+                  <Text style={[styles.label, { color: currentColors.muted }]}>{t.categoryLabel || 'Kategória'}</Text>
+                  <Pressable
+                    onPress={() => setShowCategoryPicker(true)}
+                    style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+                  >
+                    <Text style={{ color: categoryId ? currentColors.text : currentColors.muted, fontWeight: '700', fontSize: 13 }}>
+                      {categoryId ? (categories.find(c => c.id === categoryId)?.label || '—') : (t.noCategory || 'Žiadna')}
+                    </Text>
+                    <Ionicons name="chevron-down" size={14} color={currentColors.muted} />
+                  </Pressable>
+                </View>
+              )}
             </View>
 
             <View style={styles.actions}>
@@ -265,6 +283,35 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
           </ScrollView>
         </Animated.View>
       </View>
+
+      {/* Category Picker Modal */}
+      {showCategoryPicker && (
+        <Modal visible={true} transparent animationType="fade" onRequestClose={() => setShowCategoryPicker(false)}>
+          <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 }} onPress={() => setShowCategoryPicker(false)}>
+            <View style={{ backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderRadius: 16, borderWidth: 1, borderColor: currentColors.border, maxHeight: '60%' }}>
+              <ScrollView bounces={false}>
+                <Pressable
+                  style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: currentColors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                  onPress={() => { setCategoryId(null); setShowCategoryPicker(false); }}
+                >
+                  <Text style={{ color: !categoryId ? currentColors.accent : currentColors.text, fontWeight: '600', fontSize: 16 }}>{t.noCategory || 'Žiadna kategória'}</Text>
+                  {!categoryId && <Ionicons name="checkmark" size={20} color={currentColors.accent} />}
+                </Pressable>
+                {categories.map(c => (
+                  <Pressable
+                    key={c.id}
+                    style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: currentColors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                    onPress={() => { setCategoryId(c.id); setShowCategoryPicker(false); }}
+                  >
+                    <Text style={{ color: categoryId === c.id ? currentColors.accent : currentColors.text, fontWeight: '600', fontSize: 16 }}>{c.label}</Text>
+                    {categoryId === c.id && <Ionicons name="checkmark" size={20} color={currentColors.accent} />}
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          </Pressable>
+        </Modal>
+      )}
     </Modal>
   );
 }

@@ -112,7 +112,7 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, analysisMode, setAnalysisMode, customModels, setCustomModels, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory } = useSettings();
+  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, analysisMode, setAnalysisMode, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory } = useSettings();
 
   const colors = theme === 'light'
     ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)', elemBg: '#F1F5F9', elemBorder: 'rgba(0,0,0,0.05)', modalBg: '#FFFFFF' }
@@ -372,6 +372,62 @@ export default function SettingsScreen() {
     setNewModelName('');
   };
 
+  // Food Categories Logic
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) return;
+    const label = newCategoryName.trim();
+
+    if (editingCategory) {
+      const updated = foodCategories.map(c =>
+        c.id === editingCategory.id ? { ...c, label } : c
+      );
+      setFoodCategories(updated);
+      Alert.alert(t.success, t.saved || 'Uložené');
+    } else {
+      const id = Date.now().toString();
+      setFoodCategories([...foodCategories, { id, label }]);
+      Alert.alert(t.success, t.categoryAddedSuccess || 'Category added.');
+    }
+
+    setNewCategoryName('');
+    setEditingCategory(null);
+    setAddingCategory(false);
+  };
+
+  const handleEditCategory = (cat) => {
+    setNewCategoryName(cat.label);
+    setEditingCategory(cat);
+    setAddingCategory(true);
+  };
+
+  const handleDeleteCategory = (catId) => {
+    Alert.alert(
+      t.deleteMealTitle,
+      t.deleteCategoryConfirm || 'Delete this category?',
+      [
+        { text: t.cancel, style: 'cancel' },
+        {
+          text: t.delete,
+          style: 'destructive',
+          onPress: () => {
+            setFoodCategories(foodCategories.filter(c => c.id !== catId));
+            Alert.alert(t.success, t.categoryDeletedSuccess || 'Category deleted.');
+          }
+        }
+      ]
+    );
+  };
+
+  const closeCategoryModal = () => {
+    setAddingCategory(false);
+    setEditingCategory(null);
+    setNewCategoryName('');
+  };
+
   return (
 
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
@@ -535,6 +591,38 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
+        {/* Manage Food Categories */}
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.label, { color: colors.text }]}>{t.manageCategoriesTitle || 'Kategórie jedál'}</Text>
+
+          {foodCategories.map((c) => (
+            <View key={c.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: 8, backgroundColor: colors.elemBg, borderRadius: 8 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.text, fontWeight: '600' }}>{c.label}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <Pressable onPress={() => handleEditCategory(c)}>
+                  <Ionicons name="pencil" size={20} color={colors.accent} />
+                </Pressable>
+                <Pressable onPress={() => handleDeleteCategory(c.id)}>
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                </Pressable>
+              </View>
+            </View>
+          ))}
+
+          <Pressable
+            onPress={() => setAddingCategory(true)}
+            style={({ pressed }) => [
+              styles.actionBtn,
+              { backgroundColor: colors.elemBg, borderColor: colors.elemBorder, marginTop: 4 },
+              pressed && styles.pressed
+            ]}
+          >
+            <Text style={{ color: colors.accent, fontWeight: '700' }}>{t.addCategoryBtn || 'Pridať kategóriu'}</Text>
+          </Pressable>
+        </View>
+
         {/* 5. Language */}
         <Dropdown
           label={t.language}
@@ -652,6 +740,37 @@ export default function SettingsScreen() {
                 </Pressable>
                 <Pressable onPress={handleAddCustomModel} style={{ padding: 10, backgroundColor: colors.accent, borderRadius: 8 }}>
                   <Text style={{ color: '#fff', fontWeight: '700' }}>{editingModel ? (t.save || 'Save') : t.confirm}</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Add/Edit Category Modal */}
+      <Modal visible={addingCategory} transparent animationType="fade" onRequestClose={closeCategoryModal}>
+        <Pressable style={styles.modalOverlay} onPress={closeCategoryModal}>
+          <Pressable style={[styles.modalContent, { backgroundColor: colors.modalBg, borderColor: colors.border, width: '90%' }]} onPress={() => { }}>
+            <ScrollView contentContainerStyle={{ padding: 20 }}>
+              <Text style={[styles.modalTitle, { color: colors.text, marginBottom: 16 }]}>
+                {editingCategory ? (t.editMealTitle || 'Edit') : (t.addCategoryBtn || 'Add Category')}
+              </Text>
+
+              <Text style={[styles.label, { color: colors.muted, fontSize: 14 }]}>{t.categoryNameLabel || 'Názov kategórie'}</Text>
+              <TextInput
+                value={newCategoryName}
+                onChangeText={setNewCategoryName}
+                style={[styles.input, { flex: 0, minHeight: 60, fontSize: 18, backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text, marginBottom: 24 }]}
+                placeholder={t.categoryNamePlaceholder || 'napr. Raňajky'}
+                placeholderTextColor={colors.muted}
+              />
+
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+                <Pressable onPress={closeCategoryModal} style={{ padding: 10 }}>
+                  <Text style={{ color: colors.muted, fontWeight: '700' }}>{t.cancel}</Text>
+                </Pressable>
+                <Pressable onPress={handleAddCategory} style={{ padding: 10, backgroundColor: colors.accent, borderRadius: 8 }}>
+                  <Text style={{ color: '#fff', fontWeight: '700' }}>{editingCategory ? (t.save || 'Save') : t.confirm}</Text>
                 </Pressable>
               </View>
             </ScrollView>

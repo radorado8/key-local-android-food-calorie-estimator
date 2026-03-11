@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Alert,
-    FlatList,
+    SectionList,
     Pressable,
     StyleSheet,
     Text,
@@ -20,7 +20,7 @@ import { useTranslation } from '../hooks/useTranslation';
 
 export default function FavoritesScreen() {
     const t = useTranslation();
-    const { theme, showImagesInHistory, useLocalStorage } = useSettings();
+    const { theme, showImagesInHistory, useLocalStorage, foodCategories } = useSettings();
     const [favorites, setFavorites] = useState([]);
     const [editOpen, setEditOpen] = useState(false);
     const [addOpen, setAddOpen] = useState(false);
@@ -28,6 +28,7 @@ export default function FavoritesScreen() {
     const [selectedImage, setSelectedImage] = useState(null);
     const [weightDialogOpen, setWeightDialogOpen] = useState(false);
     const [weightItem, setWeightItem] = useState(null);
+    const [expandedCategories, setExpandedCategories] = useState({});
 
     const colors = theme === 'light'
         ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)' }
@@ -99,6 +100,38 @@ export default function FavoritesScreen() {
         ]);
     };
 
+    const toggleCategory = (catId) => {
+        setExpandedCategories(prev => ({ ...prev, [catId]: !prev[catId] }));
+    };
+
+    const sections = useMemo(() => {
+        const uncategorized = favorites.filter(f => !f.categoryId);
+        const categorized = new Map();
+
+        for (const fav of favorites) {
+            if (!fav.categoryId) continue;
+            if (!categorized.has(fav.categoryId)) categorized.set(fav.categoryId, []);
+            categorized.get(fav.categoryId).push(fav);
+        }
+
+        const result = [];
+
+        // Uncategorized items first (no header needed, rendered directly)
+        if (uncategorized.length > 0) {
+            result.push({ categoryId: '__none__', title: null, data: uncategorized });
+        }
+
+        // Category sections (only if they have items)
+        for (const cat of foodCategories) {
+            const items = categorized.get(cat.id);
+            if (items && items.length > 0) {
+                result.push({ categoryId: cat.id, title: cat.label, data: items });
+            }
+        }
+
+        return result;
+    }, [favorites, foodCategories]);
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
             <View style={[styles.headerBlock, { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }]}>
@@ -114,29 +147,59 @@ export default function FavoritesScreen() {
                 </Pressable>
             </View>
 
-            <FlatList
-                data={favorites}
+            <SectionList
+                sections={sections}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100, gap: 8 }}
-                renderItem={({ item }) => (
-                    <FavoriteMealItem
-                        item={item}
-                        colors={colors}
-                        t={t}
-                        showImage={showImagesInHistory}
-                        onAddToLog={() => handleAddToLog(item)}
-                        onAddToLogLongPress={() => {
-                            setWeightItem(item);
-                            setWeightDialogOpen(true);
-                        }}
-                        onEdit={() => {
-                            setEditItem(item);
-                            setEditOpen(true);
-                        }}
-                        onDelete={() => handleDelete(item)}
-                        onImagePress={() => setSelectedImage(item.imageUri)}
-                    />
-                )}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 }}
+                stickySectionHeadersEnabled={false}
+                renderSectionHeader={({ section }) => {
+                    if (!section.title) return null; // uncategorized — no header
+                    const isExpanded = expandedCategories[section.categoryId] !== false; // default expanded
+                    return (
+                        <Pressable
+                            onPress={() => toggleCategory(section.categoryId)}
+                            style={[styles.categoryHeader, { borderBottomColor: colors.border }]}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons
+                                    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                    size={16}
+                                    color={colors.accent}
+                                    style={{ marginRight: 6 }}
+                                />
+                                <Text style={[styles.categoryTitle, { color: colors.accent }]}>
+                                    {section.title}
+                                </Text>
+                                <Text style={{ color: colors.muted, fontSize: 13, marginLeft: 6 }}>({section.data.length})</Text>
+                            </View>
+                        </Pressable>
+                    );
+                }}
+                renderItem={({ item, section }) => {
+                    // Hide items if category is collapsed
+                    if (section.title && expandedCategories[section.categoryId] === false) return null;
+                    return (
+                        <View style={{ marginBottom: 8 }}>
+                        <FavoriteMealItem
+                            item={item}
+                            colors={colors}
+                            t={t}
+                            showImage={showImagesInHistory}
+                            onAddToLog={() => handleAddToLog(item)}
+                            onAddToLogLongPress={() => {
+                                setWeightItem(item);
+                                setWeightDialogOpen(true);
+                            }}
+                            onEdit={() => {
+                                setEditItem(item);
+                                setEditOpen(true);
+                            }}
+                            onDelete={() => handleDelete(item)}
+                            onImagePress={() => setSelectedImage(item.imageUri)}
+                        />
+                        </View>
+                    );
+                }}
                 ListEmptyComponent={
                     <View style={styles.center}>
                         <Text style={[styles.muted, { color: colors.muted }]}>{t.emptyFavorites || 'Zatiaľ žiadne obľúbené jedlá.'}</Text>
@@ -149,6 +212,7 @@ export default function FavoritesScreen() {
                 visible={editOpen}
                 initialMeal={editItem}
                 colors={colors}
+                categories={foodCategories}
                 onCancel={() => {
                     setEditOpen(false);
                     setEditItem(null);
@@ -170,6 +234,7 @@ export default function FavoritesScreen() {
                 initialMeal={{}}
                 mode="add"
                 colors={colors}
+                categories={foodCategories}
                 onCancel={() => setAddOpen(false)}
                 onSave={async (mealData) => {
                     try {
@@ -356,5 +421,15 @@ const styles = StyleSheet.create({
     actionBtnPressed: {
         transform: [{ scale: 0.95 }],
         opacity: 0.7,
+    },
+    categoryHeader: {
+        paddingVertical: 12,
+        paddingHorizontal: 2,
+        marginTop: 8,
+        marginBottom: 4,
+    },
+    categoryTitle: {
+        fontSize: 16,
+        fontWeight: '800',
     },
 });
