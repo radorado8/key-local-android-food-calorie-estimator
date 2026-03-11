@@ -22,6 +22,7 @@ import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { exportUserData, getFriendlyError } from '../api/backend';
 import { getAllMeals, createMeal } from '../api/mealService';
+import { clearCategoryFromFavorites } from '../api/favoritesService';
 import { getGeminiKey, setGeminiKey } from '../utils/secureStorage';
 import TermsModal from '../components/TermsModal';
 
@@ -413,13 +414,24 @@ export default function SettingsScreen() {
         {
           text: t.delete,
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
             setFoodCategories(foodCategories.filter(c => c.id !== catId));
+            await clearCategoryFromFavorites(catId);
             Alert.alert(t.success, t.categoryDeletedSuccess || 'Category deleted.');
           }
         }
       ]
     );
+  };
+
+  const handleMoveCategory = (catId, direction) => {
+    const idx = foodCategories.findIndex(c => c.id === catId);
+    if (idx < 0) return;
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= foodCategories.length) return;
+    const updated = [...foodCategories];
+    [updated[idx], updated[newIdx]] = [updated[newIdx], updated[idx]];
+    setFoodCategories(updated);
   };
 
   const closeCategoryModal = () => {
@@ -595,12 +607,26 @@ export default function SettingsScreen() {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.label, { color: colors.text }]}>{t.manageCategoriesTitle || 'Kategórie jedál'}</Text>
 
-          {foodCategories.map((c) => (
+          {foodCategories.map((c, index) => (
             <View key={c.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: 8, backgroundColor: colors.elemBg, borderRadius: 8 }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.text, fontWeight: '600' }}>{c.label}</Text>
               </View>
-              <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                <Pressable
+                  onPress={() => handleMoveCategory(c.id, -1)}
+                  style={{ opacity: index === 0 ? 0.25 : 1 }}
+                  disabled={index === 0}
+                >
+                  <Ionicons name="chevron-up" size={20} color={colors.muted} />
+                </Pressable>
+                <Pressable
+                  onPress={() => handleMoveCategory(c.id, 1)}
+                  style={{ opacity: index === foodCategories.length - 1 ? 0.25 : 1 }}
+                  disabled={index === foodCategories.length - 1}
+                >
+                  <Ionicons name="chevron-down" size={20} color={colors.muted} />
+                </Pressable>
                 <Pressable onPress={() => handleEditCategory(c)}>
                   <Ionicons name="pencil" size={20} color={colors.accent} />
                 </Pressable>

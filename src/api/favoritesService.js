@@ -71,6 +71,19 @@ export async function removeFavorite(id) {
     saveLocalCache();
 }
 
+export async function clearCategoryFromFavorites(categoryId) {
+    await initLocalCache();
+    let changed = false;
+    localFavoritesCache = localFavoritesCache.map(f => {
+        if (f.categoryId === categoryId) {
+            changed = true;
+            return { ...f, categoryId: null };
+        }
+        return f;
+    });
+    if (changed) saveLocalCache();
+}
+
 export function subscribeFavorites(callback) {
     initLocalCache().then(() => {
         callback([...localFavoritesCache]);
