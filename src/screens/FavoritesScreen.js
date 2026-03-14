@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
     Alert,
     SectionList,
@@ -17,6 +17,9 @@ import MealEditDialog from '../components/MealEditDialog';
 import WeightDialog from '../components/WeightDialog';
 import { useSettings } from '../state/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const EXPANDED_KEY = 'favorites.expandedCategories';
 
 export default function FavoritesScreen() {
     const t = useTranslation();
@@ -39,6 +42,15 @@ export default function FavoritesScreen() {
             setFavorites(fetched);
         });
         return () => unsub();
+    }, []);
+
+    // Load persisted expanded/collapsed state
+    useEffect(() => {
+        AsyncStorage.getItem(EXPANDED_KEY).then(raw => {
+            if (raw) {
+                try { setExpandedCategories(JSON.parse(raw)); } catch {}
+            }
+        });
     }, []);
 
     const handleAddToLog = async (item) => {
@@ -100,9 +112,13 @@ export default function FavoritesScreen() {
         ]);
     };
 
-    const toggleCategory = (catId) => {
-        setExpandedCategories(prev => ({ ...prev, [catId]: !prev[catId] }));
-    };
+    const toggleCategory = useCallback((catId) => {
+        setExpandedCategories(prev => {
+            const updated = { ...prev, [catId]: prev[catId] === false ? true : false };
+            AsyncStorage.setItem(EXPANDED_KEY, JSON.stringify(updated)).catch(() => {});
+            return updated;
+        });
+    }, []);
 
     const sections = useMemo(() => {
         const uncategorized = favorites.filter(f => !f.categoryId);
@@ -429,7 +445,7 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     categoryTitle: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '800',
     },
 });
