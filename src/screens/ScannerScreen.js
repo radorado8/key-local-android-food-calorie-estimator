@@ -29,7 +29,7 @@ import { useTranslation } from '../hooks/useTranslation';
 
 export default function ScannerScreen({ navigation, route }) {
   const t = useTranslation();
-  const { dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, saveFoodImages } = useSettings();
+  const { dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, saveFoodImages, autoSaveEnabled, autoSaveSeconds } = useSettings();
   const insets = useSafeAreaInsets();
 
   // Track handled actions
@@ -505,6 +505,8 @@ export default function ScannerScreen({ navigation, route }) {
             theme={theme}
             colors={colors}
             onChange={setResult}
+            autoSaveEnabled={autoSaveEnabled}
+            autoSaveSeconds={autoSaveSeconds}
             onReset={() => {
               setStatus('idle');
               setResult(null);

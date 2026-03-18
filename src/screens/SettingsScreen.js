@@ -113,7 +113,7 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, analysisMode, setAnalysisMode, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory } = useSettings();
+  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, analysisMode, setAnalysisMode, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds } = useSettings();
 
   const colors = theme === 'light'
     ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)', elemBg: '#F1F5F9', elemBorder: 'rgba(0,0,0,0.05)', modalBg: '#FFFFFF' }
@@ -123,6 +123,7 @@ export default function SettingsScreen() {
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [autoSaveSecondsInput, setAutoSaveSecondsInput] = useState(String(autoSaveSeconds));
 
   useEffect(() => {
     // Load API Key
@@ -544,6 +545,47 @@ export default function SettingsScreen() {
               thumbColor={'#fff'}
             />
           </View>
+        </View>
+
+        {/* Auto-Save Settings */}
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: autoSaveEnabled ? 16 : 0 }}>
+            <View style={{ flex: 1, paddingRight: 10 }}>
+              <Text style={[styles.label, { color: colors.text }]}>{t.autoSaveTitle || 'Automatické uloženie'}</Text>
+              <Text style={[styles.hint, { color: colors.muted, marginBottom: 0 }]}>{t.autoSaveDescription || 'Uloží analýzu automaticky po uplynutí času'}</Text>
+            </View>
+            <Switch
+              value={autoSaveEnabled}
+              onValueChange={setAutoSaveEnabled}
+              trackColor={{ false: colors.elemBg, true: colors.accent }}
+              thumbColor={'#fff'}
+            />
+          </View>
+
+          {autoSaveEnabled && (
+            <>
+              <View style={{ height: 1, backgroundColor: colors.elemBorder, marginBottom: 12 }} />
+              <Text style={[styles.label, { color: colors.text, marginBottom: 4 }]}>{t.autoSaveSecondsLabel || 'Počet sekúnd'}</Text>
+              <View style={styles.row}>
+                <TextInput
+                  value={autoSaveSecondsInput}
+                  onChangeText={setAutoSaveSecondsInput}
+                  onEndEditing={() => {
+                    const v = parseInt(autoSaveSecondsInput, 10);
+                    const clamped = Math.max(3, Math.min(60, Number.isFinite(v) ? v : 5));
+                    setAutoSaveSeconds(clamped);
+                    setAutoSaveSecondsInput(String(clamped));
+                  }}
+                  keyboardType="numeric"
+                  inputMode="numeric"
+                  style={[styles.input, { backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text }]}
+                  placeholder="5"
+                  placeholderTextColor={colors.muted}
+                />
+                <Text style={[styles.unit, { color: colors.muted }]}>s</Text>
+              </View>
+            </>
+          )}
         </View>
 
         {/* 5. Analysis Mode */}

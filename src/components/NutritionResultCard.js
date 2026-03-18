@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View, Image, TextInput } from 'react-native';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { Pressable, StyleSheet, Text, View, Image, TextInput, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -10,7 +10,7 @@ function fmt(n, digits = 0) {
   return digits ? v.toFixed(digits) : String(Math.round(v));
 }
 
-export default function NutritionResultCard({ data, imageUri, todayCalories = 0, dailyGoal = 2000, onSave, onReset, onChange, saving, theme, colors }) {
+export default function NutritionResultCard({ data, imageUri, todayCalories = 0, dailyGoal = 2000, onSave, onReset, onChange, saving, theme, colors, autoSaveEnabled = true, autoSaveSeconds = 5 }) {
   const t = useTranslation();
   if (!data) return null;
 
@@ -22,6 +22,56 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
   const diff = Math.round(Math.abs(goal - newTotal));
 
   const confidencePct = Number.isFinite(Number(data.confidence)) ? Math.round(Number(data.confidence) * 100) : 0;
+
+  // Auto-save timer
+  const autoSaveTimerRef = useRef(null);
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const [autoSaveActive, setAutoSaveActive] = useState(autoSaveEnabled);
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+
+  const cancelAutoSave = useCallback(() => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    progressAnim.stopAnimation();
+    setAutoSaveActive(false);
+  }, [progressAnim]);
+
+  useEffect(() => {
+    if (!autoSaveEnabled) {
+      setAutoSaveActive(false);
+      return;
+    }
+
+    const delayMs = autoSaveSeconds * 1000;
+
+    // Start auto-save countdown
+    progressAnim.setValue(0);
+    setAutoSaveActive(true);
+
+    Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: delayMs,
+      useNativeDriver: false,
+    }).start();
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      if (onSaveRef.current) onSaveRef.current();
+    }, delayMs);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      progressAnim.stopAnimation();
+    };
+  }, []); // Run once on mount
+
+  // Wrap onChange to also cancel auto-save
+  const handleChange = useCallback((newData) => {
+    cancelAutoSave();
+    if (onChange) onChange(newData);
+  }, [onChange, cancelAutoSave]);
 
   return (
     <View style={styles.container}>
@@ -44,7 +94,8 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
         <View style={styles.headerInfo}>
           <TextInput
             value={data.name || ''}
-            onChangeText={(v) => onChange && onChange({ ...data, name: v })}
+            onChangeText={(v) => handleChange({ ...data, name: v })}
+            onFocus={cancelAutoSave}
             style={[styles.title, { color: colors.text, padding: 0 }]}
             placeholder={t.unknownFood}
             placeholderTextColor={colors.muted}
@@ -69,7 +120,8 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
               <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
                 <TextInput
                   value={String(Math.round(Number(data.calories || 0)))}
-                  onChangeText={(v) => onChange && onChange({ ...data, calories: v.replace(/[^0-9]/g, '') })}
+                  onChangeText={(v) => handleChange({ ...data, calories: v.replace(/[^0-9]/g, '') })}
+                  onFocus={cancelAutoSave}
                   keyboardType="number-pad"
                   textAlignVertical="bottom"
                   style={[styles.valueLarge, { color: colors.text, padding: 0, paddingVertical: 0, includeFontPadding: false, minWidth: 40 }]}
@@ -102,7 +154,8 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
           <StatCard
             label={t.weightLabel || 'Váha'}
             value={String(data.weight_g || '')}
-            onChangeText={(v) => onChange && onChange({ ...data, weight_g: v.replace(/[^0-9.]/g, '') })}
+            onChangeText={(v) => handleChange({ ...data, weight_g: v.replace(/[^0-9.]/g, '') })}
+            onFocus={cancelAutoSave}
             unit="g"
             icon={<Text style={{ fontWeight: '900', color: colors.text }}>g</Text>}
             iconBg="rgba(150, 150, 150, 0.1)"
@@ -115,7 +168,8 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
         <StatCard
           label={t.protein}
           value={String(Math.round(Number(data.protein || 0)))}
-          onChangeText={(v) => onChange && onChange({ ...data, protein: v.replace(/[^0-9]/g, '') })}
+          onChangeText={(v) => handleChange({ ...data, protein: v.replace(/[^0-9]/g, '') })}
+          onFocus={cancelAutoSave}
           unit="g"
           icon={<Ionicons name="flash" size={18} color="#2DD4BF" />}
           iconBg="rgba(45, 212, 191, 0.1)"
@@ -129,7 +183,8 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
         <StatCard
           label={t.carbs}
           value={String(Math.round(Number(data.carbs || 0)))}
-          onChangeText={(v) => onChange && onChange({ ...data, carbs: v.replace(/[^0-9]/g, '') })}
+          onChangeText={(v) => handleChange({ ...data, carbs: v.replace(/[^0-9]/g, '') })}
+          onFocus={cancelAutoSave}
           unit="g"
           icon={<Ionicons name="pulse" size={18} color="#F472B6" />}
           iconBg="rgba(244, 114, 182, 0.1)"
@@ -143,7 +198,8 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
         <StatCard
           label={t.fat}
           value={String(Math.round(Number(data.fat || 0)))}
-          onChangeText={(v) => onChange && onChange({ ...data, fat: v.replace(/[^0-9]/g, '') })}
+          onChangeText={(v) => handleChange({ ...data, fat: v.replace(/[^0-9]/g, '') })}
+          onFocus={cancelAutoSave}
           unit="g"
           icon={<Text style={{ fontWeight: '900', color: colors.text }}>T</Text>}
           iconBg="rgba(150, 150, 150, 0.1)"
@@ -154,6 +210,26 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
         />
       </View>
 
+      {/* Auto-save progress bar */}
+      {autoSaveActive && (
+        <View style={styles.autoSaveContainer}>
+          <View style={[styles.autoSaveTrack, { backgroundColor: colors.elemBg }]}>
+            <Animated.View
+              style={[
+                styles.autoSaveFill,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+          </View>
+          <Text style={[styles.autoSaveText, { color: colors.muted }]}>{t.autoSaveHint || 'Automatické uloženie...'}</Text>
+        </View>
+      )}
+
       {/* Actions */}
       <View style={styles.actions}>
         <Pressable
@@ -163,7 +239,7 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
             { backgroundColor: colors.elemBg, borderColor: colors.elemBorder },
             pressed && styles.btnPressed
           ]}
-          onPress={onReset}
+          onPress={() => { cancelAutoSave(); onReset(); }}
         >
           <Ionicons name="refresh" size={18} color={colors.text} />
           <Text style={[styles.btnGhostText, { color: colors.text }]}>{t.back}</Text>
@@ -177,7 +253,7 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
             pressed && styles.btnPressed,
             saving && styles.btnDisabled
           ]}
-          onPress={onSave}
+          onPress={() => { cancelAutoSave(); onSave(); }}
         >
           <Ionicons name={saving ? "time" : "save"} size={18} color={theme === 'light' ? 'white' : 'black'} />
           <Text style={[styles.btnPrimaryText, theme === 'light' && { color: 'white' }]}>{saving ? t.saving : t.saveToLog}</Text>
@@ -196,7 +272,7 @@ function Row({ label, value, bold, colors }) {
   );
 }
 
-function StatCard({ label, value, unit, icon, iconBg, colors, progress, progressColor, editable, onChangeText }) {
+function StatCard({ label, value, unit, icon, iconBg, colors, progress, progressColor, editable, onChangeText, onFocus }) {
   return (
     <View style={[styles.card, styles.smallCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.statRow}>
@@ -210,6 +286,7 @@ function StatCard({ label, value, unit, icon, iconBg, colors, progress, progress
               <TextInput
                 value={value}
                 onChangeText={onChangeText}
+                onFocus={onFocus}
                 keyboardType="numeric"
                 textAlignVertical="bottom"
                 style={[styles.valueSmall, { color: colors.text, padding: 0, paddingVertical: 0, includeFontPadding: false, minWidth: 20 }]}
@@ -412,5 +489,25 @@ const styles = StyleSheet.create({
   },
   btnDisabled: {
     opacity: 0.6,
+  },
+  autoSaveContainer: {
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  autoSaveTrack: {
+    width: '100%',
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  autoSaveFill: {
+    height: '100%',
+    backgroundColor: '#4ADE80',
+    borderRadius: 3,
+  },
+  autoSaveText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
