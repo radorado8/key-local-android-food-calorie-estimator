@@ -10,7 +10,7 @@ function fmt(n, digits = 0) {
   return digits ? v.toFixed(digits) : String(Math.round(v));
 }
 
-export default function NutritionResultCard({ data, imageUri, todayCalories = 0, dailyGoal = 2000, onSave, onReset, onChange, saving, theme, colors, autoSaveEnabled = true, autoSaveSeconds = 5 }) {
+export default function NutritionResultCard({ data, imageUri, todayCalories = 0, dailyGoal = 2000, onSave, onReset, onChange, saving, theme, colors, autoSaveEnabled = true, autoSaveSeconds = 10 }) {
   const t = useTranslation();
   if (!data) return null;
 

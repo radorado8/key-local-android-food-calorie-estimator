@@ -27,7 +27,7 @@ export function SettingsProvider({ children }) {
   const [showImagesInHistory, setShowImagesInHistory] = useState(true);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
-  const [autoSaveSeconds, setAutoSaveSeconds] = useState(5);
+  const [autoSaveSeconds, setAutoSaveSeconds] = useState(10);
 
   useEffect(() => {
     let cancelled = false;
