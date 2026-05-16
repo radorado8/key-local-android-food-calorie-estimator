@@ -28,6 +28,7 @@ export function SettingsProvider({ children }) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [autoSaveSeconds, setAutoSaveSeconds] = useState(10);
+  const [healthConnectEnabled, setHealthConnectEnabled] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,6 +54,7 @@ export function SettingsProvider({ children }) {
           if (typeof parsed?.termsAccepted === 'boolean') setTermsAccepted(parsed.termsAccepted);
           if (typeof parsed?.autoSaveEnabled === 'boolean') setAutoSaveEnabled(parsed.autoSaveEnabled);
           if (Number.isFinite(parsed?.autoSaveSeconds)) setAutoSaveSeconds(parsed.autoSaveSeconds);
+          if (typeof parsed?.healthConnectEnabled === 'boolean') setHealthConnectEnabled(parsed.healthConnectEnabled);
           // Enforce local storage for this version
           setUseLocalStorage(true);
           setHydrated(true);
@@ -71,9 +73,9 @@ export function SettingsProvider({ children }) {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, foodCategories, saveFoodImages, showImagesInHistory, termsAccepted, autoSaveEnabled, autoSaveSeconds })
+      JSON.stringify({ dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, foodCategories, saveFoodImages, showImagesInHistory, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled })
     ).catch(() => { });
-  }, [dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, foodCategories, saveFoodImages, showImagesInHistory, termsAccepted, autoSaveEnabled, autoSaveSeconds, hydrated]);
+  }, [dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, foodCategories, saveFoodImages, showImagesInHistory, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, hydrated]);
 
   const colorScheme = useColorScheme();
 
@@ -108,8 +110,10 @@ export function SettingsProvider({ children }) {
       setAutoSaveEnabled,
       autoSaveSeconds,
       setAutoSaveSeconds,
+      healthConnectEnabled,
+      setHealthConnectEnabled,
     };
-  }, [hydrated, dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, foodCategories, saveFoodImages, showImagesInHistory, termsAccepted, autoSaveEnabled, autoSaveSeconds, colorScheme]);
+  }, [hydrated, dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, foodCategories, saveFoodImages, showImagesInHistory, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, colorScheme]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

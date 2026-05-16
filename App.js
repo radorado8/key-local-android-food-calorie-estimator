@@ -12,6 +12,7 @@ import { enableScreens } from 'react-native-screens';
 import ScannerScreen from './src/screens/ScannerScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import FavoritesScreen from './src/screens/FavoritesScreen';
+import AnalyticsScreen from './src/screens/AnalyticsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { SettingsProvider, useSettings } from './src/state/SettingsContext';
 import { useTranslation } from './src/hooks/useTranslation';
@@ -174,6 +175,8 @@ function AppContent({ startupError }) {
               iconName = focused ? 'list' : 'list-outline';
             } else if (route.name === 'Favorites') {
               iconName = focused ? 'heart' : 'heart-outline';
+            } else if (route.name === 'Analytics') {
+              iconName = focused ? 'bar-chart' : 'bar-chart-outline';
             } else if (route.name === 'Settings') {
               iconName = focused ? 'settings' : 'settings-outline';
             }
@@ -212,6 +215,7 @@ function AppContent({ startupError }) {
         <Tab.Screen name="Scanner" component={ScannerScreen} options={{ title: t.tabScanner }} />
         <Tab.Screen name="History" component={HistoryScreen} options={{ title: t.tabHistory }} />
         <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: t.tabFavorites || 'Obľúbené' }} />
+        <Tab.Screen name="Analytics" component={AnalyticsScreen} options={{ title: t.tabAnalytics || 'Analýza' }} />
         <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: t.tabSettings }} />
       </Tab.Navigator>
     </NavigationContainer>

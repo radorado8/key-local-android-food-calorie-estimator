@@ -113,7 +113,7 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, analysisMode, setAnalysisMode, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds } = useSettings();
+  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, analysisMode, setAnalysisMode, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled } = useSettings();
 
   const colors = theme === 'light'
     ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)', elemBg: '#F1F5F9', elemBorder: 'rgba(0,0,0,0.05)', modalBg: '#FFFFFF' }
@@ -586,6 +586,41 @@ export default function SettingsScreen() {
               </View>
             </>
           )}
+        </View>
+
+        {/* Health Connect Toggle */}
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, paddingRight: 10 }}>
+              <Text style={[styles.label, { color: colors.text }]}>{'Google Health Connect'}</Text>
+              <Text style={[styles.hint, { color: colors.muted, marginBottom: 0 }]}>{t.healthConnectHint || 'Čítanie a zápis spálených kalórií'}</Text>
+            </View>
+            <Switch
+              value={healthConnectEnabled}
+              onValueChange={async (val) => {
+                if (val) {
+                  try {
+                    const { requestHealthPermissions, isHealthConnectAvailable } = require('../api/healthConnectService');
+                    const available = await isHealthConnectAvailable();
+                    if (!available) {
+                      Alert.alert('Health Connect', t.healthConnectUnavailable || 'Health Connect nie je dostupný na tomto zariadení.');
+                      return;
+                    }
+                    const granted = await requestHealthPermissions();
+                    if (!granted) {
+                      Alert.alert('Health Connect', t.healthConnectDenied || 'Povolenie bolo zamietnuté.');
+                      return;
+                    }
+                  } catch (e) {
+                    console.warn('HC permission error:', e);
+                  }
+                }
+                setHealthConnectEnabled(val);
+              }}
+              trackColor={{ false: colors.elemBg, true: colors.accent }}
+              thumbColor={'#fff'}
+            />
+          </View>
         </View>
 
         {/* 5. Analysis Mode */}
