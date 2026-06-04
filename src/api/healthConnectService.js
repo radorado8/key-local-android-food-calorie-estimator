@@ -1,11 +1,11 @@
-// Health Connect service — wraps expo-health-connect with safe fallbacks
+// Health Connect service — wraps react-native-health-connect with safe fallbacks
 // This module is always importable; methods return gracefully if HC is unavailable.
 
 let HC = null;
 try {
-    HC = require('expo-health-connect');
+    HC = require('react-native-health-connect');
 } catch {
-    // expo-health-connect not installed or not linked — all methods will no-op
+    // react-native-health-connect not installed or not linked — all methods will no-op
 }
 
 export async function isHealthConnectAvailable() {

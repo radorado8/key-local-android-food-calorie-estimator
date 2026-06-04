@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Rect, G, Line, Text as SvgText, Path, Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { subscribeToMeals } from '../api/mealService';
-import { readBurnedCaloriesPerDay, isHealthConnectAvailable } from '../api/healthConnectService';
+import { readBurnedCaloriesPerDay, isHealthConnectAvailable, requestHealthPermissions } from '../api/healthConnectService';
 import { useSettings } from '../state/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -24,7 +24,7 @@ function getLocalDateKey(d) {
 
 export default function AnalyticsScreen() {
     const t = useTranslation();
-    const { theme, dailyGoal, useLocalStorage, language, healthConnectEnabled } = useSettings();
+    const { theme, dailyGoal, useLocalStorage, language, healthConnectEnabled, setHealthConnectEnabled } = useSettings();
     const { width: screenWidth } = useWindowDimensions();
 
     const colors = theme === 'light'
@@ -34,6 +34,46 @@ export default function AnalyticsScreen() {
     const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
     const [meals, setMeals] = useState([]);
     const [burnedPerDay, setBurnedPerDay] = useState({});
+    const [hcAvailable, setHcAvailable] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    useEffect(() => {
+        (async () => {
+            const avail = await isHealthConnectAvailable();
+            setHcAvailable(avail);
+        })();
+    }, []);
+
+    const syncHealthConnect = useCallback(async () => {
+        setIsSyncing(true);
+        try {
+            const available = await isHealthConnectAvailable();
+            if (!available) {
+                setIsSyncing(false);
+                return;
+            }
+            let permitted = healthConnectEnabled;
+            if (!permitted) {
+                permitted = await requestHealthPermissions();
+                if (permitted) {
+                    setHealthConnectEnabled(true);
+                }
+            }
+            if (permitted) {
+                const end = new Date();
+                const start = new Date();
+                start.setDate(start.getDate() - 31);
+                start.setHours(0, 0, 0, 0);
+                end.setHours(23, 59, 59, 999);
+                const data = await readBurnedCaloriesPerDay(start, end);
+                setBurnedPerDay(data);
+            }
+        } catch (error) {
+            console.warn('Sync error:', error);
+        } finally {
+            setIsSyncing(false);
+        }
+    }, [healthConnectEnabled, setHealthConnectEnabled]);
 
     useEffect(() => {
         const unsub = subscribeToMeals(useLocalStorage, (fetched) => {
@@ -248,26 +288,60 @@ export default function AnalyticsScreen() {
 
                 {/* Summary Cards Row */}
                 <View style={styles.summaryRow}>
+                    <SummaryCard label={t.totalCalories || 'Celkové kalórie'} value={`${summary.totalCals}`} unit="kcal" icon="nutrition" iconColor="#10B981" colors={colors} />
                     <SummaryCard label={t.avgCalories || 'Priemer/deň'} value={`${summary.avgCals}`} unit="kcal" icon="flame" iconColor="#FB923C" colors={colors} />
-                    <SummaryCard label={t.daysTracked || 'Sledované dni'} value={`${summary.daysTracked}`} unit={`/ ${numDays}`} icon="calendar" iconColor={colors.accent} colors={colors} />
                 </View>
                 <View style={styles.summaryRow}>
+                    <SummaryCard label={t.daysTracked || 'Sledované dni'} value={`${summary.daysTracked}`} unit={`/ ${numDays}`} icon="calendar" iconColor={colors.accent} colors={colors} />
                     <SummaryCard label={t.highestDay || 'Najvyšší deň'} value={`${summary.highest}`} unit="kcal" icon="arrow-up" iconColor="#F87171" colors={colors} />
+                </View>
+                <View style={styles.summaryRow}>
                     <SummaryCard label={t.lowestDay || 'Najnižší deň'} value={`${summary.lowest}`} unit="kcal" icon="arrow-down" iconColor="#4ADE80" colors={colors} />
                 </View>
 
                 {/* Health Connect burned calories */}
-                {healthConnectEnabled && summary.totalBurned > 0 && (
+                {hcAvailable && (
                     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                         <View style={styles.burnedRow}>
-                            <Ionicons name="fitness" size={22} color="#F472B6" />
+                            <Ionicons name="fitness" size={24} color="#F472B6" />
                             <View style={{ flex: 1, marginLeft: 10 }}>
                                 <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 2 }]}>{t.burnedCalories || 'Spálené kalórie'}</Text>
                                 <Text style={{ color: colors.muted, fontSize: 13 }}>Google Health Connect</Text>
                             </View>
-                            <Text style={{ color: '#F472B6', fontSize: 22, fontWeight: '800' }}>{Math.round(summary.totalBurned)}</Text>
-                            <Text style={{ color: colors.muted, fontSize: 13, marginLeft: 3 }}>kcal</Text>
+                            {healthConnectEnabled ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
+                                    <Text style={{ color: '#F472B6', fontSize: 22, fontWeight: '800' }}>{Math.round(summary.totalBurned)}</Text>
+                                    <Text style={{ color: colors.muted, fontSize: 13 }}>kcal</Text>
+                                </View>
+                            ) : (
+                                <Text style={{ color: colors.muted, fontSize: 13, fontWeight: '500' }}>{t.notConnected || 'Neprepojené'}</Text>
+                            )}
                         </View>
+
+                        <Pressable
+                            style={[
+                                styles.syncBtn,
+                                {
+                                    backgroundColor: colors.elemBg,
+                                    borderColor: colors.border,
+                                    marginTop: 12,
+                                    opacity: isSyncing ? 0.6 : 1,
+                                }
+                            ]}
+                            disabled={isSyncing}
+                            onPress={syncHealthConnect}
+                        >
+                            {isSyncing ? (
+                                <Text style={[styles.syncBtnText, { color: colors.text }]}>{t.syncing || 'Preberám...'}</Text>
+                            ) : (
+                                <>
+                                    <Ionicons name="sync-outline" size={16} color={colors.text} style={{ marginRight: 6 }} />
+                                    <Text style={[styles.syncBtnText, { color: colors.text }]}>
+                                        {healthConnectEnabled ? (t.downloadBurnedCalories || 'Stiahnuť spálené kalórie') : (t.connectHealthConnect || 'Prepojiť Google Health')}
+                                    </Text>
+                                </>
+                            )}
+                        </Pressable>
                     </View>
                 )}
 
@@ -319,7 +393,7 @@ export default function AnalyticsScreen() {
                 </View>
 
                 {/* Net calories card */}
-                {healthConnectEnabled && summary.totalBurned > 0 && (
+                {healthConnectEnabled && (
                     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                         <Text style={[styles.cardTitle, { color: colors.text }]}>{t.netCalories || 'Čisté kalórie'}</Text>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
@@ -411,4 +485,17 @@ const styles = StyleSheet.create({
     macroRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     macroDot: { width: 10, height: 10, borderRadius: 5 },
     burnedRow: { flexDirection: 'row', alignItems: 'center' },
+    syncBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+    },
+    syncBtnText: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
 });
