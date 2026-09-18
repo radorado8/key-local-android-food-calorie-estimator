@@ -19,7 +19,6 @@ export function SettingsProvider({ children }) {
   const [language, setLanguage] = useState(initialLang);
   const [theme, setTheme] = useState('system');
   const [useLocalStorage, setUseLocalStorage] = useState(true);
-  const [analysisMode, setAnalysisMode] = useState('auto'); // 'auto' | 'local' | 'cloud'
   const [customModels, setCustomModels] = useState([]);
   const [foodCategories, setFoodCategories] = useState([]);
   const [hydrated, setHydrated] = useState(false);
@@ -46,7 +45,6 @@ export function SettingsProvider({ children }) {
           if (typeof parsed?.aiModel === 'string') setAiModel(parsed.aiModel);
           if (typeof parsed?.language === 'string') setLanguage(parsed.language);
           if (typeof parsed?.theme === 'string') setTheme(parsed.theme);
-          if (typeof parsed?.analysisMode === 'string') setAnalysisMode(parsed.analysisMode);
           if (Array.isArray(parsed?.customModels)) setCustomModels(parsed.customModels);
           if (Array.isArray(parsed?.foodCategories)) setFoodCategories(parsed.foodCategories);
           if (typeof parsed?.saveFoodImages === 'boolean') setSaveFoodImages(parsed.saveFoodImages);
@@ -73,9 +71,9 @@ export function SettingsProvider({ children }) {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, foodCategories, saveFoodImages, showImagesInHistory, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled })
+      JSON.stringify({ dailyGoal, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled })
     ).catch(() => { });
-  }, [dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, foodCategories, saveFoodImages, showImagesInHistory, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, hydrated]);
+  }, [dailyGoal, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, hydrated]);
 
   const colorScheme = useColorScheme();
 
@@ -94,8 +92,6 @@ export function SettingsProvider({ children }) {
       setTheme,
       useLocalStorage,
       setUseLocalStorage,
-      analysisMode,
-      setAnalysisMode,
       customModels,
       setCustomModels,
       foodCategories,
@@ -113,7 +109,7 @@ export function SettingsProvider({ children }) {
       healthConnectEnabled,
       setHealthConnectEnabled,
     };
-  }, [hydrated, dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, customModels, foodCategories, saveFoodImages, showImagesInHistory, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, colorScheme]);
+  }, [hydrated, dailyGoal, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, colorScheme]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

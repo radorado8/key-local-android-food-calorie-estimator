@@ -3,9 +3,9 @@
     "name": "Calories AI Local",
     "slug": "android-food-calorie-estimator",
     "scheme": "keylocalfoodestimator",
-    "version": "1.0.3",
+    "version": "1.0.5",
     "orientation": "default",
-    "icon": "./assets/icon_key_fire.png",
+    "icon": "./assets/icon_key_fire_android.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,17 +15,17 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rados.keylocalandroidfoodcalorieestimator"
+      "bundleIdentifier": "com.rados.keylocalandroidfoodcalorieestimator",
+      "deploymentTarget": "15.0"
     },
     "android": {
       "package": "com.rados.keylocalandroidfoodcalorieestimator",
-      "versionCode": 1,
+      "versionCode": 144,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon_key_fire.png",
+        "foregroundImage": "./assets/icon_key_fire_android.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "launchMode": "singleTask"
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,7 +37,7 @@
         {
           "android": {
             "compileSdkVersion": 36,
-            "targetSdkVersion": 35,
+            "targetSdkVersion": 36,
             "minSdkVersion": 26,
             "ndkVersion": "27.2.12479018",
             "gradleProperties": {
@@ -64,7 +64,6 @@
       "expo-secure-store",
       "expo-document-picker",
       "expo-file-system",
-      "react-native-fast-tflite",
       [
         "expo-health-connect",
         {
@@ -76,6 +75,9 @@
       ],
       "./plugins/withShortcutIcons",
       "./plugins/withExtractNativeLibs",
+      "./plugins/withAllModulesBuildTools",
+      "./plugins/withIosPodsDeploymentTarget",
+      "./plugins/withIosSceneLifecycle",
       [
         "expo-splash-screen",
         {

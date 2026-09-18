@@ -1,12 +1,21 @@
 {
   "name": "android-food-calorie-estimator",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "expo-health-connect"
+        ]
+      }
+    }
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -15,18 +24,17 @@
     "@react-navigation/native": "^7.1.26",
     "@shopify/react-native-skia": "2.2.12",
     "babel-preset-expo": "~54.0.0",
-    "expo": "^54.0.33",
+    "expo": "~54.0.37",
     "expo-asset": "~12.0.12",
     "expo-build-properties": "~1.0.10",
     "expo-camera": "~17.0.10",
-    "expo-constants": "~18.0.13",
-    "expo-dev-client": "~6.0.20",
+    "expo-constants": "~18.0.14",
     "expo-document-picker": "~14.0.8",
-    "expo-file-system": "~19.0.21",
+    "expo-file-system": "~19.0.24",
     "expo-health-connect": "^0.1.1",
     "expo-image-manipulator": "~14.0.8",
     "expo-image-picker": "~17.0.10",
-    "expo-localization": "~17.0.8",
+    "expo-localization": "~17.0.9",
     "expo-navigation-bar": "~5.0.10",
     "expo-quick-actions": "^6.0.0",
     "expo-secure-store": "~15.0.8",
@@ -35,13 +43,13 @@
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
     "react-native": "0.81.5",
-    "react-native-fast-tflite": "^2.0.0",
     "react-native-health-connect": "^3.5.3",
     "react-native-image-viewing": "^0.2.2",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
-    "react-native-svg": "15.12.1"
+    "react-native-svg": "15.12.1",
+    "react-native-worklets": "0.5.1"
   },
   "private": true
 }

@@ -113,7 +113,7 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, analysisMode, setAnalysisMode, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled } = useSettings();
+  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled } = useSettings();
 
   const colors = theme === 'light'
     ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)', elemBg: '#F1F5F9', elemBorder: 'rgba(0,0,0,0.05)', modalBg: '#FFFFFF' }
@@ -623,20 +623,6 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* 5. Analysis Mode */}
-        <Dropdown
-          label={t.analysisMode || "Analysis Mode"}
-          hint={t.analysisModeHint}
-          value={analysisMode}
-          options={[
-            { id: 'auto', label: t.modeAuto || "Auto (Key based)" },
-            { id: 'cloud', label: t.modeCloud || "Cloud (Gemini)" },
-            { id: 'local', label: t.modeLocal || "Offline (On-Device)" },
-          ]}
-          onSelect={setAnalysisMode}
-          colors={colors}
-        />
-
         {/* 5. AI Model */}
         <Dropdown
           label={t.aiModel}
@@ -795,17 +781,9 @@ export default function SettingsScreen() {
             ☕ {t.buyMeCoffee}
           </Text>
 
-          <Text style={[styles.hint, { color: colors.muted, marginBottom: 4 }]}>{t.modelSource || 'Model Source:'}</Text>
-          <Text
-            style={{ color: colors.accent, fontSize: 13, textDecorationLine: 'underline' }}
-            onPress={() => Linking.openURL('https://github.com/google-coral/edgetpu/blob/master/test_data/mobilenet_v2_1.0_224_quant.tflite')}
-          >
-            Google Coral (MobileNet V2)
-          </Text>
-
           <Text style={[styles.hint, { color: colors.muted, marginBottom: 4, marginTop: 12 }]}>{t.poweredBy || 'Powered by:'}</Text>
           <Text style={{ color: colors.muted, fontSize: 13 }}>
-            Expo • React Native • Fast TFLite • Gemini API
+            Expo • React Native • Gemini API
           </Text>
         </View>
       </ScrollView>

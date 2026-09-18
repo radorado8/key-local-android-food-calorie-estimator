@@ -29,7 +29,7 @@ import { useTranslation } from '../hooks/useTranslation';
 
 export default function ScannerScreen({ navigation, route }) {
   const t = useTranslation();
-  const { dailyGoal, aiModel, language, theme, useLocalStorage, analysisMode, saveFoodImages, autoSaveEnabled, autoSaveSeconds } = useSettings();
+  const { dailyGoal, aiModel, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds } = useSettings();
   const insets = useSafeAreaInsets();
 
   // Track handled actions
@@ -265,8 +265,6 @@ export default function ScannerScreen({ navigation, route }) {
           aiModel,
           weightG,
           language,
-          analysisMode,
-          imageUri: asset.uri,
           signal: controller.signal // Pass signal
         });
 
