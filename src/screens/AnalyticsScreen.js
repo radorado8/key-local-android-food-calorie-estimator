@@ -376,9 +376,9 @@ export default function AnalyticsScreen() {
                                 )}
                                 {/* Center text */}
                                 <SvgText x={donutCx} y={donutCy - 4} fill={colors.text} fontSize="18" fontWeight="800" textAnchor="middle">
-                                    {Math.round(totalMacroG)}g
+                                    {`${Math.round(totalMacroG)}g`}
                                 </SvgText>
-                                <SvgText x={donutCx} y={donutCy + 14} fill={colors.muted} fontSize="11" fontWeight="600" textAnchor="middle">
+                                <SvgText x={donutCx} y={donutCy + 16} fill={colors.muted} fontSize="11" fontWeight="600" textAnchor="middle">
                                     {t.totalLabel || 'Celkom'}
                                 </SvgText>
                             </Svg>

@@ -45,6 +45,7 @@ export async function addFavorite(meal) {
 
     const favorite = {
         id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
         name: meal.name,
         calories: meal.calories,
         protein: meal.protein,

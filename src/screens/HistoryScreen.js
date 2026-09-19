@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   ActivityIndicator,
@@ -11,6 +11,8 @@ import {
   View,
   Image,
   AppState,
+  Keyboard,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ImageView from "react-native-image-viewing";
@@ -56,6 +58,13 @@ function dateToKey(dateObj) {
 function dateKeyToDate(dateKey) {
   const [yyyy, mm, dd] = String(dateKey).split('-').map(Number);
   return new Date(yyyy, (mm || 1) - 1, dd || 1, 12, 0, 0);
+}
+
+function normalizeSearchText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase();
 }
 
 function formatDateLabelShort(dateObj, t, language, now) {
@@ -106,6 +115,10 @@ export default function HistoryScreen() {
   const [addOpen, setAddOpen] = useState(false);
   const [editMeal, setEditMeal] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = React.useRef(null);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const colors = theme === 'light'
     ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)' }
@@ -153,6 +166,18 @@ export default function HistoryScreen() {
     return () => unsub();
   }, [useLocalStorage]);
 
+  useEffect(() => {
+    if (!isSearching) return;
+    const focusTimer = setTimeout(() => searchInputRef.current?.focus(), 100);
+    return () => clearTimeout(focusTimer);
+  }, [isSearching]);
+
+  const closeSearch = useCallback(() => {
+    setSearchQuery('');
+    setIsSearching(false);
+    Keyboard.dismiss();
+  }, []);
+
   // Always expand today and the most recent meal type when screen is focused
   useFocusEffect(
     useCallback(() => {
@@ -196,7 +221,25 @@ export default function HistoryScreen() {
     }, [meals])
   );
 
+  const searchIndex = useMemo(() => meals
+    .map(item => ({
+      item,
+      normalizedName: normalizeSearchText(item.name),
+      addedAt: item.dateObj?.getTime?.() || Date.parse(item.timestamp || '') || Number(item.id) || 0,
+    }))
+    .sort((a, b) => b.addedAt - a.addedAt), [meals]);
+
+  const searchResults = useMemo(() => {
+    const normalizedQuery = normalizeSearchText(deferredSearchQuery).trim();
+    if (!normalizedQuery) return [];
+    return searchIndex
+      .filter(entry => entry.normalizedName.includes(normalizedQuery))
+      .map(entry => entry.item);
+  }, [deferredSearchQuery, searchIndex]);
+
   const sections = useMemo(() => {
+    if (isSearching) return searchResults.length ? [{ dateKey: '__search__', data: searchResults }] : [];
+
     const groups = new Map();
 
     for (const meal of meals) {
@@ -229,7 +272,7 @@ export default function HistoryScreen() {
         allItems: items,
       };
     });
-  }, [meals, isMobile, t, language, now]);
+  }, [meals, isMobile, t, language, now, isSearching, searchResults]);
 
   const toggleDay = (dateKey) => {
     setExpandedDays((prev) => ({ ...prev, [dateKey]: !prev[dateKey] }));
@@ -253,12 +296,30 @@ export default function HistoryScreen() {
 
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
       <View style={[styles.headerBlock, { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>{t.historyTitle}</Text>
         <Pressable
-          style={({ pressed }) => [
-            { position: 'absolute', right: 16, top: 13, padding: 7, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
-            pressed && { opacity: 0.7 }
-          ]}
+          accessibilityLabel={isSearching ? (t.close || 'Zavrieť') : (t.searchFood || 'Hľadať jedlo')}
+          style={({ pressed }) => [styles.headerIcon, { left: 16, backgroundColor: colors.card, borderColor: colors.border }, pressed && { opacity: 0.7 }]}
+          onPress={() => isSearching ? closeSearch() : setIsSearching(true)}
+        >
+          <Ionicons name={isSearching ? 'close' : 'search'} size={22} color={colors.text} />
+        </Pressable>
+        {isSearching ? (
+          <TextInput
+            ref={searchInputRef}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={t.searchFood || 'Hľadať jedlo'}
+            placeholderTextColor={colors.muted}
+            style={[styles.searchInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.card }]}
+            returnKeyType="search"
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+        ) : (
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t.historyTitle}</Text>
+        )}
+        <Pressable
+          style={({ pressed }) => [styles.headerIcon, { right: 16, backgroundColor: colors.card, borderColor: colors.border }, pressed && { opacity: 0.7 }]}
           onPress={() => setAddOpen(true)}
         >
           <Ionicons name="add" size={24} color={colors.text} />
@@ -273,6 +334,8 @@ export default function HistoryScreen() {
         indicatorStyle={theme === 'light' ? 'black' : 'white'}
         stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section }) => {
+          if (isSearching) return null;
+
           const isDayExpanded = expandedDays[section.dateKey] === true;
           const totals = section.totals;
 
@@ -422,10 +485,51 @@ export default function HistoryScreen() {
             </View>
           );
         }}
-        renderItem={() => null}
+        renderItem={({ item }) => {
+          if (!isSearching) return null;
+          return (
+            <View style={{ marginBottom: 8 }}>
+              <MealItem
+                item={item}
+                t={t}
+                colors={colors}
+                onEdit={() => {
+                  setEditMeal(item);
+                  setEditOpen(true);
+                }}
+                onFavorite={async () => {
+                  try {
+                    await addFavorite(item);
+                    Alert.alert(t.addedToFavorites || '❤️', t.addedToFavoritesMsg || item.name);
+                  } catch (e) {
+                    Alert.alert(t.errorTitle, e.message || t.errorTitle);
+                  }
+                }}
+                onDelete={() => {
+                  Alert.alert(t.deleteMealTitle, t.deleteMealMsg, [
+                    { text: t.cancel, style: 'cancel' },
+                    {
+                      text: t.delete,
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await deleteMeal(item.id, useLocalStorage);
+                        } catch (e) {
+                          Alert.alert(t.errorTitle, e.message || t.errorTitle);
+                        }
+                      },
+                    },
+                  ]);
+                }}
+                onImagePress={() => setSelectedImage(item.imageUri)}
+                showImage={showImagesInHistory}
+              />
+            </View>
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.center}>
-            <Text style={[styles.muted, { color: colors.muted }]}>{t.emptyHistory}</Text>
+            <Text style={[styles.muted, { color: colors.muted }]}>{isSearching ? (t.noSearchResults || 'Nenašli sa žiadne jedlá.') : t.emptyHistory}</Text>
           </View>
         }
       />
@@ -576,15 +680,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   headerBlock: {
+    height: 68,
     paddingHorizontal: 16,
-    paddingTop: 18,
-    paddingBottom: 8,
+    paddingVertical: 0,
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 22,
     fontWeight: '800',
     textAlign: 'center',
+  },
+  headerIcon: {
+    position: 'absolute',
+    top: 16,
+    padding: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  searchInput: {
+    position: 'absolute',
+    left: 58,
+    right: 58,
+    top: 13,
+    height: 42,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    fontSize: 16,
   },
   sectionContainer: {
     marginBottom: 6, // Reduced from 20

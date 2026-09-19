@@ -3,7 +3,7 @@
     "name": "Calories AI Local",
     "slug": "android-food-calorie-estimator",
     "scheme": "keylocalfoodestimator",
-    "version": "1.0.5",
+    "version": "1.0.7",
     "orientation": "default",
     "icon": "./assets/icon_key_fire_android.png",
     "userInterfaceStyle": "automatic",
@@ -15,12 +15,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rados.keylocalandroidfoodcalorieestimator",
-      "deploymentTarget": "15.0"
+      "bundleIdentifier": "com.rados.keylocalandroidfoodcalorieestimator"
     },
     "android": {
       "package": "com.rados.keylocalandroidfoodcalorieestimator",
-      "versionCode": 144,
+      "versionCode": 147,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon_key_fire_android.png",
         "backgroundColor": "#ffffff"
@@ -43,6 +42,9 @@
             "gradleProperties": {
               "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g"
             }
+          },
+          "ios": {
+            "deploymentTarget": "15.1"
           }
         }
       ],

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
     Alert,
     SectionList,
@@ -7,6 +7,8 @@ import {
     Text,
     View,
     Image,
+    Keyboard,
+    TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ImageView from "react-native-image-viewing";
@@ -21,6 +23,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const EXPANDED_KEY = 'favorites.expandedCategories';
 
+function normalizeSearchText(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase();
+}
+
 export default function FavoritesScreen() {
     const t = useTranslation();
     const { theme, showImagesInHistory, useLocalStorage, foodCategories } = useSettings();
@@ -32,6 +41,10 @@ export default function FavoritesScreen() {
     const [weightDialogOpen, setWeightDialogOpen] = useState(false);
     const [weightItem, setWeightItem] = useState(null);
     const [expandedCategories, setExpandedCategories] = useState({});
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const searchInputRef = useRef(null);
+    const deferredSearchQuery = useDeferredValue(searchQuery);
 
     const colors = theme === 'light'
         ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)' }
@@ -42,6 +55,18 @@ export default function FavoritesScreen() {
             setFavorites(fetched);
         });
         return () => unsub();
+    }, []);
+
+    useEffect(() => {
+        if (!isSearching) return;
+        const focusTimer = setTimeout(() => searchInputRef.current?.focus(), 100);
+        return () => clearTimeout(focusTimer);
+    }, [isSearching]);
+
+    const closeSearch = useCallback(() => {
+        setSearchQuery('');
+        setIsSearching(false);
+        Keyboard.dismiss();
     }, []);
 
     // Load persisted expanded/collapsed state
@@ -120,7 +145,25 @@ export default function FavoritesScreen() {
         });
     }, []);
 
+    const searchIndex = useMemo(() => favorites
+        .map(item => ({
+            item,
+            normalizedName: normalizeSearchText(item.name),
+            addedAt: Date.parse(item.createdAt || item.timestamp || '') || Number(item.id) || 0,
+        }))
+        .sort((a, b) => b.addedAt - a.addedAt), [favorites]);
+
+    const searchResults = useMemo(() => {
+        const normalizedQuery = normalizeSearchText(deferredSearchQuery).trim();
+        if (!normalizedQuery) return [];
+        return searchIndex
+            .filter(entry => entry.normalizedName.includes(normalizedQuery))
+            .map(entry => entry.item);
+    }, [deferredSearchQuery, searchIndex]);
+
     const sections = useMemo(() => {
+        if (isSearching) return searchResults.length ? [{ categoryId: '__search__', title: null, data: searchResults }] : [];
+
         const uncategorized = favorites.filter(f => !f.categoryId);
         const categorized = new Map();
 
@@ -146,17 +189,35 @@ export default function FavoritesScreen() {
         }
 
         return result;
-    }, [favorites, foodCategories]);
+    }, [favorites, foodCategories, isSearching, searchResults]);
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
             <View style={[styles.headerBlock, { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }]}>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>{t.favoritesTitle || 'Obľúbené'}</Text>
                 <Pressable
-                    style={({ pressed }) => [
-                        { position: 'absolute', right: 16, top: 13, padding: 7, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
-                        pressed && { opacity: 0.7 }
-                    ]}
+                    accessibilityLabel={isSearching ? (t.close || 'Zavrieť') : (t.searchFood || 'Hľadať jedlo')}
+                    style={({ pressed }) => [styles.headerIcon, { left: 16, backgroundColor: colors.card, borderColor: colors.border }, pressed && { opacity: 0.7 }]}
+                    onPress={() => isSearching ? closeSearch() : setIsSearching(true)}
+                >
+                    <Ionicons name={isSearching ? 'close' : 'search'} size={22} color={colors.text} />
+                </Pressable>
+                {isSearching ? (
+                    <TextInput
+                        ref={searchInputRef}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholder={t.searchFood || 'Hľadať jedlo'}
+                        placeholderTextColor={colors.muted}
+                        style={[styles.searchInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.card }]}
+                        returnKeyType="search"
+                        autoCorrect={false}
+                        autoCapitalize="none"
+                    />
+                ) : (
+                    <Text style={[styles.headerTitle, { color: colors.text }]}>{t.favoritesTitle || 'Obľúbené'}</Text>
+                )}
+                <Pressable
+                    style={({ pressed }) => [styles.headerIcon, { right: 16, backgroundColor: colors.card, borderColor: colors.border }, pressed && { opacity: 0.7 }]}
                     onPress={() => setAddOpen(true)}
                 >
                     <Ionicons name="add" size={24} color={colors.text} />
@@ -218,7 +279,7 @@ export default function FavoritesScreen() {
                 }}
                 ListEmptyComponent={
                     <View style={styles.center}>
-                        <Text style={[styles.muted, { color: colors.muted }]}>{t.emptyFavorites || 'Zatiaľ žiadne obľúbené jedlá.'}</Text>
+                        <Text style={[styles.muted, { color: colors.muted }]}>{isSearching ? (t.noSearchResults || 'Nenašli sa žiadne jedlá.') : (t.emptyFavorites || 'Zatiaľ žiadne obľúbené jedlá.')}</Text>
                     </View>
                 }
             />
@@ -372,15 +433,33 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     headerBlock: {
+        height: 68,
         paddingHorizontal: 16,
-        paddingTop: 18,
-        paddingBottom: 8,
+        paddingVertical: 0,
         alignItems: 'center',
     },
     headerTitle: {
         fontSize: 22,
         fontWeight: '800',
         textAlign: 'center',
+    },
+    headerIcon: {
+        position: 'absolute',
+        top: 16,
+        padding: 7,
+        borderRadius: 20,
+        borderWidth: 1,
+    },
+    searchInput: {
+        position: 'absolute',
+        left: 58,
+        right: 58,
+        top: 13,
+        height: 42,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        fontSize: 16,
     },
     itemCard: {
         paddingVertical: 12,
