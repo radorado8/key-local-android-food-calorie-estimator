@@ -113,7 +113,7 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled } = useSettings();
+  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled } = useSettings();
 
   const colors = theme === 'light'
     ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)', elemBg: '#F1F5F9', elemBorder: 'rgba(0,0,0,0.05)', modalBg: '#FFFFFF' }
@@ -541,6 +541,21 @@ export default function SettingsScreen() {
             <Switch
               value={showImagesInHistory}
               onValueChange={setShowImagesInHistory}
+              trackColor={{ false: colors.elemBg, true: colors.accent }}
+              thumbColor={'#fff'}
+            />
+          </View>
+
+          <View style={{ height: 1, backgroundColor: colors.elemBorder, marginVertical: 16 }} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, paddingRight: 10 }}>
+              <Text style={[styles.label, { color: colors.text }]}>{t.uniqueHistorySearchTitle}</Text>
+              <Text style={[styles.hint, { color: colors.muted, marginBottom: 0 }]}>{t.uniqueHistorySearchHint}</Text>
+            </View>
+            <Switch
+              value={showUniqueHistorySearchResults}
+              onValueChange={setShowUniqueHistorySearchResults}
               trackColor={{ false: colors.elemBg, true: colors.accent }}
               thumbColor={'#fff'}
             />

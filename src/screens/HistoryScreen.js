@@ -24,6 +24,7 @@ import MealEditDialog from '../components/MealEditDialog';
 import { useSettings } from '../state/SettingsContext';
 
 import { useTranslation } from '../hooks/useTranslation';
+import { normalizeFoodSearchText, sortFoodSearchResults } from '../utils/foodSearch';
 
 const MEAL_CATEGORIES = [
   { id: 'breakfast', labelKey: 'catBreakfast', start: 1, end: 10 },
@@ -60,13 +61,6 @@ function dateKeyToDate(dateKey) {
   return new Date(yyyy, (mm || 1) - 1, dd || 1, 12, 0, 0);
 }
 
-function normalizeSearchText(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLocaleLowerCase();
-}
-
 function formatDateLabelShort(dateObj, t, language, now) {
   const dateStr = dateObj.toLocaleDateString(language, { weekday: 'short', day: '2-digit', month: '2-digit' });
 
@@ -100,7 +94,7 @@ function formatDateLabelLong(dateObj, t, language, now) {
 
 export default function HistoryScreen() {
   const t = useTranslation();
-  const { theme, useLocalStorage, language, dailyGoal, showImagesInHistory } = useSettings();
+  const { theme, useLocalStorage, language, dailyGoal, showImagesInHistory, showUniqueHistorySearchResults } = useSettings();
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = React.useRef(null);
@@ -224,18 +218,24 @@ export default function HistoryScreen() {
   const searchIndex = useMemo(() => meals
     .map(item => ({
       item,
-      normalizedName: normalizeSearchText(item.name),
+      normalizedName: normalizeFoodSearchText(item.name),
       addedAt: item.dateObj?.getTime?.() || Date.parse(item.timestamp || '') || Number(item.id) || 0,
     }))
     .sort((a, b) => b.addedAt - a.addedAt), [meals]);
 
   const searchResults = useMemo(() => {
-    const normalizedQuery = normalizeSearchText(deferredSearchQuery).trim();
-    if (!normalizedQuery) return [];
-    return searchIndex
-      .filter(entry => entry.normalizedName.includes(normalizedQuery))
+    const sortedResults = sortFoodSearchResults(searchIndex, deferredSearchQuery);
+    if (!showUniqueHistorySearchResults) return sortedResults.map(entry => entry.item);
+
+    const seenNames = new Set();
+    return sortedResults
+      .filter(entry => {
+        if (seenNames.has(entry.normalizedName)) return false;
+        seenNames.add(entry.normalizedName);
+        return true;
+      })
       .map(entry => entry.item);
-  }, [deferredSearchQuery, searchIndex]);
+  }, [deferredSearchQuery, searchIndex, showUniqueHistorySearchResults]);
 
   const sections = useMemo(() => {
     if (isSearching) return searchResults.length ? [{ dateKey: '__search__', data: searchResults }] : [];
@@ -330,6 +330,7 @@ export default function HistoryScreen() {
         ref={scrollRef}
         sections={sections}
         keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 1, paddingBottom: 100 }}
         indicatorStyle={theme === 'light' ? 'black' : 'white'}
         stickySectionHeadersEnabled={false}

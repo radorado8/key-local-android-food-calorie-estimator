@@ -20,15 +20,9 @@ import WeightDialog from '../components/WeightDialog';
 import { useSettings } from '../state/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { normalizeFoodSearchText, sortFoodSearchResults } from '../utils/foodSearch';
 
 const EXPANDED_KEY = 'favorites.expandedCategories';
-
-function normalizeSearchText(value) {
-    return String(value || '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLocaleLowerCase();
-}
 
 export default function FavoritesScreen() {
     const t = useTranslation();
@@ -148,17 +142,13 @@ export default function FavoritesScreen() {
     const searchIndex = useMemo(() => favorites
         .map(item => ({
             item,
-            normalizedName: normalizeSearchText(item.name),
+            normalizedName: normalizeFoodSearchText(item.name),
             addedAt: Date.parse(item.createdAt || item.timestamp || '') || Number(item.id) || 0,
         }))
         .sort((a, b) => b.addedAt - a.addedAt), [favorites]);
 
     const searchResults = useMemo(() => {
-        const normalizedQuery = normalizeSearchText(deferredSearchQuery).trim();
-        if (!normalizedQuery) return [];
-        return searchIndex
-            .filter(entry => entry.normalizedName.includes(normalizedQuery))
-            .map(entry => entry.item);
+        return sortFoodSearchResults(searchIndex, deferredSearchQuery).map(entry => entry.item);
     }, [deferredSearchQuery, searchIndex]);
 
     const sections = useMemo(() => {
@@ -227,6 +217,7 @@ export default function FavoritesScreen() {
             <SectionList
                 sections={sections}
                 keyExtractor={(item) => item.id}
+                keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 }}
                 stickySectionHeadersEnabled={false}
                 renderSectionHeader={({ section }) => {

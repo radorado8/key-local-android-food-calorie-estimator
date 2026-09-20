@@ -3,7 +3,7 @@
     "name": "Calories AI Local",
     "slug": "android-food-calorie-estimator",
     "scheme": "keylocalfoodestimator",
-    "version": "1.0.7",
+    "version": "1.0.9",
     "orientation": "default",
     "icon": "./assets/icon_key_fire_android.png",
     "userInterfaceStyle": "automatic",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rados.keylocalandroidfoodcalorieestimator"
+      "bundleIdentifier": "com.rados.caloriesai"
     },
     "android": {
       "package": "com.rados.keylocalandroidfoodcalorieestimator",
