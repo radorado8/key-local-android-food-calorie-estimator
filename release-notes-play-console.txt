@@ -1,55 +1,40 @@
 <en-US>
-• Faster food search in History and Favorites
-• Search now ignores accents and punctuation, with more relevant results
-• Option to show duplicate foods only once in History search
-• Improved controls while the keyboard is open
+• Add meals by text or voice recording.
+• Faster, smarter search in History and Favorites.
+• Edit meals more easily and repeat saved meals with a custom weight.
 </en-US>
-
 <cs-CZ>
-• Rychlejší vyhledávání jídel v Historii a Oblíbených
-• Vyhledávání nyní ignoruje diakritiku a interpunkci a nabízí relevantnější výsledky
-• Možnost zobrazit duplicitní jídla ve vyhledávání Historie pouze jednou
-• Vylepšené ovládání při otevřené klávesnici
+• Přidávejte jídla textem nebo hlasovým záznamem.
+• Rychlejší a chytřejší vyhledávání v Historii a Oblíbených.
+• Snadnější úprava jídel a opakování uložených jídel s vlastní hmotností.
 </cs-CZ>
-
 <de-DE>
-• Schnellere Lebensmittelsuche in Verlauf und Favoriten
-• Die Suche ignoriert jetzt Akzente und Satzzeichen und liefert relevantere Ergebnisse
-• Option, doppelte Lebensmittel in der Verlaufssuche nur einmal anzuzeigen
-• Verbesserte Bedienung bei geöffneter Tastatur
+• Füge Mahlzeiten per Text oder Sprachaufnahme hinzu.
+• Schnellere und intelligentere Suche in Verlauf und Favoriten.
+• Bearbeite Mahlzeiten einfacher und wiederhole gespeicherte Mahlzeiten mit eigener Menge.
 </de-DE>
-
 <es-ES>
-• Búsqueda de alimentos más rápida en Historial y Favoritos
-• La búsqueda ahora ignora acentos y signos de puntuación, con resultados más relevantes
-• Opción para mostrar alimentos duplicados solo una vez en la búsqueda del Historial
-• Controles mejorados con el teclado abierto
+• Añade comidas mediante texto o grabación de voz.
+• Búsqueda más rápida e inteligente en Historial y Favoritos.
+• Edita comidas fácilmente y repite comidas guardadas con un peso personalizado.
 </es-ES>
-
 <fr-FR>
-• Recherche d’aliments plus rapide dans l’Historique et les Favoris
-• La recherche ignore désormais les accents et la ponctuation, avec des résultats plus pertinents
-• Option pour n’afficher les aliments en double qu’une seule fois dans la recherche de l’Historique
-• Commandes améliorées lorsque le clavier est ouvert
+• Ajoutez des repas par texte ou enregistrement vocal.
+• Recherche plus rapide et plus intelligente dans l’historique et les favoris.
+• Modifiez facilement les repas et répétez-les avec un poids personnalisé.
 </fr-FR>
-
 <it-IT>
-• Ricerca degli alimenti più veloce in Cronologia e Preferiti
-• La ricerca ora ignora accenti e punteggiatura e offre risultati più pertinenti
-• Opzione per mostrare gli alimenti duplicati una sola volta nella ricerca della Cronologia
-• Comandi migliorati quando la tastiera è aperta
+• Aggiungi pasti tramite testo o registrazione vocale.
+• Ricerca più veloce e intelligente in Cronologia e Preferiti.
+• Modifica facilmente i pasti e ripeti quelli salvati con un peso personalizzato.
 </it-IT>
-
 <pl-PL>
-• Szybsze wyszukiwanie produktów w Historii i Ulubionych
-• Wyszukiwanie ignoruje teraz znaki diakrytyczne i interpunkcję oraz daje trafniejsze wyniki
-• Opcja wyświetlania duplikatów produktów tylko raz w wyszukiwaniu Historii
-• Ulepszone sterowanie przy otwartej klawiaturze
+• Dodawaj posiłki tekstem lub nagraniem głosowym.
+• Szybsze i inteligentniejsze wyszukiwanie w Historii i Ulubionych.
+• Łatwiej edytuj posiłki i powtarzaj zapisane pozycje z własną wagą.
 </pl-PL>
-
 <sk>
-• Rýchlejšie vyhľadávanie jedál v Histórii a Obľúbených
-• Vyhľadávanie teraz ignoruje diakritiku a interpunkciu a prináša relevantnejšie výsledky
-• Možnosť zobraziť duplicitné jedlá vo vyhľadávaní Histórie iba raz
-• Vylepšené ovládanie pri otvorenej klávesnici
+• Pridávajte jedlá textom alebo hlasovým záznamom.
+• Rýchlejšie a inteligentnejšie vyhľadávanie v Histórii a Obľúbených.
+• Jednoduchšia úprava jedál a opakovanie uložených jedál s vlastnou hmotnosťou.
 </sk>

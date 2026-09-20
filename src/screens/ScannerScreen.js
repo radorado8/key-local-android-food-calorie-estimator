@@ -30,6 +30,8 @@ import { getAppConfig } from '../config/appConfig';
 import { useTranslation } from '../hooks/useTranslation';
 import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 
+const MAX_RECORDING_DURATION_MS = 30_000;
+
 export default function ScannerScreen({ navigation, route }) {
   const t = useTranslation();
   const { dailyGoal, aiModel, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds } = useSettings();
@@ -59,6 +61,7 @@ export default function ScannerScreen({ navigation, route }) {
   const [recordedAudio, setRecordedAudio] = useState(null);
   const foodInputRef = useRef(null);
   const recordingPulse = useRef(new Animated.Value(0.45)).current;
+  const recordingLimitReachedRef = useRef(false);
 
   const pickingRef = useRef(false);
 
@@ -85,6 +88,22 @@ export default function ScannerScreen({ navigation, route }) {
     }
     recordingPulse.setValue(0.45);
   }, [recordingState.isRecording, recordingPulse]);
+
+  useEffect(() => {
+    if (!recordingState.isRecording) {
+      recordingLimitReachedRef.current = false;
+      return;
+    }
+
+    if (recordingState.durationMillis < MAX_RECORDING_DURATION_MS || recordingLimitReachedRef.current) return;
+
+    recordingLimitReachedRef.current = true;
+    audioRecorder.stop()
+      .then(() => {
+        if (audioRecorder.uri) setRecordedAudio({ uri: audioRecorder.uri, mimeType: 'audio/mp4' });
+      })
+      .catch(() => {});
+  }, [audioRecorder, recordingState.durationMillis, recordingState.isRecording]);
 
   // Handle Quick Actions
   useEffect(() => {
@@ -773,6 +792,9 @@ export default function ScannerScreen({ navigation, route }) {
                       style={[styles.waveBar, { height: 28 * height, opacity: recordingPulse, backgroundColor: '#DC2626' }]}
                     />
                   ))}
+                  <Text style={[styles.recordingTimer, { color: colors.muted }]}>
+                    {`${Math.min(30, Math.floor((recordingState.durationMillis || 0) / 1000))} / 30 s`}
+                  </Text>
                 </View>
               )}
               {!recordingState.isRecording && recordedAudio && (
@@ -1062,6 +1084,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
+  },
+  recordingTimer: {
+    marginLeft: 6,
+    fontSize: 12,
+    fontWeight: '700',
   },
   waveBar: {
     width: 4,
