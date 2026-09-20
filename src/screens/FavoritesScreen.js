@@ -365,7 +365,12 @@ export default function FavoritesScreen() {
 }
 
 const FavoriteMealItem = ({ item, colors, t, onAddToLog, onAddToLogLongPress, onEdit, onDelete, onImagePress, showImage }) => (
-    <View style={[styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t.editMealTitle || 'Upraviť jedlo'}
+        onPress={onEdit}
+        style={({ pressed }) => [styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.itemCardPressed]}
+    >
         {showImage && item.imageUri && (
             <Pressable onPress={onImagePress} style={{ marginRight: 2 }}>
                 <Image
@@ -394,19 +399,13 @@ const FavoriteMealItem = ({ item, colors, t, onAddToLog, onAddToLogLongPress, on
                 <Ionicons name="add" size={16} color={colors.accent} />
             </Pressable>
             <Pressable
-                style={({ pressed }) => [styles.miniAction, styles.editAction, pressed && styles.actionBtnPressed]}
-                onPress={onEdit}
-            >
-                <Ionicons name="pencil" size={16} color={colors.muted} />
-            </Pressable>
-            <Pressable
                 style={({ pressed }) => [styles.miniAction, styles.deleteAction, pressed && styles.actionBtnPressed]}
                 onPress={onDelete}
             >
                 <Ionicons name="trash-outline" size={16} color="rgba(239, 68, 68, 0.7)" />
             </Pressable>
         </View>
-    </View>
+    </Pressable>
 );
 
 const styles = StyleSheet.create({
@@ -461,6 +460,9 @@ const styles = StyleSheet.create({
         gap: 12,
         alignItems: 'center',
     },
+    itemCardPressed: {
+        opacity: 0.82,
+    },
     itemName: {
         fontWeight: '700',
         fontSize: 17,
@@ -499,10 +501,6 @@ const styles = StyleSheet.create({
     addToLogAction: {
         borderColor: 'rgba(45, 212, 191, 0.3)',
         backgroundColor: 'rgba(45, 212, 191, 0.08)',
-    },
-    editAction: {
-        borderColor: 'rgba(59, 130, 246, 0.25)',
-        backgroundColor: 'rgba(59, 130, 246, 0.07)',
     },
     actionBtnPressed: {
         transform: [{ scale: 0.95 }],

@@ -3,7 +3,7 @@
     "name": "Calories AI Local",
     "slug": "android-food-calorie-estimator",
     "scheme": "keylocalfoodestimator",
-    "version": "1.0.9",
+    "version": "1.0.10",
     "orientation": "default",
     "icon": "./assets/icon_key_fire_android.png",
     "userInterfaceStyle": "automatic",
@@ -90,6 +90,12 @@
             "image": "./assets/mensie_512_smooth.png",
             "backgroundColor": "#0B0F14"
           }
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Povoliť prístup k mikrofónu pre nadiktovanie jedla."
         }
       ]
     ],

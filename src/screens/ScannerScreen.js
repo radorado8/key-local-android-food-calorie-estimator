@@ -11,6 +11,8 @@ import {
   ScrollView,
   AppState,
   Animated,
+  TextInput,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -21,16 +23,19 @@ import AnalysisLoader from '../components/AnalysisLoader';
 import DailySummary from '../components/DailySummary';
 import WeightDialog from '../components/WeightDialog';
 import { useSettings } from '../state/SettingsContext';
-import { analyzeFood, getFriendlyError } from '../api/backend';
+import { analyzeFood, analyzeFoodDescriptionInput, getFriendlyError } from '../api/backend';
 import NutritionResultCard from '../components/NutritionResultCard';
 import { subscribeToMeals, createMeal } from '../api/mealService';
 import { getAppConfig } from '../config/appConfig';
 import { useTranslation } from '../hooks/useTranslation';
+import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 
 export default function ScannerScreen({ navigation, route }) {
   const t = useTranslation();
   const { dailyGoal, aiModel, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds } = useSettings();
   const insets = useSafeAreaInsets();
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recordingState = useAudioRecorderState(audioRecorder, 150);
 
   // Track handled actions
   const lastActionTimestampRef = useRef(0);
@@ -49,6 +54,11 @@ export default function ScannerScreen({ navigation, route }) {
   const [todayMealCount, setTodayMealCount] = useState(0);
   const [todayCalories, setTodayCalories] = useState(0);
   const [capturedUri, setCapturedUri] = useState(null);
+  const [showFoodInput, setShowFoodInput] = useState(false);
+  const [foodDescription, setFoodDescription] = useState('');
+  const [recordedAudio, setRecordedAudio] = useState(null);
+  const foodInputRef = useRef(null);
+  const recordingPulse = useRef(new Animated.Value(0.45)).current;
 
   const pickingRef = useRef(false);
 
@@ -63,6 +73,18 @@ export default function ScannerScreen({ navigation, route }) {
 
   const shutterOpacity = useRef(new Animated.Value(0)).current;
   const { DAILY_ANALYSIS_LIMIT } = getAppConfig();
+
+  useEffect(() => {
+    if (recordingState.isRecording) {
+      const animation = Animated.loop(Animated.sequence([
+        Animated.timing(recordingPulse, { toValue: 1, duration: 550, useNativeDriver: true }),
+        Animated.timing(recordingPulse, { toValue: 0.35, duration: 550, useNativeDriver: true }),
+      ]));
+      animation.start();
+      return () => animation.stop();
+    }
+    recordingPulse.setValue(0.45);
+  }, [recordingState.isRecording, recordingPulse]);
 
   // Handle Quick Actions
   useEffect(() => {
@@ -200,6 +222,92 @@ export default function ScannerScreen({ navigation, route }) {
       return false;
     }
     return true;
+  };
+
+  const openFoodInput = () => {
+    setFoodDescription('');
+    setRecordedAudio(null);
+    setShowFoodInput(true);
+    setTimeout(() => foodInputRef.current?.focus(), 250);
+  };
+
+  const closeFoodInput = async () => {
+    if (audioRecorder.isRecording) await audioRecorder.stop().catch(() => {});
+    setShowFoodInput(false);
+    setFoodDescription('');
+    setRecordedAudio(null);
+  };
+
+  const toggleRecording = async () => {
+    try {
+      if (audioRecorder.isRecording) {
+        await audioRecorder.stop();
+        if (audioRecorder.uri) setRecordedAudio({ uri: audioRecorder.uri, mimeType: 'audio/mp4' });
+        return;
+      }
+
+      const permission = await requestRecordingPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(t.errorTitle || 'Chyba', t.microphonePermissionMissing || 'Povoľ prístup k mikrofónu a skús znova.');
+        return;
+      }
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      setRecordedAudio(null);
+      await audioRecorder.prepareToRecordAsync();
+      audioRecorder.record();
+    } catch (err) {
+      Alert.alert(t.errorTitle || 'Chyba', err?.message || 'Nahrávanie sa nepodarilo spustiť.');
+    }
+  };
+
+  const analyzeFoodInput = async () => {
+    if (!checkLimit()) return;
+    if (audioRecorder.isRecording) {
+      await toggleRecording();
+    }
+
+    const description = foodDescription.trim();
+    const audio = recordedAudio;
+    if (!description && !audio?.uri) return;
+
+    const analysisId = Date.now().toString();
+    currentAnalysisIdRef.current = analysisId;
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setShowFoodInput(false);
+    setCapturedUri(null);
+    setStatus('analyzing');
+    setIsRetrying(false);
+    setResult(null);
+    analysisActiveRef.current = true;
+
+    try {
+      const audioBase64 = audio?.uri
+        ? await FileSystem.readAsStringAsync(audio.uri, { encoding: 'base64' })
+        : null;
+      const data = await analyzeFoodDescriptionInput({
+        text: description,
+        audioBase64,
+        audioMimeType: audio?.mimeType,
+        language,
+        aiModel,
+        signal: controller.signal,
+      });
+      if (currentAnalysisIdRef.current !== analysisId || !analysisActiveRef.current) return;
+      setResult(data);
+      setStatus('result');
+    } catch (err) {
+      if (currentAnalysisIdRef.current !== analysisId || !analysisActiveRef.current) return;
+      if (err.name === 'AbortError' || err.message === 'Aborted') return;
+      setStatus('idle');
+      analysisActiveRef.current = false;
+      const friendly = getFriendlyError(err, t);
+      Alert.alert(friendly.title, friendly.message);
+    } finally {
+      setRecordedAudio(null);
+    }
   };
 
   const ensurePermissions = async (action) => {
@@ -588,9 +696,13 @@ export default function ScannerScreen({ navigation, route }) {
         </View>
 
         <View style={styles.sectionHeader}>
-          <View style={[styles.sectionFrame, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.sectionTitle, { color: colors.muted }]}>{t.addFoodLabel}</Text>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.sectionFrame, { backgroundColor: colors.btn, borderColor: colors.border }, pressed && styles.sectionFramePressed]}
+            onPress={openFoodInput}
+          >
+            <Text style={[styles.sectionTitle, { color: colors.btnText }]}>{t.addFoodTextOrVoice || t.addFoodLabel}</Text>
+          </Pressable>
         </View>
 
         <View style={styles.actions}>
@@ -612,6 +724,89 @@ export default function ScannerScreen({ navigation, route }) {
         </View>
 
       </ScrollView>
+
+      <Modal
+        visible={showFoodInput}
+        animationType="fade"
+        transparent
+        onRequestClose={closeFoodInput}
+      >
+        <KeyboardAvoidingView
+          style={styles.foodInputOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeFoodInput} />
+          <View style={[styles.foodInputDialog, { backgroundColor: theme === 'light' ? colors.card : '#161B22', borderColor: colors.border }]}>
+            <Text style={[styles.foodInputTitle, { color: colors.text }]}>{t.addFoodTextOrVoice || t.addFoodLabel}</Text>
+            <TextInput
+              ref={foodInputRef}
+              value={foodDescription}
+              onChangeText={setFoodDescription}
+              placeholder={t.foodDescriptionPlaceholder || 'napr. rožok s maslom'}
+              placeholderTextColor={colors.muted}
+              style={[styles.foodTextInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.bg }]}
+              multiline
+              returnKeyType="done"
+              onSubmitEditing={analyzeFoodInput}
+            />
+
+            <View style={styles.recordingRow}>
+              <Pressable
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.microphoneButton,
+                  { backgroundColor: recordingState.isRecording ? '#DC2626' : colors.btn, borderColor: colors.border },
+                  pressed && styles.bigBtnPressed,
+                ]}
+                onPress={toggleRecording}
+              >
+                <Text style={[styles.microphoneIcon, { color: recordingState.isRecording ? '#FFFFFF' : colors.btnText }]}>●</Text>
+                <Text style={[styles.microphoneText, { color: recordingState.isRecording ? '#FFFFFF' : colors.btnText }]}>
+                  {recordingState.isRecording ? (t.stopRecording || 'Zastaviť nahrávanie') : (t.microphone || 'Mikrofón')}
+                </Text>
+              </Pressable>
+              {recordingState.isRecording && (
+                <View style={styles.waveform} accessibilityLabel={t.recording || 'Nahrávanie'}>
+                  {[0.55, 0.9, 0.7, 1, 0.6].map((height, index) => (
+                    <Animated.View
+                      key={index}
+                      style={[styles.waveBar, { height: 28 * height, opacity: recordingPulse, backgroundColor: '#DC2626' }]}
+                    />
+                  ))}
+                </View>
+              )}
+              {!recordingState.isRecording && recordedAudio && (
+                <View style={[styles.recordingStatus, { backgroundColor: colors.btn, borderColor: colors.border }]}>
+                  <Text style={[styles.audioReady, { color: colors.accent }]}>{t.audioReady || 'Nahrávka pripravená'}</Text>
+                </View>
+              )}
+              {!recordingState.isRecording && !recordedAudio && (
+                <View style={[styles.recordingStatus, { backgroundColor: theme === 'light' ? '#E2E8F0' : 'rgba(255,255,255,0.10)', borderColor: colors.border }]}>
+                  <Text style={[styles.audioReady, { color: colors.muted }]}>{t.noRecording || 'No recording'}</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.foodInputActions}>
+              <Pressable style={[styles.dialogButton, { borderColor: colors.border }]} onPress={closeFoodInput}>
+                <Text style={[styles.dialogButtonText, { color: colors.muted }]}>{t.cancel}</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.dialogButton,
+                  styles.dialogConfirmButton,
+                  { backgroundColor: colors.accent, opacity: (foodDescription.trim() || recordedAudio || recordingState.isRecording) ? 1 : 0.45 },
+                  pressed && styles.bigBtnPressed,
+                ]}
+                disabled={!foodDescription.trim() && !recordedAudio && !recordingState.isRecording}
+                onPress={analyzeFoodInput}
+              >
+                <Text style={[styles.dialogButtonText, { color: '#FFFFFF' }]}>{t.confirm}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       <Modal
         visible={showCamera}
@@ -716,6 +911,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  sectionFramePressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.99 }],
+  },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '800', // Matches other headers
@@ -804,5 +1003,102 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  foodInputOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.48)',
+  },
+  foodInputDialog: {
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 20,
+    gap: 16,
+    elevation: 10,
+  },
+  foodInputTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  foodTextInput: {
+    minHeight: 94,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    textAlignVertical: 'top',
+  },
+  recordingRow: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  microphoneButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 15,
+  },
+  microphoneIcon: {
+    fontSize: 22,
+    lineHeight: 22,
+  },
+  microphoneText: {
+    fontWeight: '800',
+    fontSize: 14,
+  },
+  waveform: {
+    flex: 1,
+    height: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  waveBar: {
+    width: 4,
+    borderRadius: 2,
+  },
+  audioReady: {
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  recordingStatus: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  foodInputActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+  },
+  dialogButton: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 13,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
+  dialogConfirmButton: {
+    borderWidth: 0,
+  },
+  dialogButtonText: {
+    fontSize: 15,
+    fontWeight: '800',
   },
 });

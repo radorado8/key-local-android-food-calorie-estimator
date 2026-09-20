@@ -1,6 +1,6 @@
 {
   "name": "android-food-calorie-estimator",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
@@ -26,6 +26,7 @@
     "babel-preset-expo": "~54.0.0",
     "expo": "~54.0.37",
     "expo-asset": "~12.0.12",
+    "expo-audio": "~1.1.1",
     "expo-build-properties": "~1.0.10",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.14",

@@ -47,11 +47,15 @@ export function getFriendlyError(err, t) {
   return { title: getText('errorTitle', 'Chyba'), message: msg };
 }
 
-import { analyzeImage } from './gemini';
+import { analyzeImage, analyzeFoodDescription } from './gemini';
 
 // ... (BackendError class stays)
 
 export async function analyzeFood(payload) {
   return analyzeImage(payload);
+}
+
+export async function analyzeFoodDescriptionInput(payload) {
+  return analyzeFoodDescription(payload);
 }
 

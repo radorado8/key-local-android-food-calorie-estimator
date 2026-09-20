@@ -146,3 +146,74 @@ export async function analyzeImage({ base64Data, mimeType, weightG, language = '
         }
     }
 }
+
+const OUTPUT_LANGUAGES = {
+    sk: 'Slovak', en: 'English', de: 'German', es: 'Spanish',
+    fr: 'French', pl: 'Polish', cs: 'Czech', it: 'Italian'
+};
+
+/** Analyze a typed food description or a short voice recording, without an image. */
+export async function analyzeFoodDescription({ text, audioBase64, audioMimeType, language = 'en', aiModel, signal }) {
+    const apiKey = await getGeminiKey();
+    if (!apiKey) throw new Error('Chýba API kľúč. Nastav ho v nastaveniach.');
+
+    const modelId = aiModel || 'gemini-1.5-flash';
+    const outputLanguage = OUTPUT_LANGUAGES[language] || 'English';
+    const sourceInstruction = audioBase64
+        ? 'The user describes a food in the attached audio recording. Transcribe it and use that description.'
+        : `The user describes this food: "${String(text || '').trim()}".`;
+    const prompt = `${sourceInstruction}
+Estimate one serving and return its nutritional values. Return the food name in ${outputLanguage}.
+Format:
+{
+  "name": "short food name",
+  "calories": number (approx kcal),
+  "protein": number (approx grams protein),
+  "carbs": number (approx grams carbs),
+  "fat": number (approx grams fat),
+  "weight_g": number (estimated weight in grams),
+  "confidence": number (0.0 to 1.0)
+}
+Return ONLY a raw JSON string, nothing else. If it is not food, return {"error":"not_food"}.`;
+
+    const parts = [{ text: prompt }];
+    if (audioBase64) {
+        parts.push({ inline_data: { mime_type: audioMimeType || 'audio/mp4', data: audioBase64 } });
+    }
+
+    const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts }],
+                generationConfig: { temperature: 0.2, maxOutputTokens: 1000, responseMimeType: 'application/json' }
+            }),
+            signal
+        }
+    );
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        let message = `Gemini API Error: ${response.status}`;
+        try { message = JSON.parse(errorText).error?.message || message; } catch { }
+        throw new Error(message);
+    }
+
+    const payload = await response.json();
+    const rawText = payload.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) throw new Error('Empty response from Gemini.');
+    const parsed = JSON.parse(rawText.trim().replace(/^```json\s*/, '').replace(/\s*```$/, ''));
+    if (parsed.error === 'not_food') throw new Error('not_food');
+
+    return {
+        name: parsed.name || 'Unknown Food',
+        calories: Number(parsed.calories) || 0,
+        protein: Number(parsed.protein) || 0,
+        carbs: Number(parsed.carbs) || 0,
+        fat: Number(parsed.fat) || 0,
+        weight_g: Number(parsed.weight_g) || 0,
+        confidence: Number(parsed.confidence) || 0.5
+    };
+}

@@ -21,6 +21,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { deleteMeal, updateMeal, subscribeToMeals, createMeal } from '../api/mealService';
 import { addFavorite } from '../api/favoritesService';
 import MealEditDialog from '../components/MealEditDialog';
+import WeightDialog from '../components/WeightDialog';
 import { useSettings } from '../state/SettingsContext';
 
 import { useTranslation } from '../hooks/useTranslation';
@@ -108,6 +109,8 @@ export default function HistoryScreen() {
   const [editOpen, setEditOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [editMeal, setEditMeal] = useState(null);
+  const [weightDialogOpen, setWeightDialogOpen] = useState(false);
+  const [repeatMeal, setRepeatMeal] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -283,6 +286,28 @@ export default function HistoryScreen() {
     setExpandedCategories((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const repeatMealInLog = async (item, weightG = null) => {
+    try {
+      const originalWeight = Number(item.weight_g);
+      const shouldScale = Number(weightG) > 0 && originalWeight > 0;
+      const ratio = shouldScale ? Number(weightG) / originalWeight : 1;
+      await createMeal({
+        name: item.name,
+        calories: shouldScale ? Math.round(Number(item.calories || 0) * ratio) : Number(item.calories || 0),
+        protein: shouldScale ? Math.round(Number(item.protein || 0) * ratio * 10) / 10 : Number(item.protein || 0),
+        carbs: shouldScale ? Math.round(Number(item.carbs || 0) * ratio * 10) / 10 : Number(item.carbs || 0),
+        fat: shouldScale ? Math.round(Number(item.fat || 0) * ratio * 10) / 10 : Number(item.fat || 0),
+        weight_g: Number(weightG) > 0 ? Number(weightG) : Number(item.weight_g || 0),
+        imageUri: item.imageUri,
+        confidence: Number(item.confidence ?? 1),
+        timestamp: new Date().toISOString(),
+      }, useLocalStorage);
+      Alert.alert(t.addedToLog || '✅', t.addedToLogMsg || item.name);
+    } catch (e) {
+      Alert.alert(t.errorTitle, e.message || t.errorTitle);
+    }
+  };
+
   if (loading) {
     return (
       <View style={[styles.center, { backgroundColor: colors.bg }]}>
@@ -447,6 +472,11 @@ export default function HistoryScreen() {
                                     setEditMeal(item);
                                     setEditOpen(true);
                                   }}
+                                  onRepeat={() => repeatMealInLog(item)}
+                                  onRepeatLongPress={() => {
+                                    setRepeatMeal(item);
+                                    setWeightDialogOpen(true);
+                                  }}
                                   onFavorite={async () => {
                                     try {
                                       await addFavorite(item);
@@ -497,6 +527,11 @@ export default function HistoryScreen() {
                 onEdit={() => {
                   setEditMeal(item);
                   setEditOpen(true);
+                }}
+                onRepeat={() => repeatMealInLog(item)}
+                onRepeatLongPress={() => {
+                  setRepeatMeal(item);
+                  setWeightDialogOpen(true);
                 }}
                 onFavorite={async () => {
                   try {
@@ -567,6 +602,20 @@ export default function HistoryScreen() {
         }}
       />
 
+      <WeightDialog
+        visible={weightDialogOpen}
+        colors={colors}
+        onCancel={() => {
+          setWeightDialogOpen(false);
+          setRepeatMeal(null);
+        }}
+        onConfirm={(grams) => {
+          setWeightDialogOpen(false);
+          if (repeatMeal && grams && grams > 0) repeatMealInLog(repeatMeal, grams);
+          setRepeatMeal(null);
+        }}
+      />
+
       {/* Add Meal Dialog */}
       <MealEditDialog
         visible={addOpen}
@@ -621,8 +670,13 @@ export default function HistoryScreen() {
   );
 }
 
-const MealItem = ({ item, colors, t, onEdit, onDelete, onFavorite, onImagePress, showImage }) => (
-  <View style={[styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+const MealItem = ({ item, colors, t, onEdit, onRepeat, onRepeatLongPress, onDelete, onFavorite, onImagePress, showImage }) => (
+  <Pressable
+    accessibilityRole="button"
+    accessibilityLabel={t.editMealTitle || 'Upraviť jedlo'}
+    onPress={onEdit}
+    style={({ pressed }) => [styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.itemCardPressed]}
+  >
     {showImage && item.imageUri && (
       <Pressable onPress={onImagePress} style={{ marginRight: 2 }}>
         <Image
@@ -652,10 +706,12 @@ const MealItem = ({ item, colors, t, onEdit, onDelete, onFavorite, onImagePress,
         </Pressable>
       )}
       <Pressable
-        style={({ pressed }) => [styles.miniAction, styles.editAction, pressed && styles.actionBtnPressed]}
-        onPress={onEdit}
+        accessibilityLabel={t.repeatMeal || 'Opakovať jedlo'}
+        style={({ pressed }) => [styles.miniAction, styles.repeatAction, pressed && styles.actionBtnPressed]}
+        onPress={onRepeat}
+        onLongPress={onRepeatLongPress}
       >
-        <Ionicons name="pencil" size={16} color={colors.muted} />
+        <Ionicons name="add" size={18} color={colors.accent} />
       </Pressable>
       <Pressable
         style={({ pressed }) => [styles.miniAction, styles.deleteAction, pressed && styles.actionBtnPressed]}
@@ -664,7 +720,7 @@ const MealItem = ({ item, colors, t, onEdit, onDelete, onFavorite, onImagePress,
         <Ionicons name="trash-outline" size={16} color="rgba(239, 68, 68, 0.7)" />
       </Pressable>
     </View>
-  </View>
+  </Pressable>
 );
 
 const styles = StyleSheet.create({
@@ -771,6 +827,9 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: 'center',
   },
+  itemCardPressed: {
+    opacity: 0.82,
+  },
   itemName: {
     fontWeight: '700',
     fontSize: 17,
@@ -810,13 +869,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239, 68, 123, 0.2)',
     backgroundColor: 'rgba(239, 68, 123, 0.05)',
   },
-  editAction: {
-    borderColor: 'rgba(59, 130, 246, 0.25)',
-    backgroundColor: 'rgba(59, 130, 246, 0.07)',
-  },
-  actionBtnPressed: {
-    transform: [{ scale: 0.95 }],
-    opacity: 0.7,
+  repeatAction: {
+    borderColor: 'rgba(45, 212, 191, 0.3)',
+    backgroundColor: 'rgba(45, 212, 191, 0.08)',
   },
   actionBtnPressed: {
     transform: [{ scale: 0.95 }],
