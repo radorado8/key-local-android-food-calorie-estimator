@@ -39,9 +39,13 @@
             "targetSdkVersion": 36,
             "minSdkVersion": 26,
             "ndkVersion": "27.2.12479018",
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
             "gradleProperties": {
-              "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g"
-            }
+              "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g",
+              "android.r8.optimizedResourceShrinking": "true"
+            },
+            "extraProguardRules": "-keep class expo.modules.** { *; }"
           },
           "ios": {
             "deploymentTarget": "15.1"
@@ -78,6 +82,8 @@
       "./plugins/withShortcutIcons",
       "./plugins/withExtractNativeLibs",
       "./plugins/withAllModulesBuildTools",
+      "./plugins/withR8Optimization",
+      "./plugins/withReanimatedWorkletsPath",
       "./plugins/withIosPodsDeploymentTarget",
       "./plugins/withIosSceneLifecycle",
       [
@@ -90,12 +96,6 @@
             "image": "./assets/mensie_512_smooth.png",
             "backgroundColor": "#0B0F14"
           }
-        }
-      ],
-      [
-        "expo-audio",
-        {
-          "microphonePermission": "Povoliť prístup k mikrofónu pre nadiktovanie jedla."
         }
       ]
     ],

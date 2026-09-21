@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useLayoutEffect } from 'react';
+import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   Alert,
   Modal,
@@ -28,16 +28,53 @@ import NutritionResultCard from '../components/NutritionResultCard';
 import { subscribeToMeals, createMeal } from '../api/mealService';
 import { getAppConfig } from '../config/appConfig';
 import { useTranslation } from '../hooks/useTranslation';
-import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
+import { Audio } from 'expo-av';
 
 const MAX_RECORDING_DURATION_MS = 30_000;
+const ANALYSIS_IMAGE_MAX_WIDTH = 1024;
+const ANALYSIS_IMAGE_COMPRESSION = 0.75;
+const MIN_ANALYSIS_DISPLAY_MS = 900;
+
+async function keepAnalysisVisible(startedAt) {
+  const remaining = MIN_ANALYSIS_DISPLAY_MS - (Date.now() - startedAt);
+  if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
+}
+
+// Keep the image passed to JavaScript and Gemini bounded. Camera and gallery
+// originals can be several megabytes; passing them straight to Base64 duplicates
+// their memory use and makes the upload needlessly large.
+async function prepareImageForAnalysis(asset) {
+  if (!asset?.uri) throw new Error('Chýba fotografia na analýzu.');
+
+  const optimized = await manipulateAsync(
+    asset.uri,
+    [{ resize: { width: ANALYSIS_IMAGE_MAX_WIDTH } }],
+    {
+      compress: ANALYSIS_IMAGE_COMPRESSION,
+      format: SaveFormat.JPEG,
+      base64: true,
+    }
+  );
+
+  if (!optimized.base64) throw new Error('Nepodarilo sa pripraviť fotografiu na analýzu.');
+
+  return {
+    ...asset,
+    uri: optimized.uri,
+    width: optimized.width,
+    height: optimized.height,
+    mimeType: 'image/jpeg',
+    base64: optimized.base64,
+  };
+}
 
 export default function ScannerScreen({ navigation, route }) {
   const t = useTranslation();
   const { dailyGoal, aiModel, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds } = useSettings();
   const insets = useSafeAreaInsets();
-  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recordingState = useAudioRecorderState(audioRecorder, 150);
+  const audioRecordingRef = useRef(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDurationMillis, setRecordingDurationMillis] = useState(0);
 
   // Track handled actions
   const lastActionTimestampRef = useRef(0);
@@ -56,12 +93,31 @@ export default function ScannerScreen({ navigation, route }) {
   const [todayMealCount, setTodayMealCount] = useState(0);
   const [todayCalories, setTodayCalories] = useState(0);
   const [capturedUri, setCapturedUri] = useState(null);
+  const [analysisInput, setAnalysisInput] = useState(null);
   const [showFoodInput, setShowFoodInput] = useState(false);
   const [foodDescription, setFoodDescription] = useState('');
   const [recordedAudio, setRecordedAudio] = useState(null);
   const foodInputRef = useRef(null);
   const recordingPulse = useRef(new Animated.Value(0.45)).current;
   const recordingLimitReachedRef = useRef(false);
+
+  const stopRecording = useCallback(async () => {
+    const recording = audioRecordingRef.current;
+    if (!recording) return null;
+
+    try {
+      const status = await recording.getStatusAsync();
+      if (status.isRecording) await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      const audio = uri ? { uri, mimeType: 'audio/mp4' } : null;
+      if (audio) setRecordedAudio(audio);
+      return audio;
+    } finally {
+      audioRecordingRef.current = null;
+      setIsRecording(false);
+      setRecordingDurationMillis(0);
+    }
+  }, []);
 
   const pickingRef = useRef(false);
 
@@ -78,7 +134,7 @@ export default function ScannerScreen({ navigation, route }) {
   const { DAILY_ANALYSIS_LIMIT } = getAppConfig();
 
   useEffect(() => {
-    if (recordingState.isRecording) {
+    if (isRecording) {
       const animation = Animated.loop(Animated.sequence([
         Animated.timing(recordingPulse, { toValue: 1, duration: 550, useNativeDriver: true }),
         Animated.timing(recordingPulse, { toValue: 0.35, duration: 550, useNativeDriver: true }),
@@ -87,23 +143,27 @@ export default function ScannerScreen({ navigation, route }) {
       return () => animation.stop();
     }
     recordingPulse.setValue(0.45);
-  }, [recordingState.isRecording, recordingPulse]);
+  }, [isRecording, recordingPulse]);
 
   useEffect(() => {
-    if (!recordingState.isRecording) {
+    if (!isRecording) {
       recordingLimitReachedRef.current = false;
       return;
     }
 
-    if (recordingState.durationMillis < MAX_RECORDING_DURATION_MS || recordingLimitReachedRef.current) return;
-
-    recordingLimitReachedRef.current = true;
-    audioRecorder.stop()
-      .then(() => {
-        if (audioRecorder.uri) setRecordedAudio({ uri: audioRecorder.uri, mimeType: 'audio/mp4' });
-      })
-      .catch(() => {});
-  }, [audioRecorder, recordingState.durationMillis, recordingState.isRecording]);
+    const updateDuration = async () => {
+      const status = await audioRecordingRef.current?.getStatusAsync();
+      const duration = status?.durationMillis || 0;
+      setRecordingDurationMillis(duration);
+      if (duration >= MAX_RECORDING_DURATION_MS && !recordingLimitReachedRef.current) {
+        recordingLimitReachedRef.current = true;
+        await stopRecording();
+      }
+    };
+    updateDuration().catch(() => {});
+    const timer = setInterval(() => updateDuration().catch(() => {}), 150);
+    return () => clearInterval(timer);
+  }, [isRecording, stopRecording]);
 
   // Handle Quick Actions
   useEffect(() => {
@@ -155,11 +215,8 @@ export default function ScannerScreen({ navigation, route }) {
       try {
         const pendingResult = await ImagePicker.getPendingResultAsync();
         if (pendingResult && pendingResult.assets?.[0]) {
-          const asset = pendingResult.assets[0];
-          const base64 = await FileSystem.readAsStringAsync(asset.uri, {
-            encoding: 'base64',
-          });
-          await analyzePickedImage({ ...asset, base64 }, null);
+          const asset = await prepareImageForAnalysis(pendingResult.assets[0]);
+          await analyzePickedImage(asset, null);
         }
       } catch (err) {
         // Ignore - no pending result
@@ -251,7 +308,7 @@ export default function ScannerScreen({ navigation, route }) {
   };
 
   const closeFoodInput = async () => {
-    if (audioRecorder.isRecording) await audioRecorder.stop().catch(() => {});
+    if (isRecording) await stopRecording().catch(() => {});
     setShowFoodInput(false);
     setFoodDescription('');
     setRecordedAudio(null);
@@ -259,21 +316,29 @@ export default function ScannerScreen({ navigation, route }) {
 
   const toggleRecording = async () => {
     try {
-      if (audioRecorder.isRecording) {
-        await audioRecorder.stop();
-        if (audioRecorder.uri) setRecordedAudio({ uri: audioRecorder.uri, mimeType: 'audio/mp4' });
+      if (isRecording) {
+        await stopRecording();
         return;
       }
 
-      const permission = await requestRecordingPermissionsAsync();
-      if (!permission.granted) {
+      const permission = await Audio.requestPermissionsAsync();
+      if (permission.status !== 'granted') {
         Alert.alert(t.errorTitle || 'Chyba', t.microphonePermissionMissing || 'Povoľ prístup k mikrofónu a skús znova.');
         return;
       }
-      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        playThroughEarpieceAndroid: false,
+      });
       setRecordedAudio(null);
-      await audioRecorder.prepareToRecordAsync();
-      audioRecorder.record();
+      const recording = new Audio.Recording();
+      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await recording.startAsync();
+      audioRecordingRef.current = recording;
+      recordingLimitReachedRef.current = false;
+      setRecordingDurationMillis(0);
+      setIsRecording(true);
     } catch (err) {
       Alert.alert(t.errorTitle || 'Chyba', err?.message || 'Nahrávanie sa nepodarilo spustiť.');
     }
@@ -281,12 +346,12 @@ export default function ScannerScreen({ navigation, route }) {
 
   const analyzeFoodInput = async () => {
     if (!checkLimit()) return;
-    if (audioRecorder.isRecording) {
-      await toggleRecording();
+    let audio = recordedAudio;
+    if (isRecording) {
+      audio = await stopRecording();
     }
 
     const description = foodDescription.trim();
-    const audio = recordedAudio;
     if (!description && !audio?.uri) return;
 
     const analysisId = Date.now().toString();
@@ -294,9 +359,13 @@ export default function ScannerScreen({ navigation, route }) {
     if (abortControllerRef.current) abortControllerRef.current.abort();
     const controller = new AbortController();
     abortControllerRef.current = controller;
+    const analysisStartedAt = Date.now();
 
     setShowFoodInput(false);
     setCapturedUri(null);
+    setAnalysisInput(audio?.uri
+      ? { type: 'audio' }
+      : { type: 'text', text: description });
     setStatus('analyzing');
     setIsRetrying(false);
     setResult(null);
@@ -315,11 +384,15 @@ export default function ScannerScreen({ navigation, route }) {
         signal: controller.signal,
       });
       if (currentAnalysisIdRef.current !== analysisId || !analysisActiveRef.current) return;
+      await keepAnalysisVisible(analysisStartedAt);
+      if (currentAnalysisIdRef.current !== analysisId || !analysisActiveRef.current) return;
       setResult(data);
       setStatus('result');
     } catch (err) {
       if (currentAnalysisIdRef.current !== analysisId || !analysisActiveRef.current) return;
       if (err.name === 'AbortError' || err.message === 'Aborted') return;
+      await keepAnalysisVisible(analysisStartedAt);
+      if (currentAnalysisIdRef.current !== analysisId || !analysisActiveRef.current) return;
       setStatus('idle');
       analysisActiveRef.current = false;
       const friendly = getFriendlyError(err, t);
@@ -375,6 +448,7 @@ export default function ScannerScreen({ navigation, route }) {
     const mimeType = asset.mimeType || 'image/jpeg';
 
     setCapturedUri(asset.uri);
+    setAnalysisInput(null);
     setStatus('analyzing');
     setIsRetrying(false);
     setResult(null);
@@ -459,11 +533,8 @@ export default function ScannerScreen({ navigation, route }) {
       });
 
       if (!res.canceled && res.assets?.[0]) {
-        const asset = res.assets[0];
-        const base64 = await FileSystem.readAsStringAsync(asset.uri, {
-          encoding: 'base64',
-        });
-        await analyzePickedImage({ ...asset, base64 }, weightG);
+        const asset = await prepareImageForAnalysis(res.assets[0]);
+        await analyzePickedImage(asset, weightG);
       }
     } catch (err) {
       // Handle ActivityResultLauncher error (occurs after Android config changes)
@@ -521,11 +592,8 @@ export default function ScannerScreen({ navigation, route }) {
 
       setShowCamera(false);
 
-      const base64 = await FileSystem.readAsStringAsync(photo.uri, {
-        encoding: 'base64',
-      });
-
-      await analyzePickedImage({ ...photo, base64 }, weightForCamera);
+      const asset = await prepareImageForAnalysis(photo);
+      await analyzePickedImage(asset, weightForCamera);
 
     } catch (err) {
       console.error('Capture Error:', err);
@@ -597,6 +665,8 @@ export default function ScannerScreen({ navigation, route }) {
         <View style={styles.centerContainer}>
           <AnalysisLoader
             imageUri={capturedUri}
+            inputType={analysisInput?.type}
+            inputText={analysisInput?.text}
             t={t}
             isRetrying={isRetrying}
             onCancel={() => {
@@ -607,6 +677,7 @@ export default function ScannerScreen({ navigation, route }) {
               analysisActiveRef.current = false;
               setStatus('idle');
               setCapturedUri(null);
+              setAnalysisInput(null);
               setIsRetrying(false);
               // Force clear lock just in case
               pickingRef.current = false;
@@ -774,17 +845,17 @@ export default function ScannerScreen({ navigation, route }) {
                 accessibilityRole="button"
                 style={({ pressed }) => [
                   styles.microphoneButton,
-                  { backgroundColor: recordingState.isRecording ? '#DC2626' : colors.btn, borderColor: colors.border },
+                  { backgroundColor: isRecording ? '#DC2626' : colors.btn, borderColor: colors.border },
                   pressed && styles.bigBtnPressed,
                 ]}
                 onPress={toggleRecording}
               >
-                <Text style={[styles.microphoneIcon, { color: recordingState.isRecording ? '#FFFFFF' : colors.btnText }]}>●</Text>
-                <Text style={[styles.microphoneText, { color: recordingState.isRecording ? '#FFFFFF' : colors.btnText }]}>
-                  {recordingState.isRecording ? (t.stopRecording || 'Zastaviť nahrávanie') : (t.microphone || 'Mikrofón')}
+                <Text style={[styles.microphoneIcon, { color: isRecording ? '#FFFFFF' : colors.btnText }]}>●</Text>
+                <Text style={[styles.microphoneText, { color: isRecording ? '#FFFFFF' : colors.btnText }]}>
+                  {isRecording ? (t.stopRecording || 'Zastaviť nahrávanie') : (t.microphone || 'Mikrofón')}
                 </Text>
               </Pressable>
-              {recordingState.isRecording && (
+              {isRecording && (
                 <View style={styles.waveform} accessibilityLabel={t.recording || 'Nahrávanie'}>
                   {[0.55, 0.9, 0.7, 1, 0.6].map((height, index) => (
                     <Animated.View
@@ -793,16 +864,16 @@ export default function ScannerScreen({ navigation, route }) {
                     />
                   ))}
                   <Text style={[styles.recordingTimer, { color: colors.muted }]}>
-                    {`${Math.min(30, Math.floor((recordingState.durationMillis || 0) / 1000))} / 30 s`}
+                    {`${Math.min(30, Math.floor(recordingDurationMillis / 1000))} / 30 s`}
                   </Text>
                 </View>
               )}
-              {!recordingState.isRecording && recordedAudio && (
+              {!isRecording && recordedAudio && (
                 <View style={[styles.recordingStatus, { backgroundColor: colors.btn, borderColor: colors.border }]}>
                   <Text style={[styles.audioReady, { color: colors.accent }]}>{t.audioReady || 'Nahrávka pripravená'}</Text>
                 </View>
               )}
-              {!recordingState.isRecording && !recordedAudio && (
+              {!isRecording && !recordedAudio && (
                 <View style={[styles.recordingStatus, { backgroundColor: theme === 'light' ? '#E2E8F0' : 'rgba(255,255,255,0.10)', borderColor: colors.border }]}>
                   <Text style={[styles.audioReady, { color: colors.muted }]}>{t.noRecording || 'No recording'}</Text>
                 </View>
@@ -817,10 +888,10 @@ export default function ScannerScreen({ navigation, route }) {
                 style={({ pressed }) => [
                   styles.dialogButton,
                   styles.dialogConfirmButton,
-                  { backgroundColor: colors.accent, opacity: (foodDescription.trim() || recordedAudio || recordingState.isRecording) ? 1 : 0.45 },
+                  { backgroundColor: colors.accent, opacity: (foodDescription.trim() || recordedAudio || isRecording) ? 1 : 0.45 },
                   pressed && styles.bigBtnPressed,
                 ]}
-                disabled={!foodDescription.trim() && !recordedAudio && !recordingState.isRecording}
+                disabled={!foodDescription.trim() && !recordedAudio && !isRecording}
                 onPress={analyzeFoodInput}
               >
                 <Text style={[styles.dialogButtonText, { color: '#FFFFFF' }]}>{t.confirm}</Text>
