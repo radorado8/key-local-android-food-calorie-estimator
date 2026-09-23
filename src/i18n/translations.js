@@ -1,5 +1,9 @@
 export const translations = {
     sk: {
+        macroGoalsTitle: "Denné ciele živín",
+        macroGoalsAuto: "Počítať automaticky z kalórií",
+        macroGoalsSplit: "Bielkoviny 20 % · Sacharidy 50 % · Tuky 30 %",
+        macroGoalsInvalid: "Zadaj pri každej živine viac než 0 a najviac 2 500 g.",
         renameFavoriteList: 'Premenovať knižnicu',
         favoriteListName: 'Názov knižnice',
         // App / Navigation
@@ -288,6 +292,10 @@ export const translations = {
         categoryLabel: 'Kategória',
     },
     en: {
+        macroGoalsTitle: "Daily nutrient goals",
+        macroGoalsAuto: "Calculate automatically from calories",
+        macroGoalsSplit: "Protein 20% · Carbs 50% · Fat 30%",
+        macroGoalsInvalid: "Enter more than 0 and no more than 2,500 g for each nutrient.",
         renameFavoriteList: 'Rename library',
         favoriteListName: 'Library name',
         tabScanner: 'Home',
@@ -548,6 +556,10 @@ export const translations = {
         categoryLabel: 'Category',
     },
     de: {
+        macroGoalsTitle: "Tägliche Nährstoffziele",
+        macroGoalsAuto: "Automatisch aus Kalorien berechnen",
+        macroGoalsSplit: "Eiweiß 20 % · Kohlenhydrate 50 % · Fett 30 %",
+        macroGoalsInvalid: "Für jeden Nährstoff mehr als 0 und höchstens 2.500 g eingeben.",
         renameFavoriteList: 'Bibliothek umbenennen',
         favoriteListName: 'Name der Bibliothek',
         tabScanner: 'Home',
@@ -803,6 +815,10 @@ export const translations = {
         categoryLabel: 'Kategorie',
     },
     es: {
+        macroGoalsTitle: "Objetivos diarios de nutrientes",
+        macroGoalsAuto: "Calcular a partir de las calorías",
+        macroGoalsSplit: "Proteínas 20 % · Carbohidratos 50 % · Grasas 30 %",
+        macroGoalsInvalid: "Introduce más de 0 y hasta 2500 g por nutriente.",
         renameFavoriteList: 'Cambiar nombre de la biblioteca',
         favoriteListName: 'Nombre de la biblioteca',
         tabScanner: 'Inicio',
@@ -1065,6 +1081,10 @@ export const translations = {
         categoryLabel: 'Categoría',
     },
     fr: {
+        macroGoalsTitle: "Objectifs nutritionnels quotidiens",
+        macroGoalsAuto: "Calculer à partir des calories",
+        macroGoalsSplit: "Protéines 20 % · Glucides 50 % · Lipides 30 %",
+        macroGoalsInvalid: "Saisissez plus de 0 et au maximum 2 500 g par nutriment.",
         renameFavoriteList: 'Renommer la bibliothèque',
         favoriteListName: 'Nom de la bibliothèque',
         tabScanner: 'Accueil',
@@ -1329,6 +1349,10 @@ export const translations = {
         categoryLabel: 'Catégorie',
     },
     pl: {
+        macroGoalsTitle: "Dzienne cele składników odżywczych",
+        macroGoalsAuto: "Obliczaj automatycznie z kalorii",
+        macroGoalsSplit: "Białko 20% · Węglowodany 50% · Tłuszcze 30%",
+        macroGoalsInvalid: "Wpisz więcej niż 0 i maksymalnie 2500 g dla każdego składnika.",
         renameFavoriteList: 'Zmień nazwę biblioteki',
         favoriteListName: 'Nazwa biblioteki',
         tabScanner: 'Start',
@@ -1628,6 +1652,10 @@ export const translations = {
         categoryLabel: 'Kategoria',
     },
     cs: {
+        macroGoalsTitle: "Denní cíle živin",
+        macroGoalsAuto: "Počítat automaticky z kalorií",
+        macroGoalsSplit: "Bílkoviny 20 % · Sacharidy 50 % · Tuky 30 %",
+        macroGoalsInvalid: "Zadej u každé živiny více než 0 a nejvýše 2 500 g.",
         renameFavoriteList: 'Přejmenovat knihovnu',
         favoriteListName: 'Název knihovny',
         tabScanner: 'Domů',
@@ -1889,6 +1917,10 @@ export const translations = {
         categoryLabel: 'Kategorie',
     },
     it: {
+        macroGoalsTitle: "Obiettivi nutrizionali giornalieri",
+        macroGoalsAuto: "Calcola automaticamente dalle calorie",
+        macroGoalsSplit: "Proteine 20% · Carboidrati 50% · Grassi 30%",
+        macroGoalsInvalid: "Inserisci più di 0 e al massimo 2500 g per nutriente.",
         renameFavoriteList: 'Rinomina libreria',
         favoriteListName: 'Nome della libreria',
         tabScanner: 'Home',

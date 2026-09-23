@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "com.rados.keylocalandroidfoodcalorieestimator",
-      "versionCode": 174,
+      "versionCode": 175,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon_key_fire_android.png",
         "backgroundColor": "#ffffff"

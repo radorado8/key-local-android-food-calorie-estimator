@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Rect, G, Line, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Rect, G, Line, Path, Text as SvgText } from 'react-native-svg';
+import { MACRO_COLORS } from '../utils/macroGoals';
 import { subscribeToMeals } from '../api/mealService';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSettings } from '../state/SettingsContext';
 
 export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress }) {
   const t = useTranslation();
-  const { language } = useSettings();
+  const { language, macroGoals } = useSettings();
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -297,19 +298,25 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
       </View>
 
       <View style={[styles.macros, { borderTopColor: colors.border }]}>
-        <Macro label={t.protein} value={`${Math.round(totals.protein)}g`} colors={colors} />
-        <Macro label={t.carbs} value={`${Math.round(totals.carbs)}g`} colors={colors} />
-        <Macro label={t.fat} value={`${Math.round(totals.fat)}g`} colors={colors} />
+        {['protein', 'carbs', 'fat'].map(key => <Macro key={key} label={t[key]} value={totals[key]} goal={macroGoals[key]} color={MACRO_COLORS[key]} colors={colors} goalLabel={t.dailyGoalLabel} />)}
       </View>
     </View>
   );
 }
 
-function Macro({ label, value, colors }) {
+function Macro({ label, value, goal, color, colors, goalLabel }) {
+  const progress = Math.max(0, Math.min(1, value / goal));
+  const arc = 'M 34.444 39.556 A 22 22 0 1 1 65.556 39.556';
+  const length = 1.5 * Math.PI * 22;
   return (
-    <View style={styles.macroItem}>
-      <Text style={[styles.macroValue, { color: colors.text }]}>{value}</Text>
-      <Text style={[styles.macroLabel, { color: colors.muted }]}>{label}</Text>
+    <View style={styles.macroItem} accessible accessibilityLabel={`${label}: ${Math.round(value)}g. ${goalLabel}: ${goal}g`}>
+      <Svg width="100%" height={48} viewBox="0 0 100 48" accessible={false}>
+        <Path d={arc} stroke={color} strokeOpacity={0.15} strokeWidth={4} fill="none" strokeLinecap="round" />
+        {progress > 0 && <Path d={arc} stroke={color} strokeWidth={4} fill="none" strokeLinecap="round" strokeDasharray={`${length * progress} ${length}`} />}
+        <SvgText x={50} y={25} textAnchor="middle" fill={colors.text} fontSize={Math.round(value) >= 1000 ? 12 : 15} fontWeight="800">{`${Math.round(value)}g`}</SvgText>
+        <SvgText x={50} y={36} textAnchor="middle" fill={colors.muted} fontSize={9}>{`/ ${goal}g`}</SvgText>
+      </Svg>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.macroLabel, { color: colors.muted }]}>{label}</Text>
     </View>
   );
 }
@@ -366,18 +373,19 @@ const styles = StyleSheet.create({
     color: '#F87171',
   },
   macros: {
-    marginTop: 12,
+    height: 67,
+    marginTop: 0,
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderTopWidth: 1,
+    borderTopWidth: 0,
     borderTopColor: 'rgba(255,255,255,0.12)',
-    paddingTop: 12,
+    paddingTop: 0,
   },
   macroItem: {
     flex: 1,
     alignItems: 'center',
-    gap: 4,
+    minWidth: 0,
   },
   macroValue: {
     fontSize: 16,

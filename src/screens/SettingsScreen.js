@@ -28,6 +28,7 @@ import { clearCategoryFromFavorites, getFavoriteImageUris } from '../api/favorit
 import { getGeminiKey, setGeminiKey } from '../utils/secureStorage';
 import { escapeCsvField, parseCsvRow, parseFiniteNumber } from '../utils/csv';
 import TermsModal from '../components/TermsModal';
+import MacroGoalsDialog from '../components/MacroGoalsDialog';
 function clampDailyGoal(value) {
   if (!Number.isFinite(value)) return 2100;
   return Math.max(500, Math.min(10000, Math.round(value)));
@@ -192,6 +193,7 @@ export default function SettingsScreen() {
     : { bg: '#0B0F14', card: 'rgba(255,255,255,0.06)', text: '#FFFFFF', muted: 'rgba(255,255,255,0.7)', accent: '#2DD4BF', border: 'rgba(255,255,255,0.1)', elemBg: 'rgba(255,255,255,0.06)', elemBorder: 'rgba(255,255,255,0.12)', modalBg: '#161B22' };
 
   const [dailyGoalInput, setDailyGoalInput] = useState(String(dailyGoal));
+  const [macroGoalsOpen, setMacroGoalsOpen] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -755,6 +757,11 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        <Pressable onPress={() => setMacroGoalsOpen(true)} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+          <Ionicons name="nutrition-outline" size={24} color={colors.accent} />
+          <Text style={{ flex: 1, color: colors.text, fontSize: 16, fontWeight: '700' }}>{t.macroGoalsTitle}</Text>
+          <Ionicons name="chevron-forward" size={20} color={colors.muted} />
+        </Pressable>
         {/* 2. API Key */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.label, { color: colors.accent }]}>Gemini {t.apiKeyLabel}</Text>
@@ -1203,6 +1210,7 @@ export default function SettingsScreen() {
         </Pressable>
       </Modal>
 
+      {macroGoalsOpen && <MacroGoalsDialog colors={colors} onClose={() => setMacroGoalsOpen(false)} />}
       <TermsModal visible={showTerms} onClose={() => setShowTerms(false)} mode="view" />
     </SafeAreaView>
   );
