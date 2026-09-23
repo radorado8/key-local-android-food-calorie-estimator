@@ -9,25 +9,41 @@ import {
     Image,
     Keyboard,
     TextInput,
+    Modal,
+    ScrollView,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ImageView from "react-native-image-viewing";
 import { Ionicons } from '@expo/vector-icons';
-import { subscribeFavorites, removeFavorite, updateFavorite, addFavorite } from '../api/favoritesService';
+import { subscribeFavorites, subscribeFavoriteLists, removeFavorite, updateFavorite, addFavorite, createFavoriteList, renameFavoriteList, deleteFavoriteList, clearFavoriteList, exportFavoriteList, importFavoriteList } from '../api/favoritesService';
 import { createMeal } from '../api/mealService';
 import MealEditDialog from '../components/MealEditDialog';
 import WeightDialog from '../components/WeightDialog';
 import { useSettings } from '../state/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
 import { normalizeFoodSearchText, sortFoodSearchResults } from '../utils/foodSearch';
+import usdaCommonFoods from '../data/usdaCommonFoods.json';
 
 const EXPANDED_KEY = 'favorites.expandedCategories';
+const ACTIVE_LIST_KEY = 'favorites.activeList';
 
 export default function FavoritesScreen() {
     const t = useTranslation();
-    const { theme, showImagesInHistory, useLocalStorage, foodCategories } = useSettings();
+    const { theme, showImagesInHistory, useLocalStorage, foodCategories, language } = useSettings();
     const [favorites, setFavorites] = useState([]);
+    const [favoriteLists, setFavoriteLists] = useState([]);
+    const [activeListId, setActiveListId] = useState('default');
+    const [listManagerOpen, setListManagerOpen] = useState(false);
+    const [newListName, setNewListName] = useState('');
+    const [renamingList, setRenamingList] = useState(null);
+    const renameSaving = useRef(false);
+    const [listBusy, setListBusy] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [addOpen, setAddOpen] = useState(false);
     const [editItem, setEditItem] = useState(null);
@@ -52,6 +68,16 @@ export default function FavoritesScreen() {
     }, []);
 
     useEffect(() => {
+        const unsub = subscribeFavoriteLists(setFavoriteLists);
+        AsyncStorage.getItem(ACTIVE_LIST_KEY).then(id => { if (id) setActiveListId(id); });
+        return () => unsub();
+    }, []);
+
+    useEffect(() => {
+        if (favoriteLists.length && !favoriteLists.some(list => list.id === activeListId)) setActiveListId('default');
+    }, [favoriteLists, activeListId]);
+
+    useEffect(() => {
         if (!isSearching) return;
         const focusTimer = setTimeout(() => searchInputRef.current?.focus(), 100);
         return () => clearTimeout(focusTimer);
@@ -62,6 +88,36 @@ export default function FavoritesScreen() {
         setIsSearching(false);
         Keyboard.dismiss();
     }, []);
+
+    const activeList = favoriteLists.find(list => list.id === activeListId) || favoriteLists[0];
+    const closeListManager = () => {
+        setRenamingList(null);
+        setListManagerOpen(false);
+        Keyboard.dismiss();
+    };
+
+    const handleRenameList = async () => {
+        if (!renamingList?.name.trim() || renameSaving.current) return;
+        renameSaving.current = true;
+        setListBusy(true);
+        try {
+            await renameFavoriteList(renamingList.id, renamingList.name);
+            setRenamingList(null);
+            Keyboard.dismiss();
+        } catch (error) {
+            Alert.alert(t.errorTitle, error.message);
+        } finally {
+            renameSaving.current = false;
+            setListBusy(false);
+        }
+    };
+    const selectList = useCallback((id) => {
+        setActiveListId(id);
+        AsyncStorage.setItem(ACTIVE_LIST_KEY, id).catch(() => {});
+        setListManagerOpen(false);
+        setRenamingList(null);
+        closeSearch();
+    }, [closeSearch]);
 
     // Load persisted expanded/collapsed state
     useEffect(() => {
@@ -139,13 +195,15 @@ export default function FavoritesScreen() {
         });
     }, []);
 
-    const searchIndex = useMemo(() => favorites
+    const visibleFavorites = useMemo(() => favorites.filter(item => item.listId === (activeList?.id || 'default')), [favorites, activeList]);
+
+    const searchIndex = useMemo(() => visibleFavorites
         .map(item => ({
             item,
             normalizedName: normalizeFoodSearchText(item.name),
             addedAt: Date.parse(item.createdAt || item.timestamp || '') || Number(item.id) || 0,
         }))
-        .sort((a, b) => b.addedAt - a.addedAt), [favorites]);
+        .sort((a, b) => b.addedAt - a.addedAt), [visibleFavorites]);
 
     const searchResults = useMemo(() => {
         return sortFoodSearchResults(searchIndex, deferredSearchQuery).map(entry => entry.item);
@@ -154,10 +212,10 @@ export default function FavoritesScreen() {
     const sections = useMemo(() => {
         if (isSearching) return searchResults.length ? [{ categoryId: '__search__', title: null, data: searchResults }] : [];
 
-        const uncategorized = favorites.filter(f => !f.categoryId);
+        const uncategorized = visibleFavorites.filter(f => !f.categoryId);
         const categorized = new Map();
 
-        for (const fav of favorites) {
+        for (const fav of visibleFavorites) {
             if (!fav.categoryId) continue;
             if (!categorized.has(fav.categoryId)) categorized.set(fav.categoryId, []);
             categorized.get(fav.categoryId).push(fav);
@@ -179,7 +237,51 @@ export default function FavoritesScreen() {
         }
 
         return result;
-    }, [favorites, foodCategories, isSearching, searchResults]);
+    }, [visibleFavorites, foodCategories, isSearching, searchResults]);
+
+    const handleCreateList = async () => {
+        try {
+            const list = await createFavoriteList(newListName);
+            setNewListName('');
+            selectList(list.id);
+        } catch { Alert.alert(t.errorTitle || 'Chyba', t.listNameRequired || 'Zadaj názov zoznamu.'); }
+    };
+
+    const handleExportList = async () => {
+        if (!activeList) return;
+        try {
+            setListBusy(true);
+            const payload = await exportFavoriteList(activeList.id);
+            const safeName = activeList.name.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'favorites';
+            const uri = `${FileSystem.documentDirectory}${safeName}_${Date.now()}.calories-favorites.json`;
+            await FileSystem.writeAsStringAsync(uri, JSON.stringify(payload), { encoding: FileSystem.EncodingType.UTF8 });
+            if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: 'application/json' });
+        } catch (error) { Alert.alert(t.errorTitle || 'Chyba', error.message || 'Export zlyhal.'); }
+        finally { setListBusy(false); }
+    };
+
+    const handleImportList = async () => {
+        try {
+            setListBusy(true);
+            const result = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/json', 'text/plain'], copyToCacheDirectory: true });
+            if (result.canceled || !result.assets?.[0]) return;
+            const raw = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
+            const imported = await importFavoriteList(JSON.parse(raw), language);
+            selectList(imported.list.id);
+            Alert.alert(t.success || 'Hotovo', `${imported.count} ${t.importedMsg || 'položiek importovaných.'}`);
+        } catch (error) { Alert.alert(t.errorTitle || 'Chyba', error.message || 'Import zlyhal.'); }
+        finally { setListBusy(false); }
+    };
+
+    const handleInstallStarterList = async () => {
+        try {
+            setListBusy(true);
+            const imported = await importFavoriteList(usdaCommonFoods, language);
+            selectList(imported.list.id);
+            Alert.alert(t.success || 'Hotovo', `Pridaný zoznam: ${imported.count} potravín.`);
+        } catch (error) { Alert.alert(t.errorTitle || 'Chyba', error.message || 'Zoznam sa nepodarilo pridať.'); }
+        finally { setListBusy(false); }
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
@@ -204,7 +306,10 @@ export default function FavoritesScreen() {
                         autoCapitalize="none"
                     />
                 ) : (
-                    <Text style={[styles.headerTitle, { color: colors.text }]}>{t.favoritesTitle || 'Obľúbené'}</Text>
+                    <Pressable onPress={() => setListManagerOpen(true)} style={styles.listTitleButton}>
+                        <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.headerTitle, { color: colors.text }]}>{activeList?.name || t.favoritesTitle || 'Obľúbené'}</Text>
+                        <Ionicons name="chevron-down" size={17} color={colors.muted} style={{ flexShrink: 0 }} />
+                    </Pressable>
                 )}
                 <Pressable
                     style={({ pressed }) => [styles.headerIcon, { right: 16, backgroundColor: colors.card, borderColor: colors.border }, pressed && { opacity: 0.7 }]}
@@ -281,6 +386,7 @@ export default function FavoritesScreen() {
                 initialMeal={editItem}
                 colors={colors}
                 categories={foodCategories}
+                imageStorageFolder="favorite_images"
                 onCancel={() => {
                     setEditOpen(false);
                     setEditItem(null);
@@ -303,12 +409,11 @@ export default function FavoritesScreen() {
                 mode="add"
                 colors={colors}
                 categories={foodCategories}
+                imageStorageFolder="favorite_images"
                 onCancel={() => setAddOpen(false)}
                 onSave={async (mealData) => {
                     try {
-                        await addFavorite({
-                            ...mealData,
-                        });
+                        await addFavorite(mealData, activeList?.id || 'default');
                         setAddOpen(false);
                     } catch (e) {
                         Alert.alert(t.errorTitle, e.message || t.errorTitle);
@@ -332,6 +437,76 @@ export default function FavoritesScreen() {
                     setWeightItem(null);
                 }}
             />
+
+            <Modal visible={listManagerOpen} transparent animationType="fade" onRequestClose={closeListManager}>
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                <Pressable style={styles.modalBackdrop} onPress={closeListManager}>
+                    <Pressable style={[styles.listModal, { backgroundColor: colors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : colors.card, borderColor: colors.border }]} onPress={() => {}}>
+                        <View style={styles.listModalHeading}>
+                            <Text style={[styles.listModalTitle, { color: colors.text }]}>Zoznamy obľúbených</Text>
+                            <Pressable onPress={closeListManager}><Ionicons name="close" size={23} color={colors.muted} /></Pressable>
+                        </View>
+                        <ScrollView keyboardShouldPersistTaps="handled" style={{ flexShrink: 1 }}>
+                        {favoriteLists.map(list => (
+                            <View key={list.id} style={[styles.listRow, { borderColor: colors.border }]}>
+                                {renamingList?.id === list.id ? <>
+                                    <TextInput
+                                        autoFocus
+                                        accessibilityLabel={t.favoriteListName}
+                                        value={renamingList.name}
+                                        onChangeText={name => setRenamingList(current => ({ ...current, name }))}
+                                        maxLength={60}
+                                        editable={!listBusy}
+                                        returnKeyType="done"
+                                        onSubmitEditing={handleRenameList}
+                                        style={[styles.newListInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.bg }]}
+                                    />
+                                    <Pressable accessibilityLabel={t.save} disabled={listBusy || !renamingList.name.trim()} onPress={handleRenameList} style={styles.listAction}>
+                                        <Ionicons name="checkmark" size={22} color={renamingList.name.trim() ? colors.accent : colors.muted} />
+                                    </Pressable>
+                                    <Pressable accessibilityLabel={t.cancel} disabled={listBusy} onPress={() => { setRenamingList(null); Keyboard.dismiss(); }} style={styles.listAction}>
+                                        <Ionicons name="close" size={22} color={colors.muted} />
+                                    </Pressable>
+                                </> : <>
+                                <Pressable style={styles.listSelect} onPress={() => selectList(list.id)}>
+                                    <Ionicons name={list.id === activeList?.id ? 'radio-button-on' : 'radio-button-off'} size={20} color={colors.accent} />
+                                    <Text style={[styles.listRowName, { color: colors.text }]}>{list.name}</Text>
+                                </Pressable>
+                                {list.id !== 'default' && <Pressable
+                                    accessibilityLabel={`${t.renameFavoriteList}: ${list.name}`}
+                                    disabled={listBusy}
+                                    onPress={() => setRenamingList({ id: list.id, name: list.name })}
+                                    style={styles.listAction}
+                                ><Ionicons name="pencil-outline" size={19} color={colors.accent} /></Pressable>}
+                                {list.id === 'default'
+                                    ? favorites.some(item => item.listId === list.id) && <Pressable onPress={() => {
+                                        const itemCount = favorites.filter(item => item.listId === list.id).length;
+                                        Alert.alert('Vymazať všetky položky?', `Zo zoznamu „${list.name}“ sa natrvalo odstráni ${itemCount} položiek.`, [
+                                            { text: t.cancel || 'Zrušiť', style: 'cancel' },
+                                            { text: t.delete || 'Vymazať', style: 'destructive', onPress: () => clearFavoriteList(list.id) },
+                                        ]);
+                                    }}><Ionicons name="trash-outline" size={19} color="#EF4444" /></Pressable>
+                                    : <Pressable onPress={() => Alert.alert('Vymazať zoznam?', `Zoznam „${list.name}“ a všetky jeho položky sa natrvalo odstránia.`, [{ text: t.cancel, style: 'cancel' }, { text: t.delete, style: 'destructive', onPress: async () => { await deleteFavoriteList(list.id); if (list.id === activeListId) selectList('default'); } }])}><Ionicons name="trash-outline" size={19} color="#EF4444" /></Pressable>}
+                                </>}
+                            </View>
+                        ))}
+                        </ScrollView>
+                        <View style={styles.newListRow}>
+                            <TextInput value={newListName} onChangeText={setNewListName} placeholder="Názov nového zoznamu" placeholderTextColor={colors.muted} style={[styles.newListInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.bg }]} />
+                            <Pressable onPress={handleCreateList} style={[styles.newListButton, { backgroundColor: colors.accent }]}><Ionicons name="add" size={22} color={colors.bg} /></Pressable>
+                        </View>
+                        <View style={styles.transferActions}>
+                            <Pressable disabled={listBusy} onPress={handleImportList} style={[styles.transferButton, { borderColor: colors.border }]}><Ionicons name="download-outline" size={17} color={colors.accent} /><Text style={{ color: colors.text, fontWeight: '700' }}>Importovať</Text></Pressable>
+                            <Pressable disabled={listBusy || !activeList} onPress={handleExportList} style={[styles.transferButton, { borderColor: colors.border }]}><Ionicons name="share-outline" size={17} color={colors.accent} /><Text style={{ color: colors.text, fontWeight: '700' }}>Exportovať</Text></Pressable>
+                        </View>
+                        <Pressable disabled={listBusy} onPress={handleInstallStarterList} style={[styles.starterButton, { borderColor: colors.accent }]}>
+                            <Ionicons name="nutrition-outline" size={18} color={colors.accent} />
+                            <Text style={{ color: colors.text, fontWeight: '700' }}>Pridať USDA základný zoznam (1 000)</Text>
+                        </Pressable>
+                    </Pressable>
+                </Pressable>
+                </KeyboardAvoidingView>
+            </Modal>
 
             {/* Full Screen Image Zoom Viewer */}
             <ImageView
@@ -429,9 +604,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     headerTitle: {
+        flexShrink: 1,
+        minWidth: 0,
         fontSize: 22,
         fontWeight: '800',
         textAlign: 'center',
+    },
+    listTitleButton: {
+        position: 'absolute',
+        left: 62,
+        right: 62,
+        minWidth: 0,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
     },
     headerIcon: {
         position: 'absolute',
@@ -506,6 +693,20 @@ const styles = StyleSheet.create({
         transform: [{ scale: 0.95 }],
         opacity: 0.7,
     },
+    modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.62)', justifyContent: 'center', padding: 20 },
+    listModal: { borderWidth: 1, borderRadius: 18, padding: 16, maxHeight: '80%' },
+    listModalHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+    listModalTitle: { fontSize: 18, fontWeight: '800' },
+    listRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, minHeight: 49, paddingVertical: 8, gap: 10 },
+    listAction: { minWidth: 36, minHeight: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    listSelect: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    listRowName: { fontWeight: '700', fontSize: 16, flex: 1 },
+    newListRow: { flexDirection: 'row', gap: 8, marginTop: 14 },
+    newListInput: { flex: 1, minHeight: 43, paddingHorizontal: 12, borderWidth: 1, borderRadius: 11, fontWeight: '600' },
+    newListButton: { width: 43, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+    transferActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
+    transferButton: { flex: 1, borderWidth: 1, borderRadius: 11, minHeight: 42, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7 },
+    starterButton: { marginTop: 8, minHeight: 42, borderWidth: 1, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7 },
     categoryHeader: {
         paddingVertical: 12,
         paddingHorizontal: 2,

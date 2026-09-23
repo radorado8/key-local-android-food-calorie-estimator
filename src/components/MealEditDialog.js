@@ -14,6 +14,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -22,7 +25,7 @@ function toNumber(v) {
   return Number.isFinite(n) ? n : NaN;
 }
 
-export default function MealEditDialog({ visible, initialMeal, onCancel, onSave, colors, mode = 'edit', categories = [] }) {
+export default function MealEditDialog({ visible, initialMeal, onCancel, onSave, colors, mode = 'edit', categories = [], imageStorageFolder = 'meal_photos' }) {
   const t = useTranslation();
   const [name, setName] = useState('');
   const [calories, setCalories] = useState('');
@@ -136,6 +139,33 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
     elemBorder: 'rgba(255,255,255,0.12)',
   };
 
+  const saveSelectedImage = async (uri) => {
+    const folder = `${FileSystem.documentDirectory}${imageStorageFolder}/`;
+    await FileSystem.makeDirectoryAsync(folder, { intermediates: true });
+    const processed = await manipulateAsync(uri, [{ resize: { width: 800 } }], {
+      compress: 0.75,
+      format: SaveFormat.JPEG,
+    });
+    const destination = `${folder}${imageStorageFolder === 'favorite_images' ? 'favorite' : 'meal'}_${Date.now()}.jpg`;
+    await FileSystem.moveAsync({ from: processed.uri, to: destination });
+    setImageUri(destination);
+  };
+
+  const chooseImage = async (source) => {
+    try {
+      const permission = source === 'camera'
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== 'granted') return;
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+      if (!result.canceled && result.assets?.[0]?.uri) await saveSelectedImage(result.assets[0].uri);
+    } catch (error) {
+      console.error('Favorite image selection failed', error);
+    }
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel} statusBarTranslucent={true}>
       <View style={styles.backdrop}>
@@ -165,6 +195,17 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
                 </Pressable>
               </View>
             )}
+
+            <View style={styles.imageActions}>
+              <Pressable onPress={() => chooseImage('camera')} style={[styles.imageButton, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder }]}>
+                <Ionicons name="camera-outline" size={18} color={currentColors.accent} />
+                <Text style={{ color: currentColors.text, fontWeight: '700' }}>{t.cameraShort || 'Fotoaparát'}</Text>
+              </Pressable>
+              <Pressable onPress={() => chooseImage('gallery')} style={[styles.imageButton, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder }]}>
+                <Ionicons name="images-outline" size={18} color={currentColors.accent} />
+                <Text style={{ color: currentColors.text, fontWeight: '700' }}>{t.galleryShort || 'Galéria'}</Text>
+              </Pressable>
+            </View>
 
             <Text style={[styles.title, { color: currentColors.text }]}>
               {mode === 'add' ? t.addMealTitle : t.editMealTitle}
@@ -362,6 +403,21 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginTop: 2,
+  },
+  imageActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  imageButton: {
+    flex: 1,
+    minHeight: 42,
+    borderWidth: 1,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 7,
   },
   gridItem: {
     width: '48%',
