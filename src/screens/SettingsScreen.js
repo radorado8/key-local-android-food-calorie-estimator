@@ -18,26 +18,98 @@ import { MODEL_CATALOG, coerceModelId, DEFAULT_PUBLIC_MODEL_ID } from '../config
 import { useSettings } from '../state/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 import * as FileSystem from 'expo-file-system/legacy';
+import { File as ExpoFile } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { exportUserData, getFriendlyError } from '../api/backend';
-import { getAllMeals, createMeal } from '../api/mealService';
-import { clearCategoryFromFavorites } from '../api/favoritesService';
+import { getAllMeals, importMeals, clearAllMeals } from '../api/mealService';
+import { clearCategoryFromFavorites, getFavoriteImageUris } from '../api/favoritesService';
 import { getGeminiKey, setGeminiKey } from '../utils/secureStorage';
+import { escapeCsvField, parseCsvRow, parseFiniteNumber } from '../utils/csv';
 import TermsModal from '../components/TermsModal';
-
 function clampDailyGoal(value) {
   if (!Number.isFinite(value)) return 2100;
   return Math.max(500, Math.min(10000, Math.round(value)));
 }
 
-// ... Dropdown component ... (omitted for brevity in replace, but context match will find the right place)
-// Actually, I'll target the top of SettingsScreen component to add state, and top of file for import.
-// This call handles BOTH if I can match multiple blocks? No, replace_file_content is single block.
-// I'll do the import first, then the state.
-// Wait, I can do this in TWO separate replace_file_content calls or one multi_replace.
-// I'll use multi_replace for safety and efficiency.
+const HISTORY_EXPORT_FORMAT = 'calories-ai-history';
+const HISTORY_STREAM_VERSION = 2;
+const HISTORY_READ_CHUNK_SIZE = 64 * 1024;
 
+// JSON permits all non-ASCII characters to be written as \uXXXX escapes. Keeping
+// the streamed format ASCII lets us encode and split chunks without creating a
+// second full-file string or depending on a platform-specific text codec.
+function stringifyAsciiJson(value) {
+  return JSON.stringify(value).replace(/[\u007f-\uffff]/g, (character) =>
+    `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`
+  );
+}
+
+function asciiStringToBytes(value) {
+  const bytes = new Uint8Array(value.length);
+  for (let index = 0; index < value.length; index += 1) {
+    bytes[index] = value.charCodeAt(index);
+  }
+  return bytes;
+}
+
+function asciiBytesToString(bytes) {
+  let value = '';
+  const step = 8192;
+  for (let offset = 0; offset < bytes.length; offset += step) {
+    value += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + step, bytes.length)));
+  }
+  return value;
+}
+
+function writeJsonLine(fileHandle, value) {
+  fileHandle.writeBytes(asciiStringToBytes(`${stringifyAsciiJson(value)}\n`));
+}
+
+async function isStreamedHistoryExport(fileUri) {
+  const file = new ExpoFile(fileUri);
+  const handle = file.open();
+  try {
+    const firstChunk = asciiBytesToString(handle.readBytes(Math.min(HISTORY_READ_CHUNK_SIZE, file.size)));
+    const firstLineEnd = firstChunk.indexOf('\n');
+    if (firstLineEnd < 0) return false;
+    const header = JSON.parse(firstChunk.slice(0, firstLineEnd).trim());
+    return header?.format === HISTORY_EXPORT_FORMAT && header?.version === HISTORY_STREAM_VERSION;
+  } catch {
+    return false;
+  } finally {
+    handle.close();
+  }
+}
+
+async function readJsonLines(fileUri, onRecord) {
+  const file = new ExpoFile(fileUri);
+  const handle = file.open();
+  let pending = '';
+  let lineNumber = 0;
+
+  try {
+    while ((handle.offset ?? 0) < (handle.size ?? 0)) {
+      const remaining = (handle.size ?? 0) - (handle.offset ?? 0);
+      pending += asciiBytesToString(handle.readBytes(Math.min(HISTORY_READ_CHUNK_SIZE, remaining)));
+
+      let newlineIndex = pending.indexOf('\n');
+      while (newlineIndex >= 0) {
+        const line = pending.slice(0, newlineIndex).trim();
+        pending = pending.slice(newlineIndex + 1);
+        if (line) await onRecord(JSON.parse(line), lineNumber);
+        lineNumber += 1;
+        newlineIndex = pending.indexOf('\n');
+      }
+    }
+
+    const finalLine = pending.trim();
+    if (finalLine) await onRecord(JSON.parse(finalLine), lineNumber);
+  } finally {
+    handle.close();
+  }
+}
 
 const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
   const t = useTranslation();
@@ -173,14 +245,17 @@ export default function SettingsScreen() {
 
   // Export Logic
   const [exporting, setExporting] = useState(false);
+  const [exportingHistoryJson, setExportingHistoryJson] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importingHistoryJson, setImportingHistoryJson] = useState(false);
+  const [clearingHistory, setClearingHistory] = useState(false);
 
   const handleImport = async () => {
     try {
       setImporting(true);
 
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['text/csv', 'text/comma-separated-values', 'application/csv'],
+        type: ['text/csv', 'text/comma-separated-values', 'application/csv', 'text/plain'],
         copyToCacheDirectory: true
       });
 
@@ -200,19 +275,19 @@ export default function SettingsScreen() {
       // We ignore the header row (index 0) and parse columns by order to support any language headers
       // Expected Order: Date, Name, Calories, Protein, Carbs, Fat, Weight
 
-      let importedCount = 0;
+      const mealsToImport = [];
 
       for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].split(',');
+        const row = parseCsvRow(lines[i]);
         if (row.length < 3) continue; // minimal valid row
 
         const dateStr = row[0]?.trim();
         const name = row[1]?.trim() || t.importedMealDefault;
-        const cals = parseFloat(row[2] || '0');
-        const prot = parseFloat(row[3] || '0');
-        const carbs = parseFloat(row[4] || '0');
-        const fat = parseFloat(row[5] || '0');
-        const weight = parseFloat(row[6] || '0');
+        const cals = parseFiniteNumber(row[2]);
+        const prot = parseFiniteNumber(row[3]);
+        const carbs = parseFiniteNumber(row[4]);
+        const fat = parseFiniteNumber(row[5]);
+        const weight = parseFiniteNumber(row[6]);
 
         let timestamp;
         try {
@@ -221,7 +296,7 @@ export default function SettingsScreen() {
           timestamp = new Date().toISOString();
         }
 
-        const meal = {
+        mealsToImport.push({
           name,
           calories: cals,
           protein: prot,
@@ -230,11 +305,10 @@ export default function SettingsScreen() {
           weight_g: weight,
           timestamp,
           imported: true
-        };
-
-        await createMeal(meal, true); // Force local storage
-        importedCount++;
+        });
       }
+
+      const importedCount = await importMeals(mealsToImport);
 
       Alert.alert(t.success, `${t.importedMsg} ${importedCount}`);
 
@@ -254,18 +328,18 @@ export default function SettingsScreen() {
       // Always local export now
       const meals = await getAllMeals(true);
       // Header
-      csvData = `${t.csvHeaderDate},${t.csvHeaderName},${t.csvHeaderCals},${t.csvHeaderProt},${t.csvHeaderCarbs},${t.csvHeaderFat},${t.csvHeaderWeight}\n`;
+      csvData = `\uFEFF${[t.csvHeaderDate, t.csvHeaderName, t.csvHeaderCals, t.csvHeaderProt, t.csvHeaderCarbs, t.csvHeaderFat, t.csvHeaderWeight].map(escapeCsvField).join(',')}\n`;
 
       // Rows
       meals.forEach(m => {
         const date = m.timestamp || new Date().toISOString();
-        const name = (m.name || '').replace(/,/g, ' ');
+        const name = m.name || '';
         const cals = m.calories || 0;
         const p = m.protein || 0;
         const c = m.carbs || 0;
         const f = m.fat || 0;
         const w = m.weight_g || 0;
-        csvData += `${date},${name},${cals},${p},${c},${f},${w}\n`;
+        csvData += [date, name, cals, p, c, f, w].map(escapeCsvField).join(',') + '\n';
       });
 
       const timestamp = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').slice(0, 16);
@@ -286,6 +360,220 @@ export default function SettingsScreen() {
     } finally {
       setExporting(false);
     }
+  };
+
+  const handleHistoryJsonExport = async () => {
+    let fileHandle = null;
+    let outputFile = null;
+    try {
+      setExportingHistoryJson(true);
+      const meals = await getAllMeals(true);
+      const timestamp = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').slice(0, 16);
+      const fileUri = `${FileSystem.documentDirectory}meal_history_full_${timestamp}.json`;
+      outputFile = new ExpoFile(fileUri);
+      outputFile.create({ overwrite: true, intermediates: true });
+      fileHandle = outputFile.open();
+      writeJsonLine(fileHandle, {
+        format: HISTORY_EXPORT_FORMAT,
+        version: HISTORY_STREAM_VERSION,
+        encoding: 'json-lines',
+        exportedAt: new Date().toISOString(),
+        mealCount: meals.length,
+      });
+
+      // Each image and meal is released before the next one is loaded. This keeps
+      // exports with many photos below the JavaScript string and memory limits.
+      for (const meal of meals) {
+        let exportedImage = null;
+        if (meal.imageUri?.startsWith('data:image/')) {
+          exportedImage = meal.imageUri;
+        } else if (meal.imageUri) {
+          try {
+            const path = meal.imageUri.toLowerCase().split('?')[0];
+            const mimeType = path.endsWith('.png') ? 'image/png'
+              : path.endsWith('.webp') ? 'image/webp'
+                : path.endsWith('.gif') ? 'image/gif'
+                  : 'image/jpeg';
+            const base64 = await FileSystem.readAsStringAsync(meal.imageUri, { encoding: FileSystem.EncodingType.Base64 });
+            exportedImage = `data:${mimeType};base64,${base64}`;
+          } catch (imageError) {
+            console.warn('History image could not be exported', meal.imageUri, imageError);
+          }
+        }
+        writeJsonLine(fileHandle, { ...meal, imageUri: exportedImage });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      fileHandle.close();
+      fileHandle = null;
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, { mimeType: 'application/json', UTI: 'public.json' });
+        Alert.alert(t.info, t.exportHistoryJsonSuccess || 'Celá história bola exportovaná.');
+      } else {
+        Alert.alert(t.info, t.sharingUnavailable);
+      }
+    } catch (e) {
+      console.error('Full history export failed', e);
+      if (fileHandle) {
+        try { fileHandle.close(); } catch {}
+        fileHandle = null;
+      }
+      if (outputFile?.exists) {
+        try { outputFile.delete(); } catch {}
+      }
+      const friendly = getFriendlyError(e, { operation: 'export' });
+      Alert.alert(friendly.title, friendly.message || t.exportDataError);
+    } finally {
+      if (fileHandle) {
+        try { fileHandle.close(); } catch {}
+      }
+      setExportingHistoryJson(false);
+    }
+  };
+
+  const handleHistoryJsonImport = async () => {
+    try {
+      setImportingHistoryJson(true);
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/json', 'application/x-ndjson', 'application/octet-stream', 'text/json', 'text/plain'],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const photoDirectory = `${FileSystem.documentDirectory}meal_photos/`;
+      let photoDirectoryReady = false;
+      let restoredImageCount = 0;
+      const mealsToImport = [];
+
+      const restoreMeal = async (rawMeal, index) => {
+        if (!rawMeal || typeof rawMeal !== 'object' || Array.isArray(rawMeal)) return;
+        let imageUri = null;
+        const imageMatch = typeof rawMeal.imageUri === 'string'
+          ? rawMeal.imageUri.match(/^data:(image\/(?:jpeg|png|webp|gif));base64,([\s\S]+)$/i)
+          : null;
+        if (imageMatch) {
+          let temporaryImageUri = null;
+          try {
+            if (!photoDirectoryReady) {
+              await FileSystem.makeDirectoryAsync(photoDirectory, { intermediates: true });
+              photoDirectoryReady = true;
+            }
+            const extension = imageMatch[1].toLowerCase() === 'image/png' ? 'png'
+              : imageMatch[1].toLowerCase() === 'image/webp' ? 'webp'
+                : imageMatch[1].toLowerCase() === 'image/gif' ? 'gif'
+                  : 'jpg';
+            temporaryImageUri = `${FileSystem.cacheDirectory}history_import_${Date.now()}_${index}.${extension}`;
+            await FileSystem.writeAsStringAsync(temporaryImageUri, imageMatch[2], { encoding: FileSystem.EncodingType.Base64 });
+            const compressed = await manipulateAsync(
+              temporaryImageUri,
+              [{ resize: { width: 600 } }],
+              { compress: 0.7, format: SaveFormat.JPEG }
+            );
+            imageUri = `${photoDirectory}imported_${Date.now()}_${index}.jpg`;
+            await FileSystem.moveAsync({ from: compressed.uri, to: imageUri });
+            await FileSystem.deleteAsync(temporaryImageUri, { idempotent: true });
+            restoredImageCount += 1;
+          } catch (imageError) {
+            if (temporaryImageUri) await FileSystem.deleteAsync(temporaryImageUri, { idempotent: true }).catch(() => {});
+            imageUri = null;
+            console.warn('History image could not be restored', imageError);
+          }
+        }
+
+        const parsedTimestamp = new Date(rawMeal.timestamp);
+        const timestamp = Number.isNaN(parsedTimestamp.getTime()) ? new Date().toISOString() : parsedTimestamp.toISOString();
+        const { id: ignoredId, imageUri: ignoredImageUri, ...mealData } = rawMeal;
+        mealsToImport.push({
+          ...mealData,
+          name: String(rawMeal.name || t.importedMealDefault || 'Jedlo').slice(0, 200),
+          timestamp,
+          imageUri,
+          imported: true,
+        });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      };
+
+      const fileUri = result.assets[0].uri;
+      if (await isStreamedHistoryExport(fileUri)) {
+        await readJsonLines(fileUri, async (record, lineNumber) => {
+          if (lineNumber === 0) {
+            if (record?.format !== HISTORY_EXPORT_FORMAT || record?.version !== HISTORY_STREAM_VERSION) {
+              throw new Error('INVALID_HISTORY_JSON');
+            }
+            return;
+          }
+          await restoreMeal(record, lineNumber - 1);
+        });
+      } else {
+        // Version 1 files used a single JSON object. Keep this path so existing
+        // backups remain importable; all new exports use the streamed format.
+        const content = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.UTF8 });
+        const payload = JSON.parse(content);
+        if (payload?.format !== HISTORY_EXPORT_FORMAT || payload?.version !== 1 || !Array.isArray(payload?.meals)) {
+          throw new Error('INVALID_HISTORY_JSON');
+        }
+        for (let index = 0; index < payload.meals.length; index += 1) {
+          await restoreMeal(payload.meals[index], index);
+        }
+      }
+
+      const importedCount = await importMeals(mealsToImport);
+
+      Alert.alert(
+        t.success || 'Hotovo',
+        (t.importHistoryJsonSuccess || 'Importovaných položiek: {count}. Obnovených obrázkov: {images}.')
+          .replace('{count}', String(importedCount))
+          .replace('{images}', String(restoredImageCount))
+      );
+    } catch (e) {
+      console.error('Full history import failed', e);
+      Alert.alert(
+        t.errorTitle || 'Chyba',
+        e?.message === 'INVALID_HISTORY_JSON'
+          ? (t.importHistoryJsonInvalid || 'Vybraný súbor nie je platný export histórie.')
+          : (t.importFailed || 'Import zlyhal.')
+      );
+    } finally {
+      setImportingHistoryJson(false);
+    }
+  };
+
+  const handleClearHistory = async () => {
+    const meals = await getAllMeals();
+    if (meals.length === 0) {
+      Alert.alert(t.info || 'Informácia', t.clearHistoryEmpty || 'História je už prázdna.');
+      return;
+    }
+    Alert.alert(
+      t.clearHistoryTitle || 'Vymazať celú históriu?',
+      (t.clearHistoryConfirm || 'Natrvalo sa odstráni {count} záznamov aj ich obrázky. Túto akciu nemožno vrátiť späť.')
+        .replace('{count}', String(meals.length)),
+      [
+        { text: t.cancel || 'Zrušiť', style: 'cancel' },
+        {
+          text: t.delete || 'Vymazať',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setClearingHistory(true);
+              const favoriteImageUris = await getFavoriteImageUris();
+              const { deletedCount, deletedImageCount } = await clearAllMeals(favoriteImageUris);
+              Alert.alert(
+                t.success || 'Hotovo',
+                (t.clearHistorySuccess || 'Odstránených záznamov: {count}. Vymazaných obrázkov: {images}.')
+                  .replace('{count}', String(deletedCount))
+                  .replace('{images}', String(deletedImageCount))
+              );
+            } catch (e) {
+              console.error('Clear history failed', e);
+              Alert.alert(t.errorTitle || 'Chyba', t.exportDataError || 'Históriu sa nepodarilo vymazať.');
+            } finally {
+              setClearingHistory(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Custom Models Logic
@@ -770,6 +1058,47 @@ export default function SettingsScreen() {
               </Text>
             </Pressable>
           </View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionBtn,
+                { backgroundColor: colors.elemBg, borderColor: colors.elemBorder, flex: 1 },
+                pressed && styles.pressed
+              ]}
+              onPress={handleHistoryJsonExport}
+              disabled={exportingHistoryJson}
+            >
+              <Text style={[styles.btnText, { color: colors.accent }]}>
+                {exportingHistoryJson ? '...' : (t.exportHistoryJsonBtn || 'Export history + images (JSON)')}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionBtn,
+                { backgroundColor: colors.elemBg, borderColor: colors.elemBorder, flex: 1 },
+                pressed && styles.pressed
+              ]}
+              onPress={handleHistoryJsonImport}
+              disabled={importingHistoryJson}
+            >
+              <Text style={[styles.btnText, { color: colors.text }]}>
+                {importingHistoryJson ? '...' : (t.importHistoryJsonBtn || 'Import history (JSON)')}
+              </Text>
+            </Pressable>
+          </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.actionBtn,
+              { backgroundColor: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.35)' },
+              pressed && styles.pressed
+            ]}
+            onPress={handleClearHistory}
+            disabled={clearingHistory}
+          >
+            <Text style={[styles.btnText, { color: '#EF4444' }]}>
+              {clearingHistory ? '...' : (t.clearHistoryBtn || 'Vymazať celú históriu')}
+            </Text>
+          </Pressable>
         </View>
 
         {/* 7. Credits */}

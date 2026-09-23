@@ -19,7 +19,7 @@ import ImageView from "react-native-image-viewing";
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 import { deleteMeal, updateMeal, subscribeToMeals, createMeal } from '../api/mealService';
-import { addFavorite } from '../api/favoritesService';
+import { addFavorite, getFavoriteImageUris } from '../api/favoritesService';
 import MealEditDialog from '../components/MealEditDialog';
 import WeightDialog from '../components/WeightDialog';
 import { useSettings } from '../state/SettingsContext';
@@ -583,7 +583,10 @@ export default function HistoryScreen() {
             // Delete old image if removed
             if (editMeal?.imageUri && patch.imageUri === null) {
               try {
-                await FileSystem.deleteAsync(editMeal.imageUri, { idempotent: true });
+                const favoriteImageUris = await getFavoriteImageUris();
+                if (!favoriteImageUris.includes(editMeal.imageUri)) {
+                  await FileSystem.deleteAsync(editMeal.imageUri, { idempotent: true });
+                }
               } catch (err) {
                 console.warn('Failed to delete old image', err);
               }
