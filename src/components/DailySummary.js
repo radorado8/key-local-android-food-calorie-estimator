@@ -312,7 +312,7 @@ function Macro({ label, value, goal, color, colors, goalLabel }) {
         <Path d={arc} stroke={color} strokeOpacity={0.15} strokeWidth={5.8} fill="none" strokeLinecap="round" />
         {progress > 0 && <Path d={arc} stroke={color} strokeWidth={5.8} fill="none" strokeLinecap="round" strokeDasharray={`${length * progress} ${length}`} />}
         <SvgText x={50} y={40} textAnchor="middle" fill={colors.muted} fontSize={Math.round(value) >= 1000 ? 17 : 22} fontWeight="800">{`${Math.round(value)}g`}</SvgText>
-        <SvgText x={50} y={60} textAnchor="middle" fill={colors.muted} fontSize={15}>{`/ ${goal}g`}</SvgText>
+        <SvgText x={50} y={61} textAnchor="middle" fill={colors.muted} fontSize={14} fontWeight="800">{`${goal}g`}</SvgText>
       </Svg>
       <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.macroLabel, { color: colors.muted }]}>{label}</Text>
     </View>

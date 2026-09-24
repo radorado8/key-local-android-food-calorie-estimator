@@ -1,13 +1,24 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { isAIProvider } from '../config/aiProviders';
 
 const INDEX = 'ai-key-index.v1';
 const LEGACY = 'gemini_api_key';
-const readSecret = key => Platform.OS === 'web' ? Promise.resolve(localStorage.getItem(key)) : SecureStore.getItemAsync(key);
-const writeSecret = (key, value) => Platform.OS === 'web' ? Promise.resolve(localStorage.setItem(key, value)) : SecureStore.setItemAsync(key, value);
-const removeSecret = key => Platform.OS === 'web' ? Promise.resolve(localStorage.removeItem(key)) : SecureStore.deleteItemAsync(key);
+// Simulator builds can lack the Keychain entitlement, even when the app itself runs.
+// Keep this fallback confined to CoreSimulator; physical iPhones still use Keychain.
+const isIosSimulator = Platform.OS === 'ios' && /\/CoreSimulator\/Devices\//.test(FileSystem.documentDirectory || '');
+const simulatorSecret = key => `simulator_secret_${key}`;
+const readSecret = key => Platform.OS === 'web'
+  ? Promise.resolve(localStorage.getItem(key))
+  : isIosSimulator ? AsyncStorage.getItem(simulatorSecret(key)) : SecureStore.getItemAsync(key);
+const writeSecret = (key, value) => Platform.OS === 'web'
+  ? Promise.resolve(localStorage.setItem(key, value))
+  : isIosSimulator ? AsyncStorage.setItem(simulatorSecret(key), value) : SecureStore.setItemAsync(key, value);
+const removeSecret = key => Platform.OS === 'web'
+  ? Promise.resolve(localStorage.removeItem(key))
+  : isIosSimulator ? AsyncStorage.removeItem(simulatorSecret(key)) : SecureStore.deleteItemAsync(key);
 const secretName = id => `ai_key_${id}`;
 let sequence = 0;
 let queue = Promise.resolve();

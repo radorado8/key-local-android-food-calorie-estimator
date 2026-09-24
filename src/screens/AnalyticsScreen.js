@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Pressable,
     ScrollView,
@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Rect, G, Line, Text as SvgText, Path, Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { subscribeToMeals } from '../api/mealService';
-import { readBurnedCaloriesPerDay, isHealthConnectAvailable, requestHealthPermissions } from '../api/healthConnectService';
+import { MACRO_COLORS } from '../utils/macroGoals';
 import { useSettings } from '../state/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -24,7 +24,7 @@ function getLocalDateKey(d) {
 
 export default function AnalyticsScreen() {
     const t = useTranslation();
-    const { theme, dailyGoal, useLocalStorage, language, healthConnectEnabled, setHealthConnectEnabled } = useSettings();
+    const { theme, dailyGoal, useLocalStorage, language } = useSettings();
     const { width: screenWidth } = useWindowDimensions();
 
     const colors = theme === 'light'
@@ -33,47 +33,7 @@ export default function AnalyticsScreen() {
 
     const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
     const [meals, setMeals] = useState([]);
-    const [burnedPerDay, setBurnedPerDay] = useState({});
-    const [hcAvailable, setHcAvailable] = useState(false);
-    const [isSyncing, setIsSyncing] = useState(false);
-
-    useEffect(() => {
-        (async () => {
-            const avail = await isHealthConnectAvailable();
-            setHcAvailable(avail);
-        })();
-    }, []);
-
-    const syncHealthConnect = useCallback(async () => {
-        setIsSyncing(true);
-        try {
-            const available = await isHealthConnectAvailable();
-            if (!available) {
-                setIsSyncing(false);
-                return;
-            }
-            let permitted = healthConnectEnabled;
-            if (!permitted) {
-                permitted = await requestHealthPermissions();
-                if (permitted) {
-                    setHealthConnectEnabled(true);
-                }
-            }
-            if (permitted) {
-                const end = new Date();
-                const start = new Date();
-                start.setDate(start.getDate() - 31);
-                start.setHours(0, 0, 0, 0);
-                end.setHours(23, 59, 59, 999);
-                const data = await readBurnedCaloriesPerDay(start, end);
-                setBurnedPerDay(data);
-            }
-        } catch (error) {
-            console.warn('Sync error:', error);
-        } finally {
-            setIsSyncing(false);
-        }
-    }, [healthConnectEnabled, setHealthConnectEnabled]);
+    const [chartWidth, setChartWidth] = useState(Math.max(240, screenWidth - 64));
 
     useEffect(() => {
         const unsub = subscribeToMeals(useLocalStorage, (fetched) => {
@@ -81,22 +41,6 @@ export default function AnalyticsScreen() {
         });
         return () => unsub();
     }, [useLocalStorage]);
-
-    // Load burned calories from Health Connect
-    useEffect(() => {
-        if (!healthConnectEnabled) { setBurnedPerDay({}); return; }
-        (async () => {
-            const available = await isHealthConnectAvailable();
-            if (!available) return;
-            const end = new Date();
-            const start = new Date();
-            start.setDate(start.getDate() - 31);
-            start.setHours(0, 0, 0, 0);
-            end.setHours(23, 59, 59, 999);
-            const data = await readBurnedCaloriesPerDay(start, end);
-            setBurnedPerDay(data);
-        })();
-    }, [healthConnectEnabled]);
 
     const numDays = viewMode === 'week' ? 7 : 30;
 
@@ -119,7 +63,6 @@ export default function AnalyticsScreen() {
                 protein: 0,
                 carbs: 0,
                 fat: 0,
-                burned: burnedPerDay[key] || 0,
                 isToday: i === 0,
             });
         }
@@ -137,7 +80,7 @@ export default function AnalyticsScreen() {
         });
 
         return days;
-    }, [meals, numDays, viewMode, language, burnedPerDay]);
+    }, [meals, numDays, viewMode, language]);
 
     const summary = useMemo(() => {
         const daysWithData = dailyData.filter(d => d.calories > 0);
@@ -145,20 +88,19 @@ export default function AnalyticsScreen() {
         const totalProtein = dailyData.reduce((s, d) => s + d.protein, 0);
         const totalCarbs = dailyData.reduce((s, d) => s + d.carbs, 0);
         const totalFat = dailyData.reduce((s, d) => s + d.fat, 0);
-        const totalBurned = dailyData.reduce((s, d) => s + d.burned, 0);
         const avgCals = daysWithData.length > 0 ? Math.round(totalCals / daysWithData.length) : 0;
         const highest = daysWithData.length > 0 ? Math.max(...daysWithData.map(d => d.calories)) : 0;
         const lowest = daysWithData.length > 0 ? Math.min(...daysWithData.map(d => d.calories)) : 0;
-        return { totalCals, totalProtein, totalCarbs, totalFat, totalBurned, avgCals, highest, lowest, daysTracked: daysWithData.length };
+        return { totalCals, totalProtein, totalCarbs, totalFat, avgCals, highest, lowest, daysTracked: daysWithData.length };
     }, [dailyData]);
 
     // ---- BAR CHART ----
     const chartPadding = { left: 40, right: 16, top: 20, bottom: 30 };
-    const chartW = screenWidth - 32 - chartPadding.left - chartPadding.right;
+    const chartW = Math.max(1, chartWidth - chartPadding.left - chartPadding.right);
     const chartH = 180;
     const maxVal = Math.max(dailyGoal * 1.3, ...dailyData.map(d => d.calories)) || 2000;
-    const barW = Math.max(4, (chartW / dailyData.length) - (viewMode === 'week' ? 12 : 2));
-    const barGap = viewMode === 'week' ? 12 : 2;
+    const barGap = viewMode === 'week' ? 8 : 2;
+    const barW = Math.max(1, (chartW - barGap * (dailyData.length - 1)) / dailyData.length);
     const goalY = chartH - (dailyGoal / maxVal) * chartH;
 
     // ---- DONUT CHART ----
@@ -215,11 +157,17 @@ export default function AnalyticsScreen() {
 
                 {/* Bar Chart Card */}
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>{t.caloriesChart || 'Kalórie'}</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.chartHeader}>
+                        <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>{t.caloriesChart || 'Kalórie'}</Text>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.chartDays, { color: colors.muted }]}>
+                            {t.daysTracked || 'Sledované dni'}: {summary.daysTracked}/{numDays}
+                        </Text>
+                    </View>
+                    <View onLayout={event => setChartWidth(event.nativeEvent.layout.width)}>
                         <Svg
-                            width={chartPadding.left + dailyData.length * (barW + barGap) + chartPadding.right}
+                            width="100%"
                             height={chartH + chartPadding.top + chartPadding.bottom}
+                            viewBox={`0 0 ${chartWidth} ${chartH + chartPadding.top + chartPadding.bottom}`}
                         >
                             <G x={chartPadding.left} y={chartPadding.top}>
                                 {/* Y-axis labels */}
@@ -228,7 +176,7 @@ export default function AnalyticsScreen() {
                                     const yPos = chartH - pct * chartH;
                                     return (
                                         <G key={i}>
-                                            <Line x1={-4} y1={yPos} x2={dailyData.length * (barW + barGap)} y2={yPos} stroke={colors.border} strokeWidth={1} />
+                                            <Line x1={-4} y1={yPos} x2={chartW} y2={yPos} stroke={colors.border} strokeWidth={1} />
                                             <SvgText x={-8} y={yPos + 4} fill={colors.muted} fontSize="10" fontWeight="600" textAnchor="end">{yVal}</SvgText>
                                         </G>
                                     );
@@ -236,7 +184,7 @@ export default function AnalyticsScreen() {
 
                                 {/* Goal line */}
                                 <Line
-                                    x1={-4} y1={goalY} x2={dailyData.length * (barW + barGap)} y2={goalY}
+                                    x1={-4} y1={goalY} x2={chartW} y2={goalY}
                                     stroke="#3B82F6" strokeWidth={1.5} strokeDasharray="6,4"
                                 />
 
@@ -269,7 +217,7 @@ export default function AnalyticsScreen() {
                                 })}
                             </G>
                         </Svg>
-                    </ScrollView>
+                    </View>
                     <View style={styles.legendRow}>
                         <View style={styles.legendItem}>
                             <View style={[styles.legendDot, { backgroundColor: '#FB923C' }]} />
@@ -292,58 +240,9 @@ export default function AnalyticsScreen() {
                     <SummaryCard label={t.avgCalories || 'Priemer/deň'} value={`${summary.avgCals}`} unit="kcal" icon="flame" iconColor="#FB923C" colors={colors} />
                 </View>
                 <View style={styles.summaryRow}>
-                    <SummaryCard label={t.daysTracked || 'Sledované dni'} value={`${summary.daysTracked}`} unit={`/ ${numDays}`} icon="calendar" iconColor={colors.accent} colors={colors} />
+                    <SummaryCard label={t.lowestDay || 'Najnižší deň'} value={`${summary.lowest}`} unit="kcal" icon="arrow-down" iconColor="#4ADE80" colors={colors} />
                     <SummaryCard label={t.highestDay || 'Najvyšší deň'} value={`${summary.highest}`} unit="kcal" icon="arrow-up" iconColor="#F87171" colors={colors} />
                 </View>
-                <View style={styles.summaryRow}>
-                    <SummaryCard label={t.lowestDay || 'Najnižší deň'} value={`${summary.lowest}`} unit="kcal" icon="arrow-down" iconColor="#4ADE80" colors={colors} />
-                </View>
-
-                {/* Health Connect burned calories */}
-                {hcAvailable && (
-                    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                        <View style={styles.burnedRow}>
-                            <Ionicons name="fitness" size={24} color="#F472B6" />
-                            <View style={{ flex: 1, marginLeft: 10 }}>
-                                <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 2 }]}>{t.burnedCalories || 'Spálené kalórie'}</Text>
-                                <Text style={{ color: colors.muted, fontSize: 13 }}>Google Health Connect</Text>
-                            </View>
-                            {healthConnectEnabled ? (
-                                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
-                                    <Text style={{ color: '#F472B6', fontSize: 22, fontWeight: '800' }}>{Math.round(summary.totalBurned)}</Text>
-                                    <Text style={{ color: colors.muted, fontSize: 13 }}>kcal</Text>
-                                </View>
-                            ) : (
-                                <Text style={{ color: colors.muted, fontSize: 13, fontWeight: '500' }}>{t.notConnected || 'Neprepojené'}</Text>
-                            )}
-                        </View>
-
-                        <Pressable
-                            style={[
-                                styles.syncBtn,
-                                {
-                                    backgroundColor: colors.elemBg,
-                                    borderColor: colors.border,
-                                    marginTop: 12,
-                                    opacity: isSyncing ? 0.6 : 1,
-                                }
-                            ]}
-                            disabled={isSyncing}
-                            onPress={syncHealthConnect}
-                        >
-                            {isSyncing ? (
-                                <Text style={[styles.syncBtnText, { color: colors.text }]}>{t.syncing || 'Preberám...'}</Text>
-                            ) : (
-                                <>
-                                    <Ionicons name="sync-outline" size={16} color={colors.text} style={{ marginRight: 6 }} />
-                                    <Text style={[styles.syncBtnText, { color: colors.text }]}>
-                                        {healthConnectEnabled ? (t.downloadBurnedCalories || 'Stiahnuť spálené kalórie') : (t.connectHealthConnect || 'Prepojiť Google Health')}
-                                    </Text>
-                                </>
-                            )}
-                        </Pressable>
-                    </View>
-                )}
 
                 {/* Macros Donut + Details */}
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -357,21 +256,21 @@ export default function AnalyticsScreen() {
                                 {totalMacroG > 0 && proteinAngle > 0.5 && (
                                     <Path
                                         d={makeDonutPath(0, Math.min(proteinAngle, 359.9), donutR, donutCx, donutCy)}
-                                        stroke="#2DD4BF" strokeWidth={donutStroke} fill="none" strokeLinecap="round"
+                                        stroke={MACRO_COLORS.protein} strokeWidth={donutStroke} fill="none" strokeLinecap="round"
                                     />
                                 )}
                                 {/* Carbs arc */}
                                 {totalMacroG > 0 && carbsAngle > 0.5 && (
                                     <Path
                                         d={makeDonutPath(proteinAngle, Math.min(proteinAngle + carbsAngle, 359.9), donutR, donutCx, donutCy)}
-                                        stroke="#F472B6" strokeWidth={donutStroke} fill="none" strokeLinecap="round"
+                                        stroke={MACRO_COLORS.carbs} strokeWidth={donutStroke} fill="none" strokeLinecap="round"
                                     />
                                 )}
                                 {/* Fat arc */}
                                 {totalMacroG > 0 && fatPct > 0.01 && (
                                     <Path
                                         d={makeDonutPath(proteinAngle + carbsAngle, Math.min(360, 359.9), donutR, donutCx, donutCy)}
-                                        stroke={theme === 'light' ? '#94A3B8' : '#CBD5E1'} strokeWidth={donutStroke} fill="none" strokeLinecap="round"
+                                        stroke={MACRO_COLORS.fat} strokeWidth={donutStroke} fill="none" strokeLinecap="round"
                                     />
                                 )}
                                 {/* Center text */}
@@ -385,35 +284,12 @@ export default function AnalyticsScreen() {
                         </View>
 
                         <View style={styles.macroDetails}>
-                            <MacroRow label={t.protein || 'Bielkoviny'} value={Math.round(summary.totalProtein)} pct={Math.round(proteinPct * 100)} color="#2DD4BF" colors={colors} />
-                            <MacroRow label={t.carbs || 'Sacharidy'} value={Math.round(summary.totalCarbs)} pct={Math.round(carbsPct * 100)} color="#F472B6" colors={colors} />
-                            <MacroRow label={t.fat || 'Tuky'} value={Math.round(summary.totalFat)} pct={Math.round(fatPct * 100)} color={theme === 'light' ? '#94A3B8' : '#CBD5E1'} colors={colors} />
+                            <MacroRow label={t.protein || 'Bielkoviny'} value={Math.round(summary.totalProtein)} pct={Math.round(proteinPct * 100)} color={MACRO_COLORS.protein} colors={colors} />
+                            <MacroRow label={t.carbs || 'Sacharidy'} value={Math.round(summary.totalCarbs)} pct={Math.round(carbsPct * 100)} color={MACRO_COLORS.carbs} colors={colors} />
+                            <MacroRow label={t.fat || 'Tuky'} value={Math.round(summary.totalFat)} pct={Math.round(fatPct * 100)} color={MACRO_COLORS.fat} colors={colors} />
                         </View>
                     </View>
                 </View>
-
-                {/* Net calories card */}
-                {healthConnectEnabled && (
-                    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>{t.netCalories || 'Čisté kalórie'}</Text>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                            <View style={{ alignItems: 'center', flex: 1 }}>
-                                <Text style={{ color: '#FB923C', fontSize: 20, fontWeight: '800' }}>{Math.round(summary.totalCals)}</Text>
-                                <Text style={{ color: colors.muted, fontSize: 12 }}>{t.consumed || 'Prijaté'}</Text>
-                            </View>
-                            <Text style={{ color: colors.muted, fontSize: 20, fontWeight: '300' }}>−</Text>
-                            <View style={{ alignItems: 'center', flex: 1 }}>
-                                <Text style={{ color: '#F472B6', fontSize: 20, fontWeight: '800' }}>{Math.round(summary.totalBurned)}</Text>
-                                <Text style={{ color: colors.muted, fontSize: 12 }}>{t.burnedLabel || 'Spálené'}</Text>
-                            </View>
-                            <Text style={{ color: colors.muted, fontSize: 20, fontWeight: '300' }}>=</Text>
-                            <View style={{ alignItems: 'center', flex: 1 }}>
-                                <Text style={{ color: colors.accent, fontSize: 22, fontWeight: '900' }}>{Math.round(summary.totalCals - summary.totalBurned)}</Text>
-                                <Text style={{ color: colors.muted, fontSize: 12 }}>{t.netLabel || 'Čisté'}</Text>
-                            </View>
-                        </View>
-                    </View>
-                )}
 
                 {dailyData.every(d => d.calories === 0) && (
                     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, alignItems: 'center', paddingVertical: 30 }]}>
@@ -469,6 +345,8 @@ const styles = StyleSheet.create({
     segmentText: { fontWeight: '700', fontSize: 14 },
     card: { padding: 16, borderRadius: 16, borderWidth: 1 },
     cardTitle: { fontSize: 16, fontWeight: '800', marginBottom: 10 },
+    chartHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 10 },
+    chartDays: { flexShrink: 1, fontSize: 12, fontWeight: '600', textAlign: 'right' },
     legendRow: { flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 10 },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     legendDot: { width: 8, height: 8, borderRadius: 4 },
@@ -484,18 +362,4 @@ const styles = StyleSheet.create({
     macroDetails: { flex: 1, gap: 12 },
     macroRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     macroDot: { width: 10, height: 10, borderRadius: 5 },
-    burnedRow: { flexDirection: 'row', alignItems: 'center' },
-    syncBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 10,
-        paddingHorizontal: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-    },
-    syncBtnText: {
-        fontSize: 14,
-        fontWeight: '700',
-    },
 });

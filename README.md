@@ -11,7 +11,6 @@ Food analysis uses **your own API key** for Gemini, OpenAI, or Claude. The app s
 - Search, edit, repeat, and organize meals in history and multiple favorites lists.
 - Import the included 1,000-food USDA starter list. Import/export favorites lists and history as JSON with images; history also supports CSV import/export.
 - Choose a Gemini, OpenAI, or Claude model, add custom models, and manage multiple named API keys per provider. Claude voice input needs a Gemini or OpenAI key for transcription.
-- Optionally read burned calories from Google Health Connect on Android.
 - Use the interface in Slovak, English, Czech, German, Spanish, French, Italian, or Polish.
 
 ## Requirements

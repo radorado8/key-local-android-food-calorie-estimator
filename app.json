@@ -70,15 +70,6 @@
       "expo-secure-store",
       "expo-document-picker",
       "expo-file-system",
-      [
-        "expo-health-connect",
-        {
-          "permissions": [
-            "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
-            "android.permission.health.WRITE_ACTIVE_CALORIES_BURNED"
-          ]
-        }
-      ],
       "./plugins/withShortcutIcons",
       "./plugins/withExtractNativeLibs",
       "./plugins/withAllModulesBuildTools",

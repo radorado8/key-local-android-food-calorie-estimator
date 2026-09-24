@@ -34,7 +34,6 @@ export function SettingsProvider({ children }) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [autoSaveSeconds, setAutoSaveSeconds] = useState(10);
-  const [healthConnectEnabled, setHealthConnectEnabled] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,7 +65,6 @@ export function SettingsProvider({ children }) {
           if (typeof parsed?.termsAccepted === 'boolean') setTermsAccepted(parsed.termsAccepted);
           if (typeof parsed?.autoSaveEnabled === 'boolean') setAutoSaveEnabled(parsed.autoSaveEnabled);
           if (Number.isFinite(parsed?.autoSaveSeconds)) setAutoSaveSeconds(parsed.autoSaveSeconds);
-          if (typeof parsed?.healthConnectEnabled === 'boolean') setHealthConnectEnabled(parsed.healthConnectEnabled);
           // Enforce local storage for this version
           setUseLocalStorage(true);
           setHydrated(true);
@@ -85,9 +83,9 @@ export function SettingsProvider({ children }) {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled })
+      JSON.stringify({ aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds })
     ).catch(() => { });
-  }, [aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, hydrated]);
+  }, [aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, hydrated]);
 
   const colorScheme = useColorScheme();
 
@@ -129,10 +127,8 @@ export function SettingsProvider({ children }) {
       setAutoSaveEnabled,
       autoSaveSeconds,
       setAutoSaveSeconds,
-      healthConnectEnabled,
-      setHealthConnectEnabled,
     };
-  }, [aiProvider, providerModels, claudeVoiceProvider, hydrated, dailyGoal, customMacroGoals, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, colorScheme]);
+  }, [aiProvider, providerModels, claudeVoiceProvider, hydrated, dailyGoal, customMacroGoals, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, colorScheme]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

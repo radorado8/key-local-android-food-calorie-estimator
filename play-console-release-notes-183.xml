@@ -1,0 +1,48 @@
+<en-US>
+Improved the home screen with clearer calorie and macronutrient goals.
+The Analytics chart now fits the screen and shows tracked days, the lowest day and the highest day. Macronutrient colors match the home screen.
+Added support for Gemini, OpenAI and Claude with multiple API keys and custom models.
+Removed Google Health Connect integration.
+</en-US>
+<cs-CZ>
+Vylepšili jsme domovskou obrazovku s přehlednějšími cíli kalorií a živin.
+Graf v Analýze se přizpůsobí šířce obrazovky a zobrazuje sledované dny, nejnižší i nejvyšší den. Barvy živin odpovídají domovské obrazovce.
+Přidali jsme podporu Gemini, OpenAI a Claude s více API klíči a vlastními modely.
+Odstranili jsme propojení s Google Health Connect.
+</cs-CZ>
+<de-DE>
+Die Startseite zeigt Kalorien- und Makronährstoffziele jetzt übersichtlicher an.
+Das Diagramm in der Analyse passt sich der Bildschirmbreite an und zeigt erfasste Tage sowie den Tag mit dem niedrigsten und höchsten Wert. Die Makronährstofffarben entsprechen der Startseite.
+Gemini, OpenAI und Claude unterstützen mehrere API-Schlüssel und eigene Modelle.
+Die Google Health Connect-Anbindung wurde entfernt.
+</de-DE>
+<es-ES>
+Mejoramos la pantalla de inicio para mostrar con más claridad los objetivos de calorías y macronutrientes.
+El gráfico de Análisis se adapta al ancho de la pantalla y muestra los días registrados y los días con el valor más bajo y más alto. Los colores de los macronutrientes coinciden con los de inicio.
+Gemini, OpenAI y Claude admiten varias claves API y modelos personalizados.
+Se eliminó la integración con Google Health Connect.
+</es-ES>
+<fr-FR>
+L’écran d’accueil affiche plus clairement les objectifs de calories et de macronutriments.
+Le graphique d’Analyse s’adapte à la largeur de l’écran et indique les jours suivis ainsi que les jours aux valeurs la plus basse et la plus élevée. Les couleurs des macronutriments correspondent à celles de l’accueil.
+Gemini, OpenAI et Claude prennent en charge plusieurs clés API et des modèles personnalisés.
+L’intégration Google Health Connect a été supprimée.
+</fr-FR>
+<it-IT>
+La schermata iniziale mostra più chiaramente gli obiettivi di calorie e macronutrienti.
+Il grafico di Analisi si adatta alla larghezza dello schermo e mostra i giorni registrati e quelli con il valore più basso e più alto. I colori dei macronutrienti corrispondono alla schermata iniziale.
+Gemini, OpenAI e Claude supportano più chiavi API e modelli personalizzati.
+L’integrazione con Google Health Connect è stata rimossa.
+</it-IT>
+<pl-PL>
+Ekran główny wyraźniej pokazuje cele kalorii i makroskładników.
+Wykres w Analizie dopasowuje się do szerokości ekranu i pokazuje zarejestrowane dni oraz dni z najniższą i najwyższą wartością. Kolory makroskładników są takie same jak na ekranie głównym.
+Gemini, OpenAI i Claude obsługują wiele kluczy API oraz własne modele.
+Usunięto integrację z Google Health Connect.
+</pl-PL>
+<sk>
+Na domovskej obrazovke sú prehľadnejšie ciele kalórií a makroživín.
+Graf v Analýze sa prispôsobí šírke obrazovky a zobrazuje sledované dni, najnižší aj najvyšší deň. Farby makroživín sú rovnaké ako na domovskej obrazovke.
+Pribudla podpora Gemini, OpenAI a Claude s viacerými API kľúčmi a vlastnými modelmi.
+Odstránili sme prepojenie s Google Health Connect.
+</sk>

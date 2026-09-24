@@ -34,9 +34,11 @@ function keyStore() {
   let failIndex = false, failSecret = false;
   const mocks = {
     'react-native': { Platform: { OS: 'android' } },
+    'expo-file-system/legacy': { documentDirectory: 'file:///data/user/0/app/files/' },
     '@react-native-async-storage/async-storage': {
       getItem: async key => ordinary.get(key) || null,
       setItem: async (key, value) => { if (failIndex) throw new Error('Disk full'); ordinary.set(key, value); },
+      removeItem: async key => { ordinary.delete(key); },
     },
     'expo-secure-store': {
       getItemAsync: async key => secure.get(key) || null,
@@ -47,6 +49,29 @@ function keyStore() {
   return { ordinary, secure, reload: () => loader(mocks)('src/utils/apiKeys.js'),
     failIndex: value => { failIndex = value; }, failSecret: value => { failSecret = value; } };
 }
+
+test('iOS simulator stores keys without calling unavailable Keychain', async () => {
+  const values = new Map();
+  const api = loader({
+    'react-native': { Platform: { OS: 'ios' } },
+    'expo-file-system/legacy': { documentDirectory: 'file:///Users/test/Library/Developer/CoreSimulator/Devices/123/data/Containers/Data/Application/456/Documents/' },
+    '@react-native-async-storage/async-storage': {
+      getItem: async key => values.get(key) || null,
+      setItem: async (key, value) => { values.set(key, value); },
+      removeItem: async key => { values.delete(key); },
+    },
+    'expo-secure-store': {
+      getItemAsync: async () => { throw new Error('A required entitlement is not present'); },
+      setItemAsync: async () => { throw new Error('A required entitlement is not present'); },
+      deleteItemAsync: async () => { throw new Error('A required entitlement is not present'); },
+    },
+  })('src/utils/apiKeys.js');
+  assert.deepEqual(Array.from((await api.listApiKeys()).keys), []);
+  const index = await api.saveApiKey({ provider: 'gemini', name: 'Test', secret: 'sim-secret' });
+  assert.equal(await api.getActiveApiKey('gemini'), 'sim-secret');
+  await api.deleteApiKey(index.active.gemini);
+  assert.equal(await api.getActiveApiKey('gemini'), null);
+});
 
 test('legacy Gemini key migrates once, survives restart, and never reappears after deletion', async () => {
   const store = keyStore();
