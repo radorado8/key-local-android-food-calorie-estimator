@@ -1,3 +1,5 @@
+import { aiTranslations } from './aiTranslations';
+
 export const translations = {
     sk: {
         macroGoalsTitle: "Denné ciele živín",
@@ -2175,3 +2177,8 @@ export const translations = {
         categoryLabel: 'Categoria',
     },
 };
+
+// Provider strings override older Gemini-only labels in all supported languages.
+for (const [language, values] of Object.entries(aiTranslations)) {
+    Object.assign(translations[language], values);
+}

@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
 import * as Localization from 'expo-localization';
 import { DEFAULT_PUBLIC_MODEL_ID } from '../config/aiModels';
+import { DEFAULT_MODELS, isAIProvider } from '../config/aiProviders';
 import { resolveMacroGoals, validMacroGoals } from '../utils/macroGoals';
 
 const STORAGE_KEY = 'settings.v1';
@@ -13,6 +14,9 @@ export function SettingsProvider({ children }) {
   const [dailyGoal, setDailyGoal] = useState(2100);
   const [customMacroGoals, setCustomMacroGoals] = useState(null);
   const [aiModel, setAiModel] = useState(DEFAULT_PUBLIC_MODEL_ID);
+  const [aiProvider, setAiProvider] = useState('gemini');
+  const [providerModels, setProviderModels] = useState({});
+  const [claudeVoiceProvider, setClaudeVoiceProvider] = useState('none');
 
   const systemLang = Localization.getLocales()[0]?.languageCode;
   const supportedLangs = ['sk', 'en', 'de', 'es', 'fr', 'pl', 'cs', 'it'];
@@ -47,6 +51,11 @@ export function SettingsProvider({ children }) {
           if (Number.isFinite(parsed?.dailyGoal)) setDailyGoal(parsed.dailyGoal);
           if (validMacroGoals(parsed?.customMacroGoals)) setCustomMacroGoals(parsed.customMacroGoals);
           if (typeof parsed?.aiModel === 'string') setAiModel(parsed.aiModel);
+          if (isAIProvider(parsed?.aiProvider)) setAiProvider(parsed.aiProvider);
+          if (parsed?.providerModels && typeof parsed.providerModels === 'object') {
+            setProviderModels(Object.fromEntries(Object.entries(parsed.providerModels).filter(([id, model]) => isAIProvider(id) && typeof model === 'string' && model.trim())));
+          }
+          if (['none', 'gemini', 'openai'].includes(parsed?.claudeVoiceProvider)) setClaudeVoiceProvider(parsed.claudeVoiceProvider);
           if (typeof parsed?.language === 'string') setLanguage(parsed.language);
           if (typeof parsed?.theme === 'string') setTheme(parsed.theme);
           if (Array.isArray(parsed?.customModels)) setCustomModels(parsed.customModels);
@@ -76,9 +85,9 @@ export function SettingsProvider({ children }) {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ dailyGoal, customMacroGoals, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled })
+      JSON.stringify({ aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled })
     ).catch(() => { });
-  }, [dailyGoal, customMacroGoals, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, hydrated]);
+  }, [aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, hydrated]);
 
   const colorScheme = useColorScheme();
 
@@ -91,8 +100,12 @@ export function SettingsProvider({ children }) {
       macroGoals: resolveMacroGoals(dailyGoal, customMacroGoals),
       customMacroGoals,
       setCustomMacroGoals,
-      aiModel,
-      setAiModel,
+      aiProvider,
+      setAiProvider,
+      claudeVoiceProvider,
+      setClaudeVoiceProvider,
+      aiModel: aiProvider === 'gemini' ? aiModel : (providerModels[aiProvider] || DEFAULT_MODELS[aiProvider]),
+      setAiModel: model => aiProvider === 'gemini' ? setAiModel(model) : setProviderModels(previous => ({ ...previous, [aiProvider]: model })),
       language,
       setLanguage,
       theme: effectiveTheme, // Export resolved theme for UI consumption
@@ -119,7 +132,7 @@ export function SettingsProvider({ children }) {
       healthConnectEnabled,
       setHealthConnectEnabled,
     };
-  }, [hydrated, dailyGoal, customMacroGoals, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, colorScheme]);
+  }, [aiProvider, providerModels, claudeVoiceProvider, hydrated, dailyGoal, customMacroGoals, aiModel, language, theme, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, colorScheme]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
