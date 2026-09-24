@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Modal,
   Pressable,
   ScrollView,
@@ -13,7 +15,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { MODEL_CATALOG, coerceModelId, DEFAULT_PUBLIC_MODEL_ID } from '../config/aiModels';
+import { DEFAULT_MODELS, PROVIDER_MODELS, modelProvider } from '../config/aiProviders';
+import ApiKeySettings from '../components/ApiKeySettings';
 
 import { useSettings } from '../state/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
@@ -25,7 +28,6 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { exportUserData, getFriendlyError } from '../api/backend';
 import { getAllMeals, importMeals, clearAllMeals } from '../api/mealService';
 import { clearCategoryFromFavorites, getFavoriteImageUris } from '../api/favoritesService';
-import { getGeminiKey, setGeminiKey } from '../utils/secureStorage';
 import { escapeCsvField, parseCsvRow, parseFiniteNumber } from '../utils/csv';
 import TermsModal from '../components/TermsModal';
 import MacroGoalsDialog from '../components/MacroGoalsDialog';
@@ -186,7 +188,7 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { dailyGoal, setDailyGoal, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled } = useSettings();
+  const { dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled } = useSettings();
 
   const colors = theme === 'light'
     ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)', elemBg: '#F1F5F9', elemBorder: 'rgba(0,0,0,0.05)', modalBg: '#FFFFFF' }
@@ -194,26 +196,11 @@ export default function SettingsScreen() {
 
   const [dailyGoalInput, setDailyGoalInput] = useState(String(dailyGoal));
   const [macroGoalsOpen, setMacroGoalsOpen] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [autoSaveSecondsInput, setAutoSaveSecondsInput] = useState(String(autoSaveSeconds));
 
-  useEffect(() => {
-    // Load API Key
-    getGeminiKey().then(k => {
-      if (k) setApiKey(k);
-    });
-  }, []);
-
-  const handleSaveKey = async () => {
-    await setGeminiKey(apiKey);
-    Alert.alert(t.saved, t.apiKeySavedMsg);
-  };
-
-  const allowedModels = useMemo(() => {
-    return [...MODEL_CATALOG, ...customModels];
-  }, [customModels]);
+  const providerCustomModels = useMemo(() => customModels.filter(model => modelProvider(model) === aiProvider), [customModels, aiProvider]);
+  const allowedModels = useMemo(() => [...PROVIDER_MODELS[aiProvider], ...providerCustomModels], [aiProvider, providerCustomModels]);
 
   const languageOptions = useMemo(
     () => [
@@ -592,10 +579,15 @@ export default function SettingsScreen() {
     const newId = newModelId.trim();
     const newLabel = newModelName.trim();
 
+    if (PROVIDER_MODELS[aiProvider].some(model => model.id === newId) || providerCustomModels.some(model => model.id === newId && model.id !== editingModel?.id)) {
+      Alert.alert(t.errorTitle, t.aiModelExists);
+      return;
+    }
+
     if (editingModel) {
       // Edit Mode
       const updatedModels = customModels.map(m =>
-        m.id === editingModel.id ? { ...m, id: newId, label: newLabel } : m
+        m.id === editingModel.id && modelProvider(m) === aiProvider ? { ...m, id: newId, label: newLabel } : m
       );
       setCustomModels(updatedModels);
 
@@ -607,15 +599,10 @@ export default function SettingsScreen() {
       Alert.alert(t.success, t.saved || 'Uložené');
     } else {
       // Add Mode
-      // Check duplicate ID
-      if (customModels.some(m => m.id === newId) || MODEL_CATALOG.some(m => m.id === newId)) {
-        Alert.alert(t.errorTitle, 'Model ID already exists');
-        return;
-      }
-
       const newModel = {
         id: newId,
         label: newLabel,
+        provider: aiProvider,
         isCustom: true
       };
       setCustomModels([...customModels, newModel]);
@@ -637,7 +624,7 @@ export default function SettingsScreen() {
 
   const handleDeleteModel = (modelId) => {
     Alert.alert(
-      t.deleteMealTitle,
+      t.manageModelsTitle,
       t.deleteModelConfirm,
       [
         { text: t.cancel, style: 'cancel' },
@@ -645,10 +632,10 @@ export default function SettingsScreen() {
           text: t.delete,
           style: 'destructive',
           onPress: () => {
-            const filtered = customModels.filter(m => m.id !== modelId);
+            const filtered = customModels.filter(m => m.id !== modelId || modelProvider(m) !== aiProvider);
             setCustomModels(filtered);
             if (aiModel === modelId) {
-              setAiModel(DEFAULT_PUBLIC_MODEL_ID); // Fallback
+              setAiModel(DEFAULT_MODELS[aiProvider]); // Fallback
             }
             Alert.alert(t.success, t.modelDeletedSuccess);
           }
@@ -762,45 +749,48 @@ export default function SettingsScreen() {
           <Text style={{ flex: 1, color: colors.text, fontSize: 16, fontWeight: '700' }}>{t.macroGoalsTitle}</Text>
           <Ionicons name="chevron-forward" size={20} color={colors.muted} />
         </Pressable>
-        {/* 2. API Key */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.label, { color: colors.accent }]}>Gemini {t.apiKeyLabel}</Text>
-          <View style={[styles.inputContainer, { backgroundColor: colors.elemBg, borderColor: colors.elemBorder }]}>
-            <TextInput
-              value={apiKey}
-              onChangeText={setApiKey}
-              // onEndEditing={handleSaveKey} // Save on button press preferred for security fields
-              secureTextEntry={!showKey}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: 'transparent',
-                  borderWidth: 0,
-                  flex: 1,
-                  color: colors.text
-                }
-              ]}
-              placeholder={t.apiKeyPlaceholder}
-              placeholderTextColor={colors.muted}
-            />
-            <Pressable onPress={() => setShowKey(!showKey)} style={{ padding: 10 }}>
-              <Ionicons name={showKey ? "eye-off" : "eye"} size={20} color={colors.muted} />
-            </Pressable>
-          </View>
+        <ApiKeySettings colors={colors}>
+        <Dropdown
+          label={t.aiModel}
+          hint={t.aiModelHint}
+          value={aiModel}
+          options={allowedModels}
+          onSelect={setAiModel}
+          colors={colors}
+        />
+        {/* Manage Custom Models */}
+        <View style={{ gap: 8 }}>
+          <Text style={[styles.label, { color: colors.text }]}>{t.manageModelsTitle} · {aiProvider === 'gemini' ? 'Gemini' : aiProvider === 'openai' ? 'OpenAI' : 'Claude'}</Text>
+
+          {providerCustomModels.map((m) => (
+            <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: 8, backgroundColor: colors.elemBg, borderRadius: 8 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.text, fontWeight: '600' }}>{m.label}</Text>
+                <Text style={{ color: colors.muted, fontSize: 12 }}>{m.id}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <Pressable accessibilityLabel={t.aiEditModel + ' ' + m.label} onPress={() => handleEditModel(m)} style={{ padding: 8 }}>
+                  <Ionicons name="pencil" size={20} color={colors.accent} />
+                </Pressable>
+                <Pressable accessibilityLabel={t.delete + ' ' + m.label} onPress={() => handleDeleteModel(m.id)} style={{ padding: 8 }}>
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                </Pressable>
+              </View>
+            </View>
+          ))}
+
           <Pressable
-            onPress={handleSaveKey}
+            onPress={() => setAddingModel(true)}
             style={({ pressed }) => [
               styles.actionBtn,
-              { backgroundColor: colors.elemBg, borderColor: colors.elemBorder, marginTop: 8 },
+              { backgroundColor: colors.elemBg, borderColor: colors.elemBorder, marginTop: 4 },
               pressed && styles.pressed
             ]}
           >
-            <Text style={{ color: colors.accent, fontWeight: '700' }}>{t.save}</Text>
+            <Text style={{ color: colors.accent, fontWeight: '700' }}>{t.addCustomModelBtn}</Text>
           </Pressable>
-          <Text style={[styles.hint, { color: colors.muted, marginTop: 8, fontSize: 12 }]}>
-            {t.apiKeyHint}
-          </Text>
         </View>
+        </ApiKeySettings>
 
         {/* 3. Theme */}
         <Dropdown
@@ -933,48 +923,8 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* 5. AI Model */}
-        <Dropdown
-          label={t.aiModel}
-          hint={t.aiModelHint}
-          value={aiModel}
-          options={allowedModels}
-          onSelect={setAiModel}
-          colors={colors}
-        />
 
-        {/* Manage Custom Models */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.label, { color: colors.text }]}>{t.manageModelsTitle}</Text>
 
-          {customModels.map((m) => (
-            <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: 8, backgroundColor: colors.elemBg, borderRadius: 8 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.text, fontWeight: '600' }}>{m.label}</Text>
-                <Text style={{ color: colors.muted, fontSize: 12 }}>{m.id}</Text>
-              </View>
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <Pressable onPress={() => handleEditModel(m)}>
-                  <Ionicons name="pencil" size={20} color={colors.accent} />
-                </Pressable>
-                <Pressable onPress={() => handleDeleteModel(m.id)}>
-                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                </Pressable>
-              </View>
-            </View>
-          ))}
-
-          <Pressable
-            onPress={() => setAddingModel(true)}
-            style={({ pressed }) => [
-              styles.actionBtn,
-              { backgroundColor: colors.elemBg, borderColor: colors.elemBorder, marginTop: 4 },
-              pressed && styles.pressed
-            ]}
-          >
-            <Text style={{ color: colors.accent, fontWeight: '700' }}>{t.addCustomModelBtn}</Text>
-          </Pressable>
-        </View>
 
         {/* Manage Food Categories */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -1134,18 +1084,18 @@ export default function SettingsScreen() {
 
           <Text style={[styles.hint, { color: colors.muted, marginBottom: 4, marginTop: 12 }]}>{t.poweredBy || 'Powered by:'}</Text>
           <Text style={{ color: colors.muted, fontSize: 13 }}>
-            Expo • React Native • Gemini API
+            Expo • React Native • Gemini / OpenAI / Claude
           </Text>
         </View>
       </ScrollView>
 
       {/* Add/Edit Custom Model Modal */}
       <Modal visible={addingModel} transparent animationType="fade" onRequestClose={closeModelModal}>
-        <Pressable style={styles.modalOverlay} onPress={closeModelModal}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <Pressable style={[styles.modalContent, { backgroundColor: colors.modalBg, borderColor: colors.border, width: '90%' }]} onPress={() => { }}>
-            <ScrollView contentContainerStyle={{ padding: 20 }}>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20 }}>
               <Text style={[styles.modalTitle, { color: colors.text, marginBottom: 16 }]}>
-                {editingModel ? (t.editMealTitle ? t.editMealTitle.replace('jedlo', 'model').replace('Meal', 'Model') : 'Edit Model') : t.addCustomModelBtn}
+                {editingModel ? t.aiEditModel : t.addCustomModelBtn}
               </Text>
 
               <Text style={[styles.label, { color: colors.muted, fontSize: 14 }]}>{t.customModelNameLabel}</Text>
@@ -1159,6 +1109,8 @@ export default function SettingsScreen() {
 
               <Text style={[styles.label, { color: colors.muted, fontSize: 14 }]}>{t.customModelIdLabel}</Text>
               <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
                 value={newModelId}
                 onChangeText={setNewModelId}
                 style={[styles.input, { flex: 0, minHeight: 60, fontSize: 18, backgroundColor: colors.elemBg, borderColor: colors.elemBorder, color: colors.text, marginBottom: 24 }]}
@@ -1176,7 +1128,7 @@ export default function SettingsScreen() {
               </View>
             </ScrollView>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Add/Edit Category Modal */}

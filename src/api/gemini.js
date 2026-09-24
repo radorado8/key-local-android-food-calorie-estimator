@@ -1,14 +1,22 @@
-import { getGeminiKey } from '../utils/secureStorage';
+import { getActiveApiKey } from '../utils/apiKeys';
 import { PROMPTS } from '../config/prompts';
+import { parseFoodResult } from './foodResult';
 
-export async function analyzeImage({ base64Data, mimeType, weightG, language = 'en', aiModel, signal }) {
-    const apiKey = await getGeminiKey();
+function apiError(status) {
+    const error = new Error('ai_request_failed');
+    error.provider = 'gemini';
+    error.status = status;
+    return error;
+}
+
+export async function analyzeImage({ base64Data, mimeType, weightG, language = 'en', aiModel, signal, apiKey: suppliedKey }) {
+    const apiKey = suppliedKey || await getActiveApiKey('gemini');
     if (!apiKey) {
         throw new Error('Chýba API kľúč. Nastav ho v nastaveniach.');
     }
 
     // Use selected model or fallback to a sensible default
-    const modelId = aiModel || 'gemini-1.5-flash';
+    const modelId = aiModel || 'gemini-flash-latest';
 
     // Select prompts for language (fallback to en)
     const prompts = PROMPTS[language] || PROMPTS['en'];
@@ -20,7 +28,7 @@ export async function analyzeImage({ base64Data, mimeType, weightG, language = '
 
     const textPrompt = prompts.instruction(weightInstruction);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent`;
 
     const requestBody = {
         contents: [
@@ -59,26 +67,14 @@ export async function analyzeImage({ base64Data, mimeType, weightG, language = '
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json', 'x-goog-api-key': apiKey
                 },
                 body: JSON.stringify(requestBody),
                 signal // Pass abort signal
             });
 
             if (!response.ok) {
-                const errText = await response.text();
-                // If 503 (Service Unavailable) or 429 (Too Many Requests), throw to trigger retry
-                if (response.status === 503 || response.status === 429) {
-                    throw new Error(`Server Busy (${response.status})`);
-                }
-
-                let errMsg = `Gemini API Error: ${response.status}`;
-                try {
-                    const errJson = JSON.parse(errText);
-                    errMsg = errJson.error?.message || errMsg;
-                } catch { }
-                // Fatal error, don't retry unless network
-                throw new Error(errMsg);
+                throw apiError(response.status);
             }
 
             // Safe JSON Parsing
@@ -92,7 +88,6 @@ export async function analyzeImage({ base64Data, mimeType, weightG, language = '
             try {
                 data = JSON.parse(rawText);
             } catch (jsonErr) {
-                console.error("Gemini JSON Parse Error. Raw response:", rawText);
                 throw new Error("Invalid JSON response from server");
             }
 
@@ -100,36 +95,16 @@ export async function analyzeImage({ base64Data, mimeType, weightG, language = '
             const candidate = data.candidates?.[0];
             if (!candidate) throw new Error('No candidates returned from Gemini.');
 
-            const part = candidate.content?.parts?.[0];
-            if (!part || !part.text) throw new Error('Empty response from Gemini.');
-
-            const textContent = part.text.trim();
-
-            // Clean markdown code blocks if present
-            const jsonStr = textContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-
-            const result = JSON.parse(jsonStr);
-
-            if (result.error === 'not_food') {
-                throw new Error('not_food');
-            }
-
-            // Sanitize numbers
-            return {
-                name: result.name || 'Unknown Food',
-                calories: Number(result.calories) || 0,
-                protein: Number(result.protein) || 0,
-                carbs: Number(result.carbs) || 0,
-                fat: Number(result.fat) || 0,
-                weight_g: Number(result.weight_g) || 0,
-                confidence: Number(result.confidence) || 0.5
-            };
+            const textContent = candidate.content?.parts?.filter(part => !part.thought).map(part => part.text || '').join('');
+            if (!textContent) throw new Error('Empty response from Gemini.');
+            return parseFoodResult(textContent);
 
         } catch (error) {
             console.warn(`Attempt ${attempts} failed:`, error.message);
 
             // Should we retry?
             const isRetryable =
+                error.status === 503 || error.status === 429 ||
                 error.message.includes('Network request failed') ||
                 error.message.includes('Server Busy') ||
                 error.message.includes('Empty response') ||
@@ -153,14 +128,14 @@ const OUTPUT_LANGUAGES = {
 };
 
 /** Analyze a typed food description or a short voice recording, without an image. */
-export async function analyzeFoodDescription({ text, audioBase64, audioMimeType, language = 'en', aiModel, signal }) {
-    const apiKey = await getGeminiKey();
+export async function analyzeFoodDescription({ text, audioBase64, audioMimeType, language = 'en', aiModel, signal, apiKey: suppliedKey }) {
+    const apiKey = suppliedKey || await getActiveApiKey('gemini');
     if (!apiKey) throw new Error('Chýba API kľúč. Nastav ho v nastaveniach.');
 
-    const modelId = aiModel || 'gemini-1.5-flash';
+    const modelId = aiModel || 'gemini-flash-latest';
     const outputLanguage = OUTPUT_LANGUAGES[language] || 'English';
     const sourceInstruction = audioBase64
-        ? 'The user describes a food in the attached audio recording. Transcribe it and use that description.'
+        ? `The user describes a food in the attached audio recording. Transcribe it and use that description. Additional food details: ${JSON.stringify(String(text || '').trim())}.`
         : `The user describes this food: "${String(text || '').trim()}".`;
     const prompt = `${sourceInstruction}
 Estimate one serving and return its nutritional values. Return the food name in ${outputLanguage}.
@@ -182,10 +157,10 @@ Return ONLY a raw JSON string, nothing else. If it is not food, return {"error":
     }
 
     const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent`,
         {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
             body: JSON.stringify({
                 contents: [{ parts }],
                 generationConfig: { temperature: 0.2, maxOutputTokens: 1000, responseMimeType: 'application/json' }
@@ -195,25 +170,11 @@ Return ONLY a raw JSON string, nothing else. If it is not food, return {"error":
     );
 
     if (!response.ok) {
-        const errorText = await response.text();
-        let message = `Gemini API Error: ${response.status}`;
-        try { message = JSON.parse(errorText).error?.message || message; } catch { }
-        throw new Error(message);
+        throw apiError(response.status);
     }
 
     const payload = await response.json();
-    const rawText = payload.candidates?.[0]?.content?.parts?.[0]?.text;
+    const rawText = payload.candidates?.[0]?.content?.parts?.filter(part => !part.thought).map(part => part.text || '').join('');
     if (!rawText) throw new Error('Empty response from Gemini.');
-    const parsed = JSON.parse(rawText.trim().replace(/^```json\s*/, '').replace(/\s*```$/, ''));
-    if (parsed.error === 'not_food') throw new Error('not_food');
-
-    return {
-        name: parsed.name || 'Unknown Food',
-        calories: Number(parsed.calories) || 0,
-        protein: Number(parsed.protein) || 0,
-        carbs: Number(parsed.carbs) || 0,
-        fat: Number(parsed.fat) || 0,
-        weight_g: Number(parsed.weight_g) || 0,
-        confidence: Number(parsed.confidence) || 0.5
-    };
+    return parseFoodResult(rawText);
 }

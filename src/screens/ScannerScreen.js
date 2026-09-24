@@ -70,7 +70,7 @@ async function prepareImageForAnalysis(asset) {
 
 export default function ScannerScreen({ navigation, route }) {
   const t = useTranslation();
-  const { dailyGoal, aiModel, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds } = useSettings();
+  const { dailyGoal, aiModel, aiProvider, claudeVoiceProvider, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds } = useSettings();
   const insets = useSafeAreaInsets();
   const audioRecordingRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -315,6 +315,10 @@ export default function ScannerScreen({ navigation, route }) {
   };
 
   const toggleRecording = async () => {
+    if (!isRecording && aiProvider === 'claude' && claudeVoiceProvider === 'none') {
+      Alert.alert('Claude', t.aiVoiceHint);
+      return;
+    }
     try {
       if (isRecording) {
         await stopRecording();
@@ -372,10 +376,14 @@ export default function ScannerScreen({ navigation, route }) {
     analysisActiveRef.current = true;
 
     try {
-      const audioBase64 = audio?.uri
+      const needsInlineAudio = aiProvider === 'gemini' || (aiProvider === 'claude' && claudeVoiceProvider === 'gemini');
+      const audioBase64 = audio?.uri && needsInlineAudio
         ? await FileSystem.readAsStringAsync(audio.uri, { encoding: 'base64' })
         : null;
       const data = await analyzeFoodDescriptionInput({
+        aiProvider,
+        claudeVoiceProvider,
+        audioUri: audio?.uri,
         text: description,
         audioBase64,
         audioMimeType: audio?.mimeType,
@@ -461,6 +469,7 @@ export default function ScannerScreen({ navigation, route }) {
       attempts++;
       try {
         const data = await analyzeFood({
+          aiProvider,
           base64Data: asset.base64,
           mimeType,
           aiModel,
@@ -828,6 +837,10 @@ export default function ScannerScreen({ navigation, route }) {
           <Pressable style={StyleSheet.absoluteFill} onPress={closeFoodInput} />
           <View style={[styles.foodInputDialog, { backgroundColor: theme === 'light' ? colors.card : '#161B22', borderColor: colors.border }]}>
             <Text style={[styles.foodInputTitle, { color: colors.text }]}>{t.addFoodTextOrVoice || t.addFoodLabel}</Text>
+            <Text style={{ color: colors.muted, fontSize: 12 }}>
+              {aiProvider === 'gemini' ? 'Gemini' : aiProvider === 'openai' ? 'OpenAI' : 'Claude'}
+              {aiProvider === 'claude' && claudeVoiceProvider !== 'none' ? ` · ${t.aiVoiceTitle}: ${claudeVoiceProvider === 'gemini' ? 'Gemini' : 'OpenAI'}` : ''}
+            </Text>
             <TextInput
               ref={foodInputRef}
               value={foodDescription}
