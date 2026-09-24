@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Rect, G, Line, Path, Text as SvgText } from 'react-native-svg';
+import Svg, { Rect, G, Path, Text as SvgText } from 'react-native-svg';
 import { MACRO_COLORS } from '../utils/macroGoals';
 import { subscribeToMeals } from '../api/mealService';
 import { useTranslation } from '../hooks/useTranslation';
@@ -162,12 +162,14 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
   }, [dailyGoal, todayCalories]);
 
   const size = 280;
+  const ringHeight = 220;
   const stroke = 18;
   const r = 116;
   const cx = size / 2;
-  const cy = size / 2;
-  const circumference = 2 * Math.PI * r;
-  const dashOffset = circumference * (1 - progress);
+  const cy = 125;
+  const arcOffset = r / Math.SQRT2;
+  const ringArc = `M ${cx - arcOffset} ${cy + arcOffset} A ${r} ${r} 0 1 1 ${cx + arcOffset} ${cy + arcOffset}`;
+  const ringLength = 1.5 * Math.PI * r;
 
   // Chart settings (matching web)
   const maxChartVal = Math.max(dailyGoal, ...weekData.map(d => d.calories)) * 1.1;
@@ -176,7 +178,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
   const barGap = 6;
   const chartWidth = weekData.length * (barWidth + barGap) - barGap;
   const startX = (size - chartWidth) / 2;
-  const chartBaseY = 110; // Moved down slightly to avoid hitting top arc
+  const chartBaseY = 87;
 
   if (loading) {
     return (
@@ -202,28 +204,22 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
       </View>
 
       <View style={styles.ringWrap}>
-        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          <Circle
-            cx={cx}
-            cy={cy}
-            r={r}
+        <Svg width={size} height={ringHeight} viewBox={`0 0 ${size} ${ringHeight}`}>
+          <Path
+            d={ringArc}
             stroke={colors.border || "rgba(255,255,255,0.12)"}
             strokeWidth={stroke}
             fill="none"
+            strokeLinecap="round"
           />
-          <Circle
-            cx={cx}
-            cy={cy}
-            r={r}
+          {progress > 0 && <Path
+            d={ringArc}
             stroke={colors.accent || "#2DD4BF"}
             strokeWidth={stroke}
             fill="none"
             strokeLinecap="round"
-            strokeDasharray={`${circumference} ${circumference}`}
-            strokeDashoffset={dashOffset}
-            origin={`${cx}, ${cy}`}
-            rotation={-90}
-          />
+            strokeDasharray={`${ringLength * progress} ${ringLength}`}
+          />}
 
           {/* 7-Day Mini Chart */}
           <G x={startX} y={chartBaseY}>
@@ -306,17 +302,17 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
 
 function Macro({ label, value, goal, color, colors, goalLabel }) {
   const progress = Math.max(0, Math.min(1, value / goal));
-  const radius = 25;
+  const radius = 36;
   const offset = radius / Math.sqrt(2);
-  const arc = `M ${50 - offset} ${24 + offset} A ${radius} ${radius} 0 1 1 ${50 + offset} ${24 + offset}`;
+  const arc = `M ${50 - offset} ${37 + offset} A ${radius} ${radius} 0 1 1 ${50 + offset} ${37 + offset}`;
   const length = 1.5 * Math.PI * radius;
   return (
     <View style={styles.macroItem} accessible accessibilityLabel={`${label}: ${Math.round(value)}g. ${goalLabel}: ${goal}g`}>
-      <Svg width="100%" height={48} viewBox="0 -3 100 48" accessible={false}>
-        <Path d={arc} stroke={color} strokeOpacity={0.15} strokeWidth={4} fill="none" strokeLinecap="round" />
-        {progress > 0 && <Path d={arc} stroke={color} strokeWidth={4} fill="none" strokeLinecap="round" strokeDasharray={`${length * progress} ${length}`} />}
-        <SvgText x={50} y={25} textAnchor="middle" fill={colors.text} fontSize={Math.round(value) >= 1000 ? 12 : 15} fontWeight="800">{`${Math.round(value)}g`}</SvgText>
-        <SvgText x={50} y={38} textAnchor="middle" fill={colors.muted} fontSize={11}>{`/ ${goal}g`}</SvgText>
+      <Svg width="100%" height={80} viewBox="0 -3 100 80" accessible={false}>
+        <Path d={arc} stroke={color} strokeOpacity={0.15} strokeWidth={5.8} fill="none" strokeLinecap="round" />
+        {progress > 0 && <Path d={arc} stroke={color} strokeWidth={5.8} fill="none" strokeLinecap="round" strokeDasharray={`${length * progress} ${length}`} />}
+        <SvgText x={50} y={40} textAnchor="middle" fill={colors.text} fontSize={Math.round(value) >= 1000 ? 17 : 22} fontWeight="800">{`${Math.round(value)}g`}</SvgText>
+        <SvgText x={50} y={60} textAnchor="middle" fill={colors.muted} fontSize={15}>{`/ ${goal}g`}</SvgText>
       </Svg>
       <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.macroLabel, { color: colors.muted }]}>{label}</Text>
     </View>
@@ -337,11 +333,11 @@ const styles = StyleSheet.create({
   },
   ringWrap: {
     width: 280,
-    height: 280,
+    height: 220,
   },
   center: {
     position: 'absolute',
-    top: 45, // Shifted down to be below the chart
+    top: 68,
     left: 0,
     right: 0,
     bottom: 0,
@@ -354,6 +350,7 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     gap: 6,
     marginTop: 8,
+    transform: [{ translateY: 4 / 3 }],
   },
   kcalValue: {
     fontSize: 44,
@@ -375,7 +372,7 @@ const styles = StyleSheet.create({
     color: '#F87171',
   },
   macros: {
-    height: 67,
+    height: 127,
     marginTop: 0,
     width: '100%',
     flexDirection: 'row',
@@ -387,6 +384,7 @@ const styles = StyleSheet.create({
   macroItem: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     minWidth: 0,
   },
   macroValue: {
@@ -394,6 +392,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   macroLabel: {
-    fontSize: 12,
+    fontSize: 17,
   },
 });
