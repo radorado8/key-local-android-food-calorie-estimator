@@ -3,7 +3,7 @@
     "name": "Calories AI Local",
     "slug": "android-food-calorie-estimator",
     "scheme": "keylocalfoodestimator",
-    "version": "1.0.14",
+    "version": "1.0.15",
     "orientation": "default",
     "icon": "./assets/icon_key_fire_android.png",
     "userInterfaceStyle": "automatic",
@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "com.rados.keylocalandroidfoodcalorieestimator",
-      "versionCode": 192,
+      "versionCode": 193,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon_key_fire_android.png",
         "backgroundColor": "#ffffff"
@@ -72,6 +72,7 @@
       "expo-file-system",
       "./plugins/withShortcutIcons",
       "./plugins/withExtractNativeLibs",
+      "./plugins/withUnrestrictedScannerOrientation",
       "./plugins/withAllModulesBuildTools",
       "./plugins/withR8Optimization",
       "./plugins/withIosPodsDeploymentTarget",
