@@ -1,5 +1,6 @@
 import { getActiveApiKey } from '../utils/apiKeys';
 import { PROMPTS } from '../config/prompts';
+import { DEFAULT_PUBLIC_MODEL_ID } from '../config/aiModels';
 import { parseFoodResult } from './foodResult';
 
 function apiError(status) {
@@ -16,7 +17,7 @@ export async function analyzeImage({ base64Data, mimeType, weightG, language = '
     }
 
     // Use selected model or fallback to a sensible default
-    const modelId = aiModel || 'gemini-flash-latest';
+    const modelId = aiModel || DEFAULT_PUBLIC_MODEL_ID;
 
     // Select prompts for language (fallback to en)
     const prompts = PROMPTS[language] || PROMPTS['en'];
@@ -127,18 +128,16 @@ const OUTPUT_LANGUAGES = {
     fr: 'French', pl: 'Polish', cs: 'Czech', it: 'Italian'
 };
 
-/** Analyze a typed food description or a short voice recording, without an image. */
-export async function analyzeFoodDescription({ text, audioBase64, audioMimeType, language = 'en', aiModel, signal, apiKey: suppliedKey }) {
+/** Analyze a transcribed or typed food description, without an image. */
+export async function analyzeFoodDescription({ text, language = 'en', aiModel, signal, apiKey: suppliedKey }) {
     const apiKey = suppliedKey || await getActiveApiKey('gemini');
     if (!apiKey) throw new Error('Chýba API kľúč. Nastav ho v nastaveniach.');
 
-    const modelId = aiModel || 'gemini-flash-latest';
+    const modelId = aiModel || DEFAULT_PUBLIC_MODEL_ID;
     const outputLanguage = OUTPUT_LANGUAGES[language] || 'English';
-    const sourceInstruction = audioBase64
-        ? `The user describes a food in the attached audio recording. Transcribe it and use that description. Additional food details: ${JSON.stringify(String(text || '').trim())}.`
-        : `The user describes this food: "${String(text || '').trim()}".`;
+    const sourceInstruction = `User description: ${JSON.stringify(String(text || '').trim())}. Only use a food explicitly identified in this description. Do not guess food from unclear, unrelated, or non-food words.`;
     const prompt = `${sourceInstruction}
-Estimate one serving and return its nutritional values. Return the food name in ${outputLanguage}.
+If a food is clearly identified, estimate one serving and return its nutritional values. Return the food name in ${outputLanguage}.
 Format:
 {
   "name": "short food name",
@@ -152,9 +151,6 @@ Format:
 Return ONLY a raw JSON string, nothing else. If it is not food, return {"error":"not_food"}.`;
 
     const parts = [{ text: prompt }];
-    if (audioBase64) {
-        parts.push({ inline_data: { mime_type: audioMimeType || 'audio/mp4', data: audioBase64 } });
-    }
 
     const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent`,

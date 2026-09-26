@@ -188,7 +188,7 @@ for (const provider of ['gemini', 'openai', 'claude']) {
   }
 }
 
-test('OpenAI voice uploads the local recording as multipart, then analyzes transcription plus typed context', async () => {
+test('OpenAI voice analyzes the transcript without stale typed food context', async () => {
   const client = apiClient([{ text: 'jablko' }, response('openai')]);
   await client.analyze({ aiProvider: 'openai', language: 'sk', audioUri: 'file:///recording.m4a', audioMimeType: 'audio/mp4', text: '100 g' });
   assert.equal(client.calls.length, 2);
@@ -197,15 +197,28 @@ test('OpenAI voice uploads the local recording as multipart, then analyzes trans
   assert.equal(client.calls[0].headers['Content-Type'], undefined);
   assert.equal(client.calls[0].body.fields.language, 'sk');
   const prompt = client.calls[1].body.input[0].content[0].text;
-  assert.ok(prompt.includes('jablko') && prompt.includes('100 g'));
+  assert.ok(prompt.includes('jablko'));
+  assert.ok(!prompt.includes('100 g'));
 });
 
-test('Gemini voice stays on Gemini and keeps the recording format', async () => {
-  const client = apiClient([response('gemini')]);
-  await client.analyze({ audioBase64: 'AUDIO', audioMimeType: 'audio/mp4' });
-  assert.equal(client.calls.length, 1);
+test('Gemini voice transcribes before analysis and never forwards old typed text', async () => {
+  const transcript = { candidates: [{ content: { parts: [{ text: JSON.stringify({ has_speech: true, transcript: 'jablko' }) }] } }] };
+  const client = apiClient([transcript, response('gemini')]);
+  await client.analyze({ audioBase64: 'AUDIO', audioMimeType: 'audio/mp4', text: 'staré jedlo' });
+  assert.equal(client.calls.length, 2);
   assert.equal(client.calls[0].body.contents[0].parts[1].inline_data.data, 'AUDIO');
   assert.equal(client.calls[0].body.contents[0].parts[1].inline_data.mime_type, 'audio/mp4');
+  const analysisRequest = JSON.stringify(client.calls[1].body);
+  assert.ok(analysisRequest.includes('jablko'));
+  assert.ok(!analysisRequest.includes('AUDIO'));
+  assert.ok(!analysisRequest.includes('staré jedlo'));
+});
+
+test('Gemini voice stops before nutrition analysis when no intelligible speech is detected', async () => {
+  const noSpeech = { candidates: [{ content: { parts: [{ text: JSON.stringify({ has_speech: false, transcript: '' }) }] } }] };
+  const client = apiClient([noSpeech]);
+  await assert.rejects(client.analyze({ audioBase64: 'NOISE' }), /empty_transcription/);
+  assert.equal(client.calls.length, 1);
 });
 
 test('Claude voice sends nothing without explicit transcription configuration', async () => {
@@ -216,7 +229,7 @@ test('Claude voice sends nothing without explicit transcription configuration', 
 
 for (const transcriber of ['openai', 'gemini']) {
   test(`Claude voice uses only the configured ${transcriber} transcriber, then Claude`, async () => {
-    const transcript = transcriber === 'openai' ? { text: 'jablko' } : { candidates: [{ content: { parts: [{ text: 'jablko' }] } }] };
+    const transcript = transcriber === 'openai' ? { text: 'jablko' } : { candidates: [{ content: { parts: [{ text: JSON.stringify({ has_speech: true, transcript: 'jablko' }) }] } }] };
     const client = apiClient([transcript, response('claude')]);
     await client.analyze({ aiProvider: 'claude', claudeVoiceProvider: transcriber, audioUri: 'file:///voice.m4a', audioBase64: 'AUDIO' });
     assert.deepEqual(client.keyRequests, ['claude', transcriber]);

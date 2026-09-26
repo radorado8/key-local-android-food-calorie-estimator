@@ -1,3 +1,7 @@
+import { dashboardButtonHeights, latestMealFitsInitially } from '../utils/dashboardLayout';
+import LatestMealBar from '../components/LatestMealBar';
+import { getLatestMeal } from '../utils/latestMeal';
+import { typography } from '../theme/palette';
 import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   Alert,
@@ -13,6 +17,7 @@ import {
   Animated,
   TextInput,
   KeyboardAvoidingView,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -29,6 +34,7 @@ import { subscribeToMeals, createMeal } from '../api/mealService';
 import { getAppConfig } from '../config/appConfig';
 import { useTranslation } from '../hooks/useTranslation';
 import { Audio } from 'expo-av';
+import { Ionicons } from '@expo/vector-icons';
 
 const MAX_RECORDING_DURATION_MS = 30_000;
 const ANALYSIS_IMAGE_MAX_WIDTH = 1024;
@@ -79,9 +85,28 @@ export default function ScannerScreen({ navigation, route }) {
   // Track handled actions
   const lastActionTimestampRef = useRef(0);
 
-  const colors = theme === 'light'
-    ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)', btn: '#0D94881A', btnText: '#0D9488' }
-    : { bg: '#0B0F14', card: 'rgba(255,255,255,0.06)', text: '#FFFFFF', muted: 'rgba(255,255,255,0.7)', accent: '#2DD4BF', border: 'rgba(255,255,255,0.1)', btn: '#CFFAFE', btnText: '#000000' };
+  const { colors, showLatestMeal, setShowLatestMeal, hydrated } = useSettings();
+  const { fontScale } = useWindowDimensions();
+  const [dashboardHeight, setDashboardHeight] = useState(0);
+  const [dashboardParts, setDashboardParts] = useState({});
+  const measureDashboardPart = (key, height) => setDashboardParts(previous =>
+    Math.abs((previous[key] || 0) - height) < 1 ? previous : { ...previous, [key]: height });
+  const [latestMeal, setLatestMeal] = useState(null);
+  const measuredDashboard = dashboardParts.summary > 0;
+  const latestMealFixedHeight = dashboardParts.latest || 88 * Math.max(1, fontScale);
+  // Keep the latest meal visible whenever the user enabled it. On smaller
+  // displays the dashboard remains scrollable instead of hiding this panel.
+  const latestMealVisible = showLatestMeal === true && !!latestMeal;
+  const dashboardSizes = dashboardButtonHeights(
+    dashboardHeight,
+    dashboardParts.summary + (latestMealVisible ? latestMealFixedHeight : 0),
+    latestMealVisible,
+    fontScale
+  );
+  useEffect(() => {
+    if (!hydrated || showLatestMeal !== null || !measuredDashboard || !dashboardHeight) return;
+    setShowLatestMeal(latestMealFitsInitially(dashboardHeight, dashboardParts.summary, fontScale));
+  }, [hydrated, showLatestMeal, measuredDashboard, dashboardHeight, dashboardParts.summary, fontScale, setShowLatestMeal]);
 
   const didLongPressRef = useRef(false);
   const [weightDialogOpen, setWeightDialogOpen] = useState(false);
@@ -96,10 +121,12 @@ export default function ScannerScreen({ navigation, route }) {
   const [analysisInput, setAnalysisInput] = useState(null);
   const [showFoodInput, setShowFoodInput] = useState(false);
   const [foodDescription, setFoodDescription] = useState('');
-  const [recordedAudio, setRecordedAudio] = useState(null);
   const foodInputRef = useRef(null);
   const recordingPulse = useRef(new Animated.Value(0.45)).current;
   const recordingLimitReachedRef = useRef(false);
+  const finishVoiceRecordingRef = useRef(null);
+  const finishingVoiceRef = useRef(false);
+  const startingVoiceRef = useRef(false);
 
   const stopRecording = useCallback(async () => {
     const recording = audioRecordingRef.current;
@@ -110,7 +137,6 @@ export default function ScannerScreen({ navigation, route }) {
       if (status.isRecording) await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
       const audio = uri ? { uri, mimeType: 'audio/mp4' } : null;
-      if (audio) setRecordedAudio(audio);
       return audio;
     } finally {
       audioRecordingRef.current = null;
@@ -118,6 +144,13 @@ export default function ScannerScreen({ navigation, route }) {
       setRecordingDurationMillis(0);
     }
   }, []);
+
+  useEffect(() => navigation.addListener('blur', () => {
+    if (!audioRecordingRef.current) return;
+    stopRecording()
+      .then(() => Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true }))
+      .catch(() => {});
+  }), [navigation, stopRecording]);
 
   const pickingRef = useRef(false);
 
@@ -157,7 +190,7 @@ export default function ScannerScreen({ navigation, route }) {
       setRecordingDurationMillis(duration);
       if (duration >= MAX_RECORDING_DURATION_MS && !recordingLimitReachedRef.current) {
         recordingLimitReachedRef.current = true;
-        await stopRecording();
+        await finishVoiceRecordingRef.current?.();
       }
     };
     updateDuration().catch(() => {});
@@ -247,6 +280,7 @@ export default function ScannerScreen({ navigation, route }) {
         return dCopy.getTime() === today.getTime();
       });
 
+      setLatestMeal(getLatestMeal(meals));
       setTodayMealCount(todayMeals.length);
       const cals = todayMeals.reduce((sum, m) => sum + (Number(m.calories) || 0), 0);
       setTodayCalories(cals);
@@ -262,15 +296,15 @@ export default function ScannerScreen({ navigation, route }) {
       // Restore explicit styles because 'undefined' overwrites default screenOptions with nothing
       navigation.setOptions({
         tabBarStyle: {
-          backgroundColor: theme === 'light' ? '#FFFFFF' : '#0B0F14',
-          borderTopColor: theme === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.12)',
+          backgroundColor: colors.tabBg,
+          borderTopColor: colors.border,
           height: 60 + (Platform.OS === 'android' ? Math.max(insets.bottom, 10) : insets.bottom),
           paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 10) : insets.bottom,
           display: 'flex',
         },
       });
     }
-  }, [status, navigation, theme, insets]);
+  }, [status, navigation, colors, insets]);
 
 
   useEffect(() => {
@@ -302,29 +336,23 @@ export default function ScannerScreen({ navigation, route }) {
 
   const openFoodInput = () => {
     setFoodDescription('');
-    setRecordedAudio(null);
     setShowFoodInput(true);
     setTimeout(() => foodInputRef.current?.focus(), 250);
   };
 
-  const closeFoodInput = async () => {
-    if (isRecording) await stopRecording().catch(() => {});
+  const closeFoodInput = () => {
     setShowFoodInput(false);
     setFoodDescription('');
-    setRecordedAudio(null);
   };
 
-  const toggleRecording = async () => {
+  const startVoiceRecording = async () => {
+    if (isRecording || audioRecordingRef.current || startingVoiceRef.current || finishingVoiceRef.current || !checkLimit()) return;
     if (!isRecording && aiProvider === 'claude' && claudeVoiceProvider === 'none') {
       Alert.alert('Claude', t.aiVoiceHint);
       return;
     }
+    startingVoiceRef.current = true;
     try {
-      if (isRecording) {
-        await stopRecording();
-        return;
-      }
-
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== 'granted') {
         Alert.alert(t.errorTitle || 'Chyba', t.microphonePermissionMissing || 'Povoľ prístup k mikrofónu a skús znova.');
@@ -335,7 +363,6 @@ export default function ScannerScreen({ navigation, route }) {
         playsInSilentModeIOS: true,
         playThroughEarpieceAndroid: false,
       });
-      setRecordedAudio(null);
       const recording = new Audio.Recording();
       await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       await recording.startAsync();
@@ -345,18 +372,18 @@ export default function ScannerScreen({ navigation, route }) {
       setIsRecording(true);
     } catch (err) {
       Alert.alert(t.errorTitle || 'Chyba', err?.message || 'Nahrávanie sa nepodarilo spustiť.');
+    } finally {
+      startingVoiceRef.current = false;
     }
   };
 
-  const analyzeFoodInput = async () => {
+  const analyzeFoodInput = async (audioOverride = null) => {
     if (!checkLimit()) return;
-    let audio = recordedAudio;
-    if (isRecording) {
-      audio = await stopRecording();
-    }
+    const audio = audioOverride?.uri ? audioOverride : null;
 
-    const description = foodDescription.trim();
+    const description = audio?.uri ? '' : foodDescription.trim();
     if (!description && !audio?.uri) return;
+    if (!audio?.uri) setFoodDescription('');
 
     const analysisId = Date.now().toString();
     currentAnalysisIdRef.current = analysisId;
@@ -405,10 +432,24 @@ export default function ScannerScreen({ navigation, route }) {
       analysisActiveRef.current = false;
       const friendly = getFriendlyError(err, t);
       Alert.alert(friendly.title, friendly.message);
-    } finally {
-      setRecordedAudio(null);
     }
   };
+
+  const finishVoiceRecording = async () => {
+    if (finishingVoiceRef.current || !audioRecordingRef.current) return;
+    finishingVoiceRef.current = true;
+    try {
+      const audio = await stopRecording();
+      if (!audio?.uri) throw new Error(t.audioMissing || 'Nahrávku sa nepodarilo uložiť.');
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+      await analyzeFoodInput(audio);
+    } catch (error) {
+      Alert.alert(t.errorTitle || 'Chyba', error?.message || t.audioMissing || 'Nahrávanie sa nepodarilo dokončiť.');
+    } finally {
+      finishingVoiceRef.current = false;
+    }
+  };
+  finishVoiceRecordingRef.current = finishVoiceRecording;
 
   const ensurePermissions = async (action) => {
     try {
@@ -778,14 +819,8 @@ export default function ScannerScreen({ navigation, route }) {
   // Idle state (Dashboard)
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
-      <ScrollView contentContainerStyle={styles.container} indicatorStyle={theme === 'light' ? 'black' : 'white'}>
-        <View style={styles.hero}>
-          <Text style={[styles.heroTitle, { color: colors.text }]}>
-            {t.heroTitle} <Text style={[styles.heroAccent, { color: colors.accent }]}>{t.heroAccent}</Text>
-          </Text>
-        </View>
-
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <ScrollView onLayout={event => setDashboardHeight(event.nativeEvent.layout.height)} contentContainerStyle={styles.dashboardContainer} indicatorStyle={theme === 'light' ? 'black' : 'white'}>
+        <View onLayout={event => measureDashboardPart('summary', event.nativeEvent.layout.height)} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <DailySummary
             dailyGoal={dailyGoal}
             colors={colors}
@@ -794,31 +829,66 @@ export default function ScannerScreen({ navigation, route }) {
           />
         </View>
 
-        <View style={styles.sectionHeader}>
+        {latestMealVisible && <View onLayout={event => measureDashboardPart('latest', event.nativeEvent.layout.height)}><LatestMealBar meal={latestMeal} colors={colors} onPress={() => navigation.navigate('History')} /></View>}
+
+        <View style={styles.entryActions}>
           <Pressable
             accessibilityRole="button"
-            style={({ pressed }) => [styles.sectionFrame, { backgroundColor: colors.btn, borderColor: colors.border }, pressed && styles.sectionFramePressed]}
+            accessibilityLabel={isRecording ? t.stopRecording : t.addFoodVoice}
+            style={({ pressed }) => [styles.sectionFrame, styles.entryButton, {
+              height: dashboardSizes.text,
+              backgroundColor: isRecording ? colors.danger : colors.btn,
+              borderColor: isRecording ? colors.danger : colors.border,
+            }, pressed && styles.sectionFramePressed]}
+            onPress={isRecording ? finishVoiceRecording : startVoiceRecording}
+          >
+            <View style={styles.voiceLabel}>
+              <Ionicons name={isRecording ? 'stop' : 'mic'} size={20} color={isRecording ? colors.onAccent : colors.btnText} />
+              <Text style={[styles.sectionTitle, { color: isRecording ? colors.onAccent : colors.btnText, textTransform: isRecording ? 'uppercase' : 'none' }]}>
+                {isRecording ? t.voiceStop : t.addFoodVoice}
+              </Text>
+            </View>
+            {isRecording && <View style={styles.voiceActivity} accessibilityLabel={t.recording}>
+              {[0.5, 0.85, 0.65, 1, 0.55].map((bar, index) =>
+                <Animated.View key={index} style={[styles.waveBar, { height: 13 * bar, opacity: recordingPulse, backgroundColor: colors.onAccent }]} />)}
+              <Text style={[styles.voiceTimer, { color: colors.onAccent }]}>
+                {`${Math.min(30, Math.floor(recordingDurationMillis / 1000))} / 30 s`}
+              </Text>
+            </View>}
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.sectionFrame, styles.entryButton, { height: dashboardSizes.text, backgroundColor: colors.btn, borderColor: colors.border }, pressed && styles.sectionFramePressed]}
             onPress={openFoodInput}
           >
-            <Text style={[styles.sectionTitle, { color: colors.btnText }]}>{t.addFoodTextOrVoice || t.addFoodLabel}</Text>
+            <View style={styles.voiceLabel}>
+              <Ionicons name="create-outline" size={20} color={colors.btnText} />
+              <Text style={[styles.sectionTitle, { color: colors.btnText, textTransform: 'none' }]}>{t.addFoodText}</Text>
+            </View>
           </Pressable>
         </View>
 
         <View style={styles.actions}>
           <Pressable
-            style={({ pressed }) => [styles.bigBtn, { backgroundColor: colors.btn, borderColor: colors.border }, pressed && styles.bigBtnPressed]}
+            style={({ pressed }) => [styles.bigBtn, { height: dashboardSizes.actions, backgroundColor: colors.btn, borderColor: colors.border }, pressed && styles.bigBtnPressed]}
             {...makeActionHandlers('gallery')}
           >
-            <Text style={[styles.hint, { color: theme === 'light' ? colors.muted : 'rgba(0,0,0,0.55)' }]}>{t.holdToWeigh}</Text>
-            <Text style={[styles.bigBtnText, { color: colors.btnText }]}>{t.galleryShort}</Text>
+            <Text style={[styles.hint, { color: colors.btnText }]}>{t.holdToWeigh}</Text>
+            <View style={styles.voiceLabel}>
+              <Ionicons name="images-outline" size={20} color={colors.btnText} />
+              <Text style={[styles.bigBtnText, { color: colors.btnText }]}>{t.galleryShort}</Text>
+            </View>
           </Pressable>
 
           <Pressable
-            style={({ pressed }) => [styles.bigBtn, { backgroundColor: colors.btn, borderColor: colors.border }, pressed && styles.bigBtnPressed]}
+            style={({ pressed }) => [styles.bigBtn, { height: dashboardSizes.actions, backgroundColor: colors.btn, borderColor: colors.border }, pressed && styles.bigBtnPressed]}
             {...makeActionHandlers('camera')}
           >
-            <Text style={[styles.hint, { color: theme === 'light' ? colors.muted : 'rgba(0,0,0,0.55)' }]}>{t.holdToWeigh}</Text>
-            <Text style={[styles.bigBtnText, { color: colors.btnText }]}>{t.cameraShort}</Text>
+            <Text style={[styles.hint, { color: colors.btnText }]}>{t.holdToWeigh}</Text>
+            <View style={styles.voiceLabel}>
+              <Ionicons name="camera-outline" size={20} color={colors.btnText} />
+              <Text style={[styles.bigBtnText, { color: colors.btnText }]}>{t.cameraShort}</Text>
+            </View>
           </Pressable>
         </View>
 
@@ -835,12 +905,8 @@ export default function ScannerScreen({ navigation, route }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <Pressable style={StyleSheet.absoluteFill} onPress={closeFoodInput} />
-          <View style={[styles.foodInputDialog, { backgroundColor: theme === 'light' ? colors.card : '#161B22', borderColor: colors.border }]}>
-            <Text style={[styles.foodInputTitle, { color: colors.text }]}>{t.addFoodTextOrVoice || t.addFoodLabel}</Text>
-            <Text style={{ color: colors.muted, fontSize: 12 }}>
-              {aiProvider === 'gemini' ? 'Gemini' : aiProvider === 'openai' ? 'OpenAI' : 'Claude'}
-              {aiProvider === 'claude' && claudeVoiceProvider !== 'none' ? ` · ${t.aiVoiceTitle}: ${claudeVoiceProvider === 'gemini' ? 'Gemini' : 'OpenAI'}` : ''}
-            </Text>
+          <View style={[styles.foodInputDialog, { backgroundColor: colors.modalBg, borderColor: colors.border }]}>
+            <Text style={[styles.foodInputTitle, { color: colors.text }]}>{t.addFoodText}</Text>
             <TextInput
               ref={foodInputRef}
               value={foodDescription}
@@ -853,46 +919,6 @@ export default function ScannerScreen({ navigation, route }) {
               onSubmitEditing={analyzeFoodInput}
             />
 
-            <View style={styles.recordingRow}>
-              <Pressable
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.microphoneButton,
-                  { backgroundColor: isRecording ? '#DC2626' : colors.btn, borderColor: colors.border },
-                  pressed && styles.bigBtnPressed,
-                ]}
-                onPress={toggleRecording}
-              >
-                <Text style={[styles.microphoneIcon, { color: isRecording ? '#FFFFFF' : colors.btnText }]}>●</Text>
-                <Text style={[styles.microphoneText, { color: isRecording ? '#FFFFFF' : colors.btnText }]}>
-                  {isRecording ? (t.stopRecording || 'Zastaviť nahrávanie') : (t.microphone || 'Mikrofón')}
-                </Text>
-              </Pressable>
-              {isRecording && (
-                <View style={styles.waveform} accessibilityLabel={t.recording || 'Nahrávanie'}>
-                  {[0.55, 0.9, 0.7, 1, 0.6].map((height, index) => (
-                    <Animated.View
-                      key={index}
-                      style={[styles.waveBar, { height: 28 * height, opacity: recordingPulse, backgroundColor: '#DC2626' }]}
-                    />
-                  ))}
-                  <Text style={[styles.recordingTimer, { color: colors.muted }]}>
-                    {`${Math.min(30, Math.floor(recordingDurationMillis / 1000))} / 30 s`}
-                  </Text>
-                </View>
-              )}
-              {!isRecording && recordedAudio && (
-                <View style={[styles.recordingStatus, { backgroundColor: colors.btn, borderColor: colors.border }]}>
-                  <Text style={[styles.audioReady, { color: colors.accent }]}>{t.audioReady || 'Nahrávka pripravená'}</Text>
-                </View>
-              )}
-              {!isRecording && !recordedAudio && (
-                <View style={[styles.recordingStatus, { backgroundColor: theme === 'light' ? '#E2E8F0' : 'rgba(255,255,255,0.10)', borderColor: colors.border }]}>
-                  <Text style={[styles.audioReady, { color: colors.muted }]}>{t.noRecording || 'No recording'}</Text>
-                </View>
-              )}
-            </View>
-
             <View style={styles.foodInputActions}>
               <Pressable style={[styles.dialogButton, { borderColor: colors.border }]} onPress={closeFoodInput}>
                 <Text style={[styles.dialogButtonText, { color: colors.muted }]}>{t.cancel}</Text>
@@ -901,13 +927,13 @@ export default function ScannerScreen({ navigation, route }) {
                 style={({ pressed }) => [
                   styles.dialogButton,
                   styles.dialogConfirmButton,
-                  { backgroundColor: colors.accent, opacity: (foodDescription.trim() || recordedAudio || isRecording) ? 1 : 0.45 },
+                  { backgroundColor: colors.accent, opacity: foodDescription.trim() ? 1 : 0.45 },
                   pressed && styles.bigBtnPressed,
                 ]}
-                disabled={!foodDescription.trim() && !recordedAudio && !isRecording}
+                disabled={!foodDescription.trim()}
                 onPress={analyzeFoodInput}
               >
-                <Text style={[styles.dialogButtonText, { color: '#FFFFFF' }]}>{t.confirm}</Text>
+                <Text style={[styles.dialogButtonText, { color: colors.onAccent }]}>{t.confirm}</Text>
               </Pressable>
             </View>
           </View>
@@ -978,22 +1004,21 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
     gap: 12,
   },
-  hero: {
-    alignItems: 'center',
-    marginTop: 3,
-    marginBottom: 4,
-  },
-  heroTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: 'white',
-  },
-  heroAccent: {
+  dashboardContainer: {
+    flexGrow: 1,
+    padding: 16,
+    paddingBottom: 16,
+    gap: 10,
+    justifyContent: 'flex-start',
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
   },
   card: {
     width: '100%',
-    padding: 16,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 18,
     borderWidth: 1,
   },
   actions: {
@@ -1001,12 +1026,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  sectionHeader: {
-    marginTop: 0,
-    marginBottom: 0,
+  entryActions: {
     width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 12,
   },
   sectionFrame: {
     width: '100%',
@@ -1017,20 +1040,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  entryButton: {
+    flex: 1,
+    width: 'auto',
+    minWidth: 0,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  voiceLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  voiceActivity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+  },
+  voiceTimer: {
+    marginLeft: 4,
+    fontSize: 11,
+    fontWeight: '700',
+  },
   sectionFramePressed: {
     opacity: 0.82,
     transform: [{ scale: 0.99 }],
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '800', // Matches other headers
+  sectionTitle: { ...typography.sectionTitle,
+    // Matches other headers
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   // sectionLine removed
   bigBtn: {
     flex: 1,
-    minHeight: 100,
     borderRadius: 16,
     borderWidth: 1,
     alignItems: 'center',
@@ -1136,60 +1181,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlignVertical: 'top',
   },
-  recordingRow: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  microphoneButton: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 15,
-  },
-  microphoneIcon: {
-    fontSize: 22,
-    lineHeight: 22,
-  },
-  microphoneText: {
-    fontWeight: '800',
-    fontSize: 14,
-  },
-  waveform: {
-    flex: 1,
-    height: 38,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  recordingTimer: {
-    marginLeft: 6,
-    fontSize: 12,
-    fontWeight: '700',
-  },
   waveBar: {
     width: 4,
     borderRadius: 2,
-  },
-  audioReady: {
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  recordingStatus: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 10,
   },
   foodInputActions: {
     flexDirection: 'row',

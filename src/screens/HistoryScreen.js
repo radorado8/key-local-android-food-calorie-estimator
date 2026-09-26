@@ -1,3 +1,4 @@
+import { typography } from '../theme/palette';
 import React, { useDeferredValue, useEffect, useMemo, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -117,9 +118,7 @@ export default function HistoryScreen() {
   const searchInputRef = React.useRef(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  const colors = theme === 'light'
-    ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)' }
-    : { bg: '#0B0F14', card: 'rgba(255,255,255,0.06)', text: '#FFFFFF', muted: 'rgba(255,255,255,0.7)', accent: '#2DD4BF', border: 'rgba(255,255,255,0.1)' };
+  const { colors } = useSettings();
 
   const { width } = useWindowDimensions();
   const isMobile = width <= 768;
@@ -331,6 +330,7 @@ export default function HistoryScreen() {
         {isSearching ? (
           <TextInput
             ref={searchInputRef}
+            selectTextOnFocus
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder={t.searchFood || 'Hľadať jedlo'}
@@ -397,7 +397,7 @@ export default function HistoryScreen() {
                         left: 0,
                         top: 0,
                         bottom: 0,
-                        backgroundColor: '#FB923C',
+                        backgroundColor: colors.calories,
                         borderRadius: 3.5,
                         width: `${Math.min((totals.calories / (dailyGoal || 1)) * 100, 150)}%`
                       }} />
@@ -418,7 +418,7 @@ export default function HistoryScreen() {
                 </View>
 
                 <View style={[styles.sectionRightGroup, { minWidth: 80 }]}>
-                  <Text style={[styles.sectionKcal, { color: '#FB923C' }]}>{Math.round(totals.calories).toLocaleString()} kcal</Text>
+                  <Text style={[styles.sectionKcal, { color: colors.calories }]}>{Math.round(totals.calories).toLocaleString()} kcal</Text>
                   <Text style={[styles.sectionMacros, { color: colors.muted }]}>{`${t.macroShortP}: ${Math.round(totals.protein)}g ${t.macroShortC}: ${Math.round(totals.carbs)}g ${t.macroShortF}: ${Math.round(totals.fat)}g`}</Text>
                 </View>
               </Pressable>
@@ -435,7 +435,13 @@ export default function HistoryScreen() {
                     if (catMeals.length === 0) return null;
 
                     const isCatExpanded = expandedCategories[`${section.dateKey}_${catId}`] === true;
-                    const catCals = catMeals.reduce((sum, m) => sum + (Number(m.calories) || 0), 0);
+                    const catTotals = catMeals.reduce((totals, meal) => {
+                      totals.calories += Number(meal.calories) || 0;
+                      totals.protein += Number(meal.protein) || 0;
+                      totals.carbs += Number(meal.carbs) || 0;
+                      totals.fat += Number(meal.fat) || 0;
+                      return totals;
+                    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
                     return (
                       <View key={cat.id} style={styles.categoryBlock}>
@@ -455,7 +461,10 @@ export default function HistoryScreen() {
                             </Text>
                           </View>
 
-                          <Text style={{ fontWeight: '800', fontSize: 14, color: '#FB923C' }}>{Math.round(catCals).toLocaleString()} KCAL</Text>
+                          <View style={{ alignItems: 'flex-end', flexShrink: 1 }}>
+                            <Text style={{ fontWeight: '800', fontSize: 14, color: colors.calories }}>{Math.round(catTotals.calories).toLocaleString()} KCAL</Text>
+                            <Text numberOfLines={1} style={[styles.sectionMacros, { color: colors.muted }]}>{`${t.macroShortP}: ${Math.round(catTotals.protein)}g ${t.macroShortC}: ${Math.round(catTotals.carbs)}g ${t.macroShortF}: ${Math.round(catTotals.fat)}g`}</Text>
+                          </View>
                         </Pressable>
 
                         {isCatExpanded && (
@@ -474,6 +483,7 @@ export default function HistoryScreen() {
                                   }}
                                   onRepeat={() => repeatMealInLog(item)}
                                   onRepeatLongPress={() => {
+                                    Keyboard.dismiss();
                                     setRepeatMeal(item);
                                     setWeightDialogOpen(true);
                                   }}
@@ -530,6 +540,7 @@ export default function HistoryScreen() {
                 }}
                 onRepeat={() => repeatMealInLog(item)}
                 onRepeatLongPress={() => {
+                  Keyboard.dismiss();
                   setRepeatMeal(item);
                   setWeightDialogOpen(true);
                 }}
@@ -691,7 +702,7 @@ const MealItem = ({ item, colors, t, onEdit, onRepeat, onRepeatLongPress, onDele
     <View style={{ flex: 1, gap: 4 }}>
       <Text style={[styles.itemName, { color: colors.text }]}>{item.name || t.unknownFood}</Text>
       <View style={styles.itemValuesContainer}>
-        <Text style={[styles.itemKcal, { color: '#FB923C' }]}>{Math.round(Number(item.calories || 0))} kcal</Text>
+        <Text style={[styles.itemKcal, { color: colors.calories }]}>{Math.round(Number(item.calories || 0))} kcal</Text>
         <Text style={[styles.itemMacrosText, { color: colors.muted }]}>
           {t.macroShortP}: {Math.round(Number(item.protein || 0))}g • {t.macroShortC}: {Math.round(Number(item.carbs || 0))}g • {t.macroShortF}: {Math.round(Number(item.fat || 0))}g
           {item.weight_g ? ` • ${item.weight_g}g` : ''}
@@ -745,9 +756,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+  headerTitle: { ...typography.screenTitle,
     textAlign: 'center',
   },
   headerIcon: {
@@ -788,10 +797,8 @@ const styles = StyleSheet.create({
   sectionRightGroup: {
     alignItems: 'flex-end',
   },
-  sectionTitle: {
-    fontWeight: '800',
-    fontSize: 16,
-  },
+  sectionTitle: { ...typography.sectionTitle,
+    },
   categoryBlock: {
     marginVertical: 3,
   },
@@ -824,7 +831,7 @@ const styles = StyleSheet.create({
   itemCard: {
     paddingVertical: 12,
     paddingHorizontal: 14,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 12,
@@ -833,10 +840,8 @@ const styles = StyleSheet.create({
   itemCardPressed: {
     opacity: 0.82,
   },
-  itemName: {
-    fontWeight: '700',
-    fontSize: 17,
-  },
+  itemName: { ...typography.itemTitle,
+    },
   itemValuesContainer: {
     flexDirection: 'column',
     alignItems: 'flex-start',

@@ -50,8 +50,8 @@ export const PUBLIC_MODEL_IDS = [
   'gemini-pro-latest',
 ];
 
-export const DEFAULT_PUBLIC_MODEL_ID = 'gemini-flash-latest';
-export const DEFAULT_ADMIN_MODEL_ID = 'gemini-flash-latest';
+export const DEFAULT_PUBLIC_MODEL_ID = 'gemini-3-flash-preview';
+export const DEFAULT_ADMIN_MODEL_ID = 'gemini-3-flash-preview';
 
 export function isAdminEmail(email) {
   return String(email || '').toLowerCase() === ADMIN_EMAIL;

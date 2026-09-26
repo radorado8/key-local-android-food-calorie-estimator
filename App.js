@@ -104,7 +104,7 @@ import TermsModal from './src/components/TermsModal';
 
 function AppContent({ startupError }) {
   const insets = useSafeAreaInsets();
-  const { theme, termsAccepted, hydrated } = useSettings();
+  const { theme, colors, termsAccepted, hydrated } = useSettings();
   const t = useTranslation();
 
   // Configure Quick Actions
@@ -131,28 +131,13 @@ function AppContent({ startupError }) {
 
   useEffect(() => {
     if (Platform.OS === 'android') {
-      const navColor = theme === 'light' ? '#FFFFFF' : '#0B0F14';
+      const navColor = colors.tabBg;
       const iconStyle = theme === 'light' ? 'dark' : 'light';
       NavigationBar.setBackgroundColorAsync(navColor).catch(() => { });
       NavigationBar.setButtonStyleAsync(iconStyle).catch(() => { });
     }
-  }, [theme]);
+  }, [theme, colors]);
 
-  const colors = theme === 'light'
-    ? {
-      bg: '#F8FAFC',
-      tabBg: '#FFFFFF',
-      tabBorder: 'rgba(0,0,0,0.06)',
-      active: '#0D9488',
-      inactive: '#64748B'
-    }
-    : {
-      bg: '#0B0F14',
-      tabBg: '#0B0F14',
-      tabBorder: 'rgba(255,255,255,0.12)',
-      active: '#2DD4BF',
-      inactive: 'rgba(255,255,255,0.6)'
-    };
 
   if (!hydrated) {
     return null; // Or a splash screen

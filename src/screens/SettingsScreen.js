@@ -1,3 +1,5 @@
+import ColorThemePicker from '../components/ColorThemePicker';
+import { typography } from '../theme/palette';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -188,11 +190,9 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds } = useSettings();
+  const { showLatestMeal, setShowLatestMeal, dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds } = useSettings();
 
-  const colors = theme === 'light'
-    ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)', elemBg: '#F1F5F9', elemBorder: 'rgba(0,0,0,0.05)', modalBg: '#FFFFFF' }
-    : { bg: '#0B0F14', card: 'rgba(255,255,255,0.06)', text: '#FFFFFF', muted: 'rgba(255,255,255,0.7)', accent: '#2DD4BF', border: 'rgba(255,255,255,0.1)', elemBg: 'rgba(255,255,255,0.06)', elemBorder: 'rgba(255,255,255,0.12)', modalBg: '#161B22' };
+  const { colors } = useSettings();
 
   const [dailyGoalInput, setDailyGoalInput] = useState(String(dailyGoal));
   const [macroGoalsOpen, setMacroGoalsOpen] = useState(false);
@@ -773,7 +773,7 @@ export default function SettingsScreen() {
                   <Ionicons name="pencil" size={20} color={colors.accent} />
                 </Pressable>
                 <Pressable accessibilityLabel={t.delete + ' ' + m.label} onPress={() => handleDeleteModel(m.id)} style={{ padding: 8 }}>
-                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                  <Ionicons name="trash-outline" size={20} color={colors.danger} />
                 </Pressable>
               </View>
             </View>
@@ -800,6 +800,18 @@ export default function SettingsScreen() {
           onSelect={setTheme}
           colors={colors}
         />
+
+        <ColorThemePicker />
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.label, { color: colors.text }]}>{t.showLatestMealTitle}</Text>
+              <Text style={[styles.hint, { color: colors.muted }]}>{t.showLatestMealHint}</Text>
+            </View>
+            <Switch value={showLatestMeal === true} onValueChange={setShowLatestMeal}
+              accessibilityLabel={t.showLatestMealTitle} trackColor={{ false: colors.elemBg, true: colors.accent }} />
+          </View>
+        </View>
 
         {/* 4. Save Photos Toggle */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -916,7 +928,7 @@ export default function SettingsScreen() {
                   <Ionicons name="pencil" size={20} color={colors.accent} />
                 </Pressable>
                 <Pressable onPress={() => handleDeleteCategory(c.id)}>
-                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                  <Ionicons name="trash-outline" size={20} color={colors.danger} />
                 </Pressable>
               </View>
             </View>
@@ -1014,7 +1026,7 @@ export default function SettingsScreen() {
             onPress={handleClearHistory}
             disabled={clearingHistory}
           >
-            <Text style={[styles.btnText, { color: '#EF4444' }]}>
+            <Text style={[styles.btnText, { color: colors.danger }]}>
               {clearingHistory ? '...' : (t.clearHistoryBtn || 'Vymazať celú históriu')}
             </Text>
           </Pressable>
@@ -1085,7 +1097,7 @@ export default function SettingsScreen() {
                   <Text style={{ color: colors.muted, fontWeight: '700' }}>{t.cancel}</Text>
                 </Pressable>
                 <Pressable onPress={handleAddCustomModel} style={{ padding: 10, backgroundColor: colors.accent, borderRadius: 8 }}>
-                  <Text style={{ color: '#fff', fontWeight: '700' }}>{editingModel ? (t.save || 'Save') : t.confirm}</Text>
+                  <Text style={{ color: colors.onAccent, fontWeight: '700' }}>{editingModel ? (t.save || 'Save') : t.confirm}</Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -1116,7 +1128,7 @@ export default function SettingsScreen() {
                   <Text style={{ color: colors.muted, fontWeight: '700' }}>{t.cancel}</Text>
                 </Pressable>
                 <Pressable onPress={handleAddCategory} style={{ padding: 10, backgroundColor: colors.accent, borderRadius: 8 }}>
-                  <Text style={{ color: '#fff', fontWeight: '700' }}>{editingCategory ? (t.save || 'Save') : t.confirm}</Text>
+                  <Text style={{ color: colors.onAccent, fontWeight: '700' }}>{editingCategory ? (t.save || 'Save') : t.confirm}</Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -1146,22 +1158,19 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+  headerTitle: { ...typography.screenTitle,
     textAlign: 'center',
   },
   card: {
     width: '100%',
     padding: 16,
-    borderRadius: 20,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.10)',
   },
-  label: {
+  label: { ...typography.sectionTitle,
     color: 'rgba(255,255,255,0.85)',
-    fontWeight: '700',
     marginBottom: 8,
   },
   hint: {

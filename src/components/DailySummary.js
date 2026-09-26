@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect, G, Path, Text as SvgText } from 'react-native-svg';
-import { MACRO_COLORS } from '../utils/macroGoals';
 import { subscribeToMeals } from '../api/mealService';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSettings } from '../state/SettingsContext';
@@ -250,7 +249,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
                     width={barWidth}
                     height={Math.max(2, barHeight)}
                     rx={3}
-                    fill={isToday ? '#2DD4BF' : '#FB923C'}
+                    fill={isToday ? colors.accent : colors.calories}
                   />
 
                   {/* Goal Marker (Blue Line at 100%) */}
@@ -283,31 +282,31 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
           onPress={onPress}
         >
           <View style={styles.centerRow}>
-            <Text style={[styles.kcalValue, { color: '#FB923C' }]}>{Math.round(todayCalories).toLocaleString()}</Text>
-            <Text style={[styles.kcalUnit, { color: '#FB923C' }]}>kcal</Text>
+            <Text style={[styles.kcalValue, { color: colors.calories }]}>{Math.round(todayCalories).toLocaleString()}</Text>
+            <Text style={[styles.kcalUnit, { color: colors.calories }]}>kcal</Text>
           </View>
           <Text style={[styles.goalText, { color: colors.muted }]}>{t.dailyGoalLabel}: {Number(dailyGoal).toLocaleString()} kcal</Text>
-          <Text style={[styles.remainingText, isOverGoal && styles.remainingOver, !isOverGoal && { color: colors.accent }]}>
+          <Text style={[styles.remainingText, { color: isOverGoal ? colors.danger : colors.accent }]}>
             {Math.round(Math.abs(remaining)).toLocaleString()} kcal {isOverGoal ? t.overGoal : t.remainingLabel}
           </Text>
         </Pressable>
       </View>
 
       <View style={[styles.macros, { borderTopColor: colors.border }]}>
-        {['protein', 'carbs', 'fat'].map(key => <Macro key={key} label={t[key]} value={totals[key]} goal={macroGoals[key]} color={MACRO_COLORS[key]} colors={colors} goalLabel={t.dailyGoalLabel} />)}
+        {['protein', 'carbs', 'fat'].map(key => <Macro key={key} label={t[key]} value={totals[key]} goal={macroGoals[key]} color={colors.macros[key]} colors={colors} goalLabel={t.dailyGoalLabel} onPress={onPress} />)}
       </View>
     </View>
   );
 }
 
-function Macro({ label, value, goal, color, colors, goalLabel }) {
+function Macro({ label, value, goal, color, colors, goalLabel, onPress }) {
   const progress = Math.max(0, Math.min(1, value / goal));
   const radius = 36;
   const offset = radius / Math.sqrt(2);
   const arc = `M ${50 - offset} ${37 + offset} A ${radius} ${radius} 0 1 1 ${50 + offset} ${37 + offset}`;
   const length = 1.5 * Math.PI * radius;
   return (
-    <View style={styles.macroItem} accessible accessibilityLabel={`${label}: ${Math.round(value)}g. ${goalLabel}: ${goal}g`}>
+    <Pressable style={styles.macroItem} accessible accessibilityRole="button" accessibilityLabel={`${label}: ${Math.round(value)}g. ${goalLabel}: ${goal}g`} onPress={onPress}>
       <Svg width="100%" height={80} viewBox="0 -3 100 80" accessible={false}>
         <Path d={arc} stroke={color} strokeOpacity={0.15} strokeWidth={5.8} fill="none" strokeLinecap="round" />
         {progress > 0 && <Path d={arc} stroke={color} strokeWidth={5.8} fill="none" strokeLinecap="round" strokeDasharray={`${length * progress} ${length}`} />}
@@ -315,7 +314,7 @@ function Macro({ label, value, goal, color, colors, goalLabel }) {
         <SvgText x={50} y={61} textAnchor="middle" fill={colors.muted} fontSize={14} fontWeight="800">{`${goal}g`}</SvgText>
       </Svg>
       <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.macroLabel, { color: colors.muted }]}>{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 

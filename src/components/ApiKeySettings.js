@@ -1,3 +1,4 @@
+import { typography } from '../theme/palette';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -78,7 +79,7 @@ export default function ApiKeySettings({ colors, children }) {
           <Pressable disabled={busy} accessibilityLabel={t.aiEditKey + ' ' + entry.name} onPress={() => edit(entry)} style={styles.icon}><Ionicons name="pencil-outline" size={21} color={colors.accent} /></Pressable>
           <Pressable disabled={busy} accessibilityLabel={t.delete + ' ' + entry.name} style={styles.icon}
             onPress={() => Alert.alert(t.delete, t.aiDeleteKey, [{ text: t.cancel, style: 'cancel' }, { text: t.delete, style: 'destructive', onPress: () => run(() => deleteApiKey(entry.id)) }])}>
-            <Ionicons name="trash-outline" size={21} color="#EF4444" />
+            <Ionicons name="trash-outline" size={21} color={colors.danger} />
           </Pressable>
         </View>
       ))}
@@ -114,7 +115,7 @@ export default function ApiKeySettings({ colors, children }) {
               </View>
               <View style={styles.row}>
                 <Pressable disabled={busy} onPress={close} style={[styles.button, button, { flex: 1 }]}><Text style={label}>{t.cancel}</Text></Pressable>
-                <Pressable disabled={busy || (!editor?.id && !secret.trim())} onPress={save} style={[styles.button, { flex: 1, backgroundColor: colors.accent, opacity: busy || (!editor?.id && !secret.trim()) ? 0.5 : 1 }]}><Text style={{ color: '#052E2B', fontWeight: '700' }}>{busy ? '…' : t.save}</Text></Pressable>
+                <Pressable disabled={busy || (!editor?.id && !secret.trim())} onPress={save} style={[styles.button, { flex: 1, backgroundColor: colors.accent, opacity: busy || (!editor?.id && !secret.trim()) ? 0.5 : 1 }]}><Text style={{ color: colors.onAccent, fontWeight: '700' }}>{busy ? '…' : t.save}</Text></Pressable>
               </View>
             </View>
           </ScrollView>
@@ -126,7 +127,7 @@ export default function ApiKeySettings({ colors, children }) {
 
 const styles = StyleSheet.create({
   card: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 12, marginBottom: 16 },
-  title: { fontSize: 18, fontWeight: '800' }, subtitle: { fontSize: 15, fontWeight: '700', marginTop: 6 },
+  title: { ...typography.sectionTitle,  }, subtitle: { fontSize: 15, fontWeight: '700', marginTop: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   provider: { flex: 1, minHeight: 44, borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center', padding: 6 },
   keyRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12, paddingLeft: 10 },

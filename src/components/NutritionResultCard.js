@@ -1,3 +1,4 @@
+import { typography } from '../theme/palette';
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View, Image, TextInput, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -113,7 +114,7 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
         <View style={[styles.card, styles.bigCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[styles.mainStatRow, { borderBottomColor: colors.elemBorder }]}>
             <View style={[styles.iconBox, { backgroundColor: 'rgba(251, 146, 60, 0.1)' }]}>
-              <Ionicons name="flame" size={24} color="#FB923C" />
+              <Ionicons name="flame" size={24} color={colors.calories} />
             </View>
             <View style={styles.statContent}>
               <Text style={[styles.label, { color: colors.muted }]}>{t.calories}</Text>
@@ -171,11 +172,11 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
           onChangeText={(v) => handleChange({ ...data, protein: v.replace(/[^0-9]/g, '') })}
           onFocus={cancelAutoSave}
           unit="g"
-          icon={<Ionicons name="flash" size={18} color="#2DD4BF" />}
+          icon={<Ionicons name="flash" size={18} color={colors.macros.protein} />}
           iconBg="rgba(45, 212, 191, 0.1)"
           colors={colors}
           progress={0.8}
-          progressColor="#2DD4BF"
+          progressColor={colors.macros.protein}
           editable
         />
 
@@ -186,11 +187,11 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
           onChangeText={(v) => handleChange({ ...data, carbs: v.replace(/[^0-9]/g, '') })}
           onFocus={cancelAutoSave}
           unit="g"
-          icon={<Ionicons name="pulse" size={18} color="#F472B6" />}
+          icon={<Ionicons name="pulse" size={18} color={colors.macros.carbs} />}
           iconBg="rgba(244, 114, 182, 0.1)"
           colors={colors}
           progress={0.4}
-          progressColor="#F472B6"
+          progressColor={colors.macros.carbs}
           editable
         />
 
@@ -205,7 +206,7 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
           iconBg="rgba(150, 150, 150, 0.1)"
           colors={colors}
           progress={0.5}
-          progressColor={colors.muted}
+          progressColor={colors.macros.fat}
           editable
         />
       </View>
@@ -255,8 +256,8 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
           ]}
           onPress={() => { cancelAutoSave(); onSave(); }}
         >
-          <Ionicons name={saving ? "time" : "save"} size={18} color={theme === 'light' ? 'white' : 'black'} />
-          <Text style={[styles.btnPrimaryText, theme === 'light' && { color: 'white' }]}>{saving ? t.saving : t.saveToLog}</Text>
+          <Ionicons name={saving ? "time" : "save"} size={18} color={colors.onAccent} />
+          <Text style={[styles.btnPrimaryText, { color: colors.onAccent }]}>{saving ? t.saving : t.saveToLog}</Text>
         </Pressable>
       </View>
     </View>
@@ -321,9 +322,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 4,
   },
-  screenTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+  screenTitle: { ...typography.screenTitle,
     textAlign: 'center',
   },
   header: {
@@ -348,10 +347,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '900',
-  },
+  title: { ...typography.sectionTitle,
+    },
   badge: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(74, 222, 128, 0.15)',
@@ -371,7 +368,7 @@ const styles = StyleSheet.create({
   },
   card: {
     padding: 12,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
   },
   bigCard: {
@@ -400,8 +397,7 @@ const styles = StyleSheet.create({
   statContent: {
     alignItems: 'flex-end',
   },
-  label: {
-    fontSize: 13,
+  label: { ...typography.sectionTitle,
     marginBottom: 2,
   },
   valueLarge: {

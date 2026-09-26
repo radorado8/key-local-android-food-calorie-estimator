@@ -1,3 +1,4 @@
+import { typography } from '../theme/palette';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
@@ -191,7 +192,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
                     borderColor: 'rgba(255,255,255,0.2)'
                   }}
                 >
-                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                  <Ionicons name="trash-outline" size={20} color={currentColors.danger} />
                 </Pressable>
               </View>
             )}
@@ -316,7 +317,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
                 style={({ pressed }) => [styles.btn, { backgroundColor: currentColors.accent }, pressed && styles.btnPressed, !valid && styles.btnDisabled]}
                 onPress={() => onSave(parsed)}
               >
-                <Text style={[styles.btnPrimaryText, { color: currentColors.card === '#FFFFFF' ? '#FFF' : '#000' }]}>
+                <Text style={[styles.btnPrimaryText, { color: currentColors.onAccent }]}>
                   {mode === 'add' ? t.add : t.save}
                 </Text>
               </Pressable>
@@ -376,17 +377,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.12)',
     gap: 6,
   },
-  title: {
+  title: { ...typography.sectionTitle,
     color: 'white',
-    fontSize: 16,
-    fontWeight: '900',
     marginBottom: 4,
   },
-  label: {
+  label: { ...typography.sectionTitle,
     color: 'rgba(255,255,255,0.75)',
-    fontSize: 12,
-    fontWeight: '700',
-  },
+    },
   input: {
     width: '100%',
     paddingVertical: 8,

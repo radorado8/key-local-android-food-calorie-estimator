@@ -1,3 +1,4 @@
+import { typography } from '../theme/palette';
 import React, { useDeferredValue, useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
     Alert,
@@ -56,9 +57,7 @@ export default function FavoritesScreen() {
     const searchInputRef = useRef(null);
     const deferredSearchQuery = useDeferredValue(searchQuery);
 
-    const colors = theme === 'light'
-        ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)' }
-        : { bg: '#0B0F14', card: 'rgba(255,255,255,0.06)', text: '#FFFFFF', muted: 'rgba(255,255,255,0.7)', accent: '#2DD4BF', border: 'rgba(255,255,255,0.1)' };
+    const { colors } = useSettings();
 
     useEffect(() => {
         const unsub = subscribeFavorites((fetched) => {
@@ -296,6 +295,7 @@ export default function FavoritesScreen() {
                 {isSearching ? (
                     <TextInput
                         ref={searchInputRef}
+                        selectTextOnFocus
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         placeholder={t.searchFood || 'Hľadať jedlo'}
@@ -360,6 +360,7 @@ export default function FavoritesScreen() {
                             showImage={showImagesInHistory}
                             onAddToLog={() => handleAddToLog(item)}
                             onAddToLogLongPress={() => {
+                                Keyboard.dismiss();
                                 setWeightItem(item);
                                 setWeightDialogOpen(true);
                             }}
@@ -485,8 +486,8 @@ export default function FavoritesScreen() {
                                             { text: t.cancel || 'Zrušiť', style: 'cancel' },
                                             { text: t.delete || 'Vymazať', style: 'destructive', onPress: () => clearFavoriteList(list.id) },
                                         ]);
-                                    }}><Ionicons name="trash-outline" size={19} color="#EF4444" /></Pressable>
-                                    : <Pressable onPress={() => Alert.alert('Vymazať zoznam?', `Zoznam „${list.name}“ a všetky jeho položky sa natrvalo odstránia.`, [{ text: t.cancel, style: 'cancel' }, { text: t.delete, style: 'destructive', onPress: async () => { await deleteFavoriteList(list.id); if (list.id === activeListId) selectList('default'); } }])}><Ionicons name="trash-outline" size={19} color="#EF4444" /></Pressable>}
+                                    }}><Ionicons name="trash-outline" size={19} color={colors.danger} /></Pressable>
+                                    : <Pressable onPress={() => Alert.alert('Vymazať zoznam?', `Zoznam „${list.name}“ a všetky jeho položky sa natrvalo odstránia.`, [{ text: t.cancel, style: 'cancel' }, { text: t.delete, style: 'destructive', onPress: async () => { await deleteFavoriteList(list.id); if (list.id === activeListId) selectList('default'); } }])}><Ionicons name="trash-outline" size={19} color={colors.danger} /></Pressable>}
                                 </>}
                             </View>
                         ))}
@@ -557,7 +558,7 @@ const FavoriteMealItem = ({ item, colors, t, onAddToLog, onAddToLogLongPress, on
         <View style={{ flex: 1, gap: 4 }}>
             <Text style={[styles.itemName, { color: colors.text }]}>{item.name || t.unknownFood}</Text>
             <View style={styles.itemValuesContainer}>
-                <Text style={[styles.itemKcal, { color: '#FB923C' }]}>{Math.round(Number(item.calories || 0))} kcal</Text>
+                <Text style={[styles.itemKcal, { color: colors.calories }]}>{Math.round(Number(item.calories || 0))} kcal</Text>
                 <Text style={[styles.itemMacrosText, { color: colors.muted }]}>
                     {t.macroShortP}: {Math.round(Number(item.protein || 0))}g • {t.macroShortC}: {Math.round(Number(item.carbs || 0))}g • {t.macroShortF}: {Math.round(Number(item.fat || 0))}g
                     {item.weight_g ? ` • ${item.weight_g}g` : ''}
@@ -603,11 +604,9 @@ const styles = StyleSheet.create({
         paddingVertical: 0,
         alignItems: 'center',
     },
-    headerTitle: {
+    headerTitle: { ...typography.screenTitle,
         flexShrink: 1,
         minWidth: 0,
-        fontSize: 22,
-        fontWeight: '800',
         textAlign: 'center',
     },
     listTitleButton: {
@@ -641,7 +640,7 @@ const styles = StyleSheet.create({
     itemCard: {
         paddingVertical: 12,
         paddingHorizontal: 14,
-        borderRadius: 16,
+        borderRadius: 18,
         borderWidth: 1,
         flexDirection: 'row',
         gap: 12,
@@ -650,10 +649,8 @@ const styles = StyleSheet.create({
     itemCardPressed: {
         opacity: 0.82,
     },
-    itemName: {
-        fontWeight: '700',
-        fontSize: 17,
-    },
+    itemName: { ...typography.itemTitle,
+        },
     itemValuesContainer: {
         flexDirection: 'column',
         alignItems: 'flex-start',

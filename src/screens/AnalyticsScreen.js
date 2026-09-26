@@ -1,3 +1,4 @@
+import { typography } from '../theme/palette';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     Pressable,
@@ -11,7 +12,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Rect, G, Line, Text as SvgText, Path, Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { subscribeToMeals } from '../api/mealService';
-import { MACRO_COLORS } from '../utils/macroGoals';
 import { useSettings } from '../state/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -27,9 +27,7 @@ export default function AnalyticsScreen() {
     const { theme, dailyGoal, useLocalStorage, language } = useSettings();
     const { width: screenWidth } = useWindowDimensions();
 
-    const colors = theme === 'light'
-        ? { bg: '#F8FAFC', card: '#FFFFFF', text: '#0F172A', muted: '#64748B', accent: '#0D9488', border: 'rgba(0,0,0,0.06)', elemBg: '#F1F5F9' }
-        : { bg: '#0B0F14', card: 'rgba(255,255,255,0.06)', text: '#FFFFFF', muted: 'rgba(255,255,255,0.7)', accent: '#2DD4BF', border: 'rgba(255,255,255,0.1)', elemBg: 'rgba(255,255,255,0.08)' };
+    const { colors } = useSettings();
 
     const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
     const [meals, setMeals] = useState([]);
@@ -145,13 +143,13 @@ export default function AnalyticsScreen() {
                         style={[styles.segmentBtn, viewMode === 'week' && [styles.segmentActive, { backgroundColor: colors.accent }]]}
                         onPress={() => setViewMode('week')}
                     >
-                        <Text style={[styles.segmentText, { color: viewMode === 'week' ? '#FFF' : colors.muted }]}>{t.weekView || 'Týždeň'}</Text>
+                        <Text style={[styles.segmentText, { color: viewMode === 'week' ? colors.onAccent : colors.muted }]}>{t.weekView || 'Týždeň'}</Text>
                     </Pressable>
                     <Pressable
                         style={[styles.segmentBtn, viewMode === 'month' && [styles.segmentActive, { backgroundColor: colors.accent }]]}
                         onPress={() => setViewMode('month')}
                     >
-                        <Text style={[styles.segmentText, { color: viewMode === 'month' ? '#FFF' : colors.muted }]}>{t.monthView || 'Mesiac'}</Text>
+                        <Text style={[styles.segmentText, { color: viewMode === 'month' ? colors.onAccent : colors.muted }]}>{t.monthView || 'Mesiac'}</Text>
                     </Pressable>
                 </View>
 
@@ -193,7 +191,7 @@ export default function AnalyticsScreen() {
                                     const barH = Math.max(2, (d.calories / maxVal) * chartH);
                                     const x = i * (barW + barGap);
                                     const isOver = d.calories > dailyGoal;
-                                    const barColor = d.isToday ? colors.accent : (isOver ? '#F87171' : '#FB923C');
+                                    const barColor = d.isToday ? colors.accent : (isOver ? colors.danger : colors.calories);
 
                                     return (
                                         <G key={d.key}>
@@ -220,7 +218,7 @@ export default function AnalyticsScreen() {
                     </View>
                     <View style={styles.legendRow}>
                         <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: '#FB923C' }]} />
+                            <View style={[styles.legendDot, { backgroundColor: colors.calories }]} />
                             <Text style={[styles.legendText, { color: colors.muted }]}>{t.caloriesLabel || 'Kalórie'}</Text>
                         </View>
                         <View style={styles.legendItem}>
@@ -228,7 +226,7 @@ export default function AnalyticsScreen() {
                             <Text style={[styles.legendText, { color: colors.muted }]}>{t.dailyGoalLabel || 'Denný cieľ'}</Text>
                         </View>
                         <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: '#F87171' }]} />
+                            <View style={[styles.legendDot, { backgroundColor: colors.danger }]} />
                             <Text style={[styles.legendText, { color: colors.muted }]}>{t.overGoalLabel || 'Nad cieľom'}</Text>
                         </View>
                     </View>
@@ -236,12 +234,12 @@ export default function AnalyticsScreen() {
 
                 {/* Summary Cards Row */}
                 <View style={styles.summaryRow}>
-                    <SummaryCard label={t.totalCalories || 'Celkové kalórie'} value={`${summary.totalCals}`} unit="kcal" icon="nutrition" iconColor="#10B981" colors={colors} />
-                    <SummaryCard label={t.avgCalories || 'Priemer/deň'} value={`${summary.avgCals}`} unit="kcal" icon="flame" iconColor="#FB923C" colors={colors} />
+                    <SummaryCard label={t.totalCalories || 'Celkové kalórie'} value={`${summary.totalCals}`} unit="kcal" icon="nutrition" iconColor={colors.accent} colors={colors} />
+                    <SummaryCard label={t.avgCalories || 'Priemer/deň'} value={`${summary.avgCals}`} unit="kcal" icon="flame" iconColor={colors.calories} colors={colors} />
                 </View>
                 <View style={styles.summaryRow}>
-                    <SummaryCard label={t.lowestDay || 'Najnižší deň'} value={`${summary.lowest}`} unit="kcal" icon="arrow-down" iconColor="#4ADE80" colors={colors} />
-                    <SummaryCard label={t.highestDay || 'Najvyšší deň'} value={`${summary.highest}`} unit="kcal" icon="arrow-up" iconColor="#F87171" colors={colors} />
+                    <SummaryCard label={t.lowestDay || 'Najnižší deň'} value={`${summary.lowest}`} unit="kcal" icon="arrow-down" iconColor={colors.accent} colors={colors} />
+                    <SummaryCard label={t.highestDay || 'Najvyšší deň'} value={`${summary.highest}`} unit="kcal" icon="arrow-up" iconColor={colors.danger} colors={colors} />
                 </View>
 
                 {/* Macros Donut + Details */}
@@ -256,21 +254,21 @@ export default function AnalyticsScreen() {
                                 {totalMacroG > 0 && proteinAngle > 0.5 && (
                                     <Path
                                         d={makeDonutPath(0, Math.min(proteinAngle, 359.9), donutR, donutCx, donutCy)}
-                                        stroke={MACRO_COLORS.protein} strokeWidth={donutStroke} fill="none" strokeLinecap="round"
+                                        stroke={colors.macros.protein} strokeWidth={donutStroke} fill="none" strokeLinecap="round"
                                     />
                                 )}
                                 {/* Carbs arc */}
                                 {totalMacroG > 0 && carbsAngle > 0.5 && (
                                     <Path
                                         d={makeDonutPath(proteinAngle, Math.min(proteinAngle + carbsAngle, 359.9), donutR, donutCx, donutCy)}
-                                        stroke={MACRO_COLORS.carbs} strokeWidth={donutStroke} fill="none" strokeLinecap="round"
+                                        stroke={colors.macros.carbs} strokeWidth={donutStroke} fill="none" strokeLinecap="round"
                                     />
                                 )}
                                 {/* Fat arc */}
                                 {totalMacroG > 0 && fatPct > 0.01 && (
                                     <Path
                                         d={makeDonutPath(proteinAngle + carbsAngle, Math.min(360, 359.9), donutR, donutCx, donutCy)}
-                                        stroke={MACRO_COLORS.fat} strokeWidth={donutStroke} fill="none" strokeLinecap="round"
+                                        stroke={colors.macros.fat} strokeWidth={donutStroke} fill="none" strokeLinecap="round"
                                     />
                                 )}
                                 {/* Center text */}
@@ -284,9 +282,9 @@ export default function AnalyticsScreen() {
                         </View>
 
                         <View style={styles.macroDetails}>
-                            <MacroRow label={t.protein || 'Bielkoviny'} value={Math.round(summary.totalProtein)} pct={Math.round(proteinPct * 100)} color={MACRO_COLORS.protein} colors={colors} />
-                            <MacroRow label={t.carbs || 'Sacharidy'} value={Math.round(summary.totalCarbs)} pct={Math.round(carbsPct * 100)} color={MACRO_COLORS.carbs} colors={colors} />
-                            <MacroRow label={t.fat || 'Tuky'} value={Math.round(summary.totalFat)} pct={Math.round(fatPct * 100)} color={MACRO_COLORS.fat} colors={colors} />
+                            <MacroRow label={t.protein || 'Bielkoviny'} value={Math.round(summary.totalProtein)} pct={Math.round(proteinPct * 100)} color={colors.macros.protein} colors={colors} />
+                            <MacroRow label={t.carbs || 'Sacharidy'} value={Math.round(summary.totalCarbs)} pct={Math.round(carbsPct * 100)} color={colors.macros.carbs} colors={colors} />
+                            <MacroRow label={t.fat || 'Tuky'} value={Math.round(summary.totalFat)} pct={Math.round(fatPct * 100)} color={colors.macros.fat} colors={colors} />
                         </View>
                     </View>
                 </View>
@@ -335,7 +333,7 @@ function MacroRow({ label, value, pct, color, colors }) {
 const styles = StyleSheet.create({
     safe: { flex: 1 },
     headerBlock: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 8, alignItems: 'center' },
-    headerTitle: { fontSize: 22, fontWeight: '800', textAlign: 'center' },
+    headerTitle: { ...typography.screenTitle, textAlign: 'center' },
     content: { padding: 16, paddingBottom: 100, gap: 12 },
     segmentContainer: {
         flexDirection: 'row', borderRadius: 12, borderWidth: 1, overflow: 'hidden',
@@ -343,7 +341,7 @@ const styles = StyleSheet.create({
     segmentBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
     segmentActive: { borderRadius: 10, margin: 2 },
     segmentText: { fontWeight: '700', fontSize: 14 },
-    card: { padding: 16, borderRadius: 16, borderWidth: 1 },
+    card: { padding: 16, borderRadius: 18, borderWidth: 1 },
     cardTitle: { fontSize: 16, fontWeight: '800', marginBottom: 10 },
     chartHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 10 },
     chartDays: { flexShrink: 1, fontSize: 12, fontWeight: '600', textAlign: 'right' },

@@ -1,3 +1,4 @@
+import { typography } from '../theme/palette';
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View, Image, ActivityIndicator, Pressable, Dimensions } from 'react-native';
 import { useSettings } from '../state/SettingsContext';
@@ -44,9 +45,7 @@ function AudioWaveform() {
 export default function AnalysisLoader({ imageUri, inputType, inputText, onCancel, t, isRetrying }) {
     const { theme } = useSettings();
 
-    const colors = theme === 'light'
-        ? { text: '#0F172A', muted: '#64748B', btnText: '#0F172A', btnBorder: '#CBD5E1', glass: 'rgba(255,255,255,0.7)' }
-        : { text: '#FFFFFF', muted: 'rgba(255,255,255,0.7)', btnText: '#FFFFFF', btnBorder: 'rgba(255,255,255,0.3)', glass: 'rgba(0,0,0,0.5)' };
+    const { colors } = useSettings();
 
     return (
         <View style={styles.container}>
@@ -70,13 +69,13 @@ export default function AnalysisLoader({ imageUri, inputType, inputText, onCance
                     </View>
                 )}
                 <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.3)' }]}>
-                    <ActivityIndicator size="large" color="#2DD4BF" style={{ transform: [{ scale: 1.5 }] }} />
+                    <ActivityIndicator size="large" color={colors.accent} style={{ transform: [{ scale: 1.5 }] }} />
                 </View>
             </View>
 
             {/* Loading Text */}
             <View style={styles.textContainer}>
-                <Text style={[styles.title, { color: '#2DD4BF' }]}>{isRetrying ? t.analyzingRetrying : t.analyzing}</Text>
+                <Text style={[styles.title, { color: colors.accent }]}>{isRetrying ? t.analyzingRetrying : t.analyzing}</Text>
                 <Text style={[styles.desc, { color: colors.muted }]}>{t.analyzingSubtitle || t.analyzingDesc}</Text>
             </View>
 
@@ -162,10 +161,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 8,
     },
-    title: {
-        fontSize: 24,
-        fontWeight: '900',
-    },
+    title: { ...typography.sectionTitle,
+        },
     desc: {
         fontSize: 16,
         textAlign: 'center',

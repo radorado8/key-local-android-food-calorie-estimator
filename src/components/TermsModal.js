@@ -1,3 +1,4 @@
+import { typography } from '../theme/palette';
 import React from 'react';
 import { Modal, View, Text, ScrollView, Pressable, StyleSheet, BackHandler, Linking, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,9 +12,7 @@ export default function TermsModal({ visible, onClose, mode = 'onboarding' }) {
     const screenHeight = Dimensions.get('window').height;
 
     const isDark = theme !== 'light';
-    const colors = isDark
-        ? { bg: '#161B22', text: '#FFFFFF', muted: '#A1A1AA', card: '#0B0F14', border: '#30363D', accent: '#2DD4BF', link: '#58A6FF' }
-        : { bg: '#FFFFFF', text: '#0F172A', muted: '#64748B', card: '#F8FAFC', border: '#E2E8F0', accent: '#0D9488', link: '#0969DA' };
+    const { colors } = useSettings();
 
     const handleAccept = () => {
         if (mode === 'onboarding') {
@@ -105,9 +104,7 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'column',
     },
-    title: {
-        fontSize: 24,
-        fontWeight: '800',
+    title: { ...typography.sectionTitle,
         marginBottom: 16,
         textAlign: 'center',
         flexShrink: 0,

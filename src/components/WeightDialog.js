@@ -1,5 +1,7 @@
+import { typography } from '../theme/palette';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -7,7 +9,6 @@ import {
   Text,
   TextInput,
   View,
-  Animated,
   Keyboard,
 } from 'react-native';
 
@@ -17,43 +18,13 @@ export default function WeightDialog({ visible, onCancel, onConfirm, colors }) {
   const t = useTranslation();
   const [value, setValue] = useState('');
   const inputRef = useRef(null);
-  const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!visible) return;
     setValue('');
-    translateY.setValue(0);
-    const focusTimeout = setTimeout(() => inputRef.current?.focus(), 150);
-
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-    const onKeyboardShow = (e) => {
-      const keyboardHeight = e.endCoordinates.height;
-      // Move dialog up by half of keyboard height (adjust as needed)
-      Animated.timing(translateY, {
-        toValue: -keyboardHeight / 2.5,
-        duration: Platform.OS === 'ios' ? 250 : 150,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    const onKeyboardHide = () => {
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: Platform.OS === 'ios' ? 250 : 150,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    const subShow = Keyboard.addListener(showEvent, onKeyboardShow);
-    const subHide = Keyboard.addListener(hideEvent, onKeyboardHide);
-
-    return () => {
-      clearTimeout(focusTimeout);
-      subShow.remove();
-      subHide.remove();
-    };
+    Keyboard.dismiss();
+    const focusTimeout = setTimeout(() => inputRef.current?.focus(), 300);
+    return () => clearTimeout(focusTimeout);
   }, [visible]);
 
   const submit = () => {
@@ -75,9 +46,9 @@ export default function WeightDialog({ visible, onCancel, onConfirm, colors }) {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel} statusBarTranslucent={true}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
-        <Animated.View style={[styles.card, { backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderColor: currentColors.border, transform: [{ translateY }] }]}>
+        <View style={[styles.card, { backgroundColor: currentColors.modalBg || currentColors.card, borderColor: currentColors.border }]}>
           <Text style={[styles.title, { color: currentColors.text }]}>{t.weightTitle}</Text>
           <Text style={[styles.subtitle, { color: currentColors.muted }]}>
             {t.weightSubtitle}
@@ -104,11 +75,11 @@ export default function WeightDialog({ visible, onCancel, onConfirm, colors }) {
               <Text style={[styles.btnText, { color: currentColors.text }]}>{t.cancel}</Text>
             </Pressable>
             <Pressable style={({ pressed }) => [styles.btn, { backgroundColor: currentColors.accent }, pressed && styles.btnPressed]} onPress={submit}>
-              <Text style={[styles.btnText, { color: currentColors.card === '#FFFFFF' ? '#FFF' : '#000' }]}>{t.confirm}</Text>
+              <Text style={[styles.btnText, { color: currentColors.onAccent }]}>{t.confirm}</Text>
             </Pressable>
           </View>
-        </Animated.View>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -125,16 +96,14 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     backgroundColor: '#121212',
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
   },
-  title: {
+  title: { ...typography.sectionTitle,
     color: 'white',
-    fontSize: 18,
-    fontWeight: '700',
-  },
+    },
   subtitle: {
     marginTop: 6,
     color: 'rgba(255,255,255,0.7)',
