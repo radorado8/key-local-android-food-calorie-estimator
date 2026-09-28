@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { upgradeUsdaFavoriteNames } from '../utils/usdaFavoriteNames';
+import { restoreImageUris } from '../utils/restoreImageUris';
 
 const LOCAL_FAVORITES_KEY = 'favorites.v1';
 const FAVORITE_LISTS_KEY = 'favorites.lists.v1';
@@ -35,7 +36,8 @@ async function initLocalCache() {
       }
       const needsListMigration = parsedFavorites.some(item => !item.listId);
       const needsDefaultList = parsedLists.length === 0;
-      localFavoritesCache = parsedFavorites;
+      const restored = await restoreImageUris(parsedFavorites, ['favorite_images', 'meal_photos']);
+      localFavoritesCache = restored.records;
       localListsCache = needsDefaultList ? [defaultList()] : parsedLists;
       // Migration: every existing favorite belongs to the original list.
       localFavoritesCache = localFavoritesCache.map(item => ({ ...item, listId: item.listId || DEFAULT_LIST_ID }));
@@ -53,7 +55,7 @@ async function initLocalCache() {
         const existingBackup = await AsyncStorage.getItem(FAVORITES_MIGRATION_BACKUP_KEY);
         if (!existingBackup && favoritesRaw) migrationWrites.push([FAVORITES_MIGRATION_BACKUP_KEY, favoritesRaw]);
       }
-      if (needsListMigration || needsNameMigration) migrationWrites.push([LOCAL_FAVORITES_KEY, JSON.stringify(localFavoritesCache)]);
+      if (needsListMigration || needsNameMigration || restored.changed) migrationWrites.push([LOCAL_FAVORITES_KEY, JSON.stringify(localFavoritesCache)]);
       if (needsDefaultList) migrationWrites.push([FAVORITE_LISTS_KEY, JSON.stringify(localListsCache)]);
       if (migrationWrites.length > 0) await AsyncStorage.multiSet(migrationWrites);
       cacheInitialized = true;

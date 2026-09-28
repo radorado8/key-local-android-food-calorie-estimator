@@ -15,7 +15,7 @@ import {
   Keyboard,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ImageView from "react-native-image-viewing";
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -95,6 +95,7 @@ function formatDateLabelLong(dateObj, t, language, now) {
 }
 
 export default function HistoryScreen() {
+  const insets = useSafeAreaInsets();
   const t = useTranslation();
   const { theme, useLocalStorage, language, dailyGoal, showImagesInHistory, showUniqueHistorySearchResults } = useSettings();
   const [meals, setMeals] = useState([]);
@@ -117,6 +118,20 @@ export default function HistoryScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = React.useRef(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const openMealImage = async (uri) => {
+    if (!uri) return;
+    try {
+      const info = await FileSystem.getInfoAsync(uri);
+      if (!info.exists) {
+        Alert.alert(t.errorTitle, t.imageUnavailable);
+        return;
+      }
+      setSelectedImage(uri);
+    } catch {
+      Alert.alert(t.errorTitle, t.imageUnavailable);
+    }
+  };
 
   const { colors } = useSettings();
 
@@ -512,7 +527,7 @@ export default function HistoryScreen() {
                                       },
                                     ]);
                                   }}
-                                  onImagePress={() => setSelectedImage(item.imageUri)}
+                                  onImagePress={() => openMealImage(item.imageUri)}
                                   showImage={showImagesInHistory}
                                 />
                               ))}
@@ -568,7 +583,7 @@ export default function HistoryScreen() {
                     },
                   ]);
                 }}
-                onImagePress={() => setSelectedImage(item.imageUri)}
+                onImagePress={() => openMealImage(item.imageUri)}
                 showImage={showImagesInHistory}
               />
             </View>
@@ -662,11 +677,14 @@ export default function HistoryScreen() {
         doubleTapToZoomEnabled={true}
         backgroundColor={colors.bg}
         HeaderComponent={({ imageIndex }) => (
-          <SafeAreaView edges={['top']} style={{ alignItems: 'flex-end', padding: 16 }}>
+          <View style={{ alignItems: 'flex-end', paddingHorizontal: 16, paddingTop: insets.top + 12 }}>
             <Pressable
               onPress={() => setSelectedImage(null)}
               style={({ pressed }) => ({
-                padding: 8,
+                minWidth: 44,
+                minHeight: 44,
+                alignItems: 'center',
+                justifyContent: 'center',
                 backgroundColor: colors.card,
                 borderRadius: 20,
                 borderWidth: 1,
@@ -676,7 +694,7 @@ export default function HistoryScreen() {
             >
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
-          </SafeAreaView>
+          </View>
         )}
       />
 

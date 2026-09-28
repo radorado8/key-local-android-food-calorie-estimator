@@ -15,7 +15,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rados.caloriesai"
+      "icon": "./assets/icon_key_fire_ios.png",
+      "bundleIdentifier": "com.rados.caloriesai",
+      "infoPlist": {
+        "CFBundleDisplayName": "Calories AI"
+      }
     },
     "android": {
       "package": "com.rados.keylocalandroidfoodcalorieestimator",

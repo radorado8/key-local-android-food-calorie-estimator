@@ -15,7 +15,7 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ImageView from "react-native-image-viewing";
 import { Ionicons } from '@expo/vector-icons';
 import { subscribeFavorites, subscribeFavoriteLists, removeFavorite, updateFavorite, addFavorite, createFavoriteList, renameFavoriteList, deleteFavoriteList, clearFavoriteList, exportFavoriteList, importFavoriteList } from '../api/favoritesService';
@@ -35,6 +35,7 @@ const EXPANDED_KEY = 'favorites.expandedCategories';
 const ACTIVE_LIST_KEY = 'favorites.activeList';
 
 export default function FavoritesScreen() {
+    const insets = useSafeAreaInsets();
     const t = useTranslation();
     const { theme, showImagesInHistory, useLocalStorage, foodCategories, language } = useSettings();
     const [favorites, setFavorites] = useState([]);
@@ -56,6 +57,20 @@ export default function FavoritesScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const searchInputRef = useRef(null);
     const deferredSearchQuery = useDeferredValue(searchQuery);
+
+    const openFavoriteImage = async (uri) => {
+        if (!uri) return;
+        try {
+            const info = await FileSystem.getInfoAsync(uri);
+            if (!info.exists) {
+                Alert.alert(t.errorTitle, t.imageUnavailable);
+                return;
+            }
+            setSelectedImage(uri);
+        } catch {
+            Alert.alert(t.errorTitle, t.imageUnavailable);
+        }
+    };
 
     const { colors } = useSettings();
 
@@ -369,7 +384,7 @@ export default function FavoritesScreen() {
                                 setEditOpen(true);
                             }}
                             onDelete={() => handleDelete(item)}
-                            onImagePress={() => setSelectedImage(item.imageUri)}
+                            onImagePress={() => openFavoriteImage(item.imageUri)}
                         />
                         </View>
                     );
@@ -519,11 +534,14 @@ export default function FavoritesScreen() {
                 doubleTapToZoomEnabled={true}
                 backgroundColor={colors.bg}
                 HeaderComponent={({ imageIndex }) => (
-                    <SafeAreaView edges={['top']} style={{ alignItems: 'flex-end', padding: 16 }}>
+                    <View style={{ alignItems: 'flex-end', paddingHorizontal: 16, paddingTop: insets.top + 12 }}>
                         <Pressable
                             onPress={() => setSelectedImage(null)}
                             style={({ pressed }) => ({
-                                padding: 8,
+                                minWidth: 44,
+                                minHeight: 44,
+                                alignItems: 'center',
+                                justifyContent: 'center',
                                 backgroundColor: colors.card,
                                 borderRadius: 20,
                                 borderWidth: 1,
@@ -533,7 +551,7 @@ export default function FavoritesScreen() {
                         >
                             <Ionicons name="close" size={24} color={colors.text} />
                         </Pressable>
-                    </SafeAreaView>
+                    </View>
                 )}
             />
         </SafeAreaView>

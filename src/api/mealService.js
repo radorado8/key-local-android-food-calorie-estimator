@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
+import { restoreImageUris } from '../utils/restoreImageUris';
 
 const LOCAL_MEALS_KEY = 'meals.v1';
 
@@ -17,6 +18,11 @@ async function initLocalCache() {
             const raw = await AsyncStorage.getItem(LOCAL_MEALS_KEY);
             localMealsCache = raw ? JSON.parse(raw) : [];
             if (!Array.isArray(localMealsCache)) throw new Error('Invalid meal storage');
+            const restored = await restoreImageUris(localMealsCache, ['meal_photos', 'favorite_images']);
+            localMealsCache = restored.records;
+            if (restored.changed) {
+                await AsyncStorage.setItem(LOCAL_MEALS_KEY, JSON.stringify(localMealsCache));
+            }
             cacheInitialized = true;
         } catch (error) {
             initPromise = null;

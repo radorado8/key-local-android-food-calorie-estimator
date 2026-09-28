@@ -2,6 +2,7 @@ import { typography } from '../theme/palette';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -15,9 +16,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -28,6 +31,8 @@ function toNumber(v) {
 
 export default function MealEditDialog({ visible, initialMeal, onCancel, onSave, colors, mode = 'edit', categories = [], imageStorageFolder = 'meal_photos' }) {
   const t = useTranslation();
+  const insets = useSafeAreaInsets();
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [name, setName] = useState('');
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
@@ -35,6 +40,9 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
   const [fat, setFat] = useState('');
   const [weightG, setWeightG] = useState('');
   const [imageUri, setImageUri] = useState(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraFlash, setCameraFlash] = useState('off');
+  const [capturingPhoto, setCapturingPhoto] = useState(false);
 
   // Date state for 'add' mode
   const [date, setDate] = useState(new Date());
@@ -43,6 +51,8 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
   const nameRef = useRef(null);
+  const imagePickerBusyRef = useRef(false);
+  const editCameraRef = useRef(null);
   const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -153,17 +163,55 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
   };
 
   const chooseImage = async (source) => {
+    if (imagePickerBusyRef.current) return;
+    imagePickerBusyRef.current = true;
     try {
-      const permission = source === 'camera'
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permission.status !== 'granted') return;
-      const result = source === 'camera'
-        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+      // The editor autofocuses its text input. Dismiss the iOS keyboard before
+      // presenting UIImagePickerController on top of the editor modal.
+      Keyboard.dismiss();
+      if (Platform.OS === 'ios') {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      if (source === 'camera') {
+        let permission = cameraPermission;
+        if (!permission?.granted) permission = await requestCameraPermission();
+        if (!permission?.granted) {
+          Alert.alert(t.errorTitle || 'Error', t.cameraPermissionMissing || 'Camera permission is required.');
+          return;
+        }
+        setCameraFlash('off');
+        setShowCamera(true);
+        return;
+      }
+
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== 'granted') {
+        Alert.alert(t.errorTitle || 'Error', t.galleryError || 'Photo library permission is required.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
       if (!result.canceled && result.assets?.[0]?.uri) await saveSelectedImage(result.assets[0].uri);
     } catch (error) {
-      console.error('Favorite image selection failed', error);
+      console.error('Meal image selection failed', error);
+      Alert.alert(t.errorTitle || 'Error', error?.message || t.galleryError || 'Could not open the camera or photo library.');
+    } finally {
+      imagePickerBusyRef.current = false;
+    }
+  };
+
+  const captureEditPhoto = async () => {
+    if (!editCameraRef.current || capturingPhoto) return;
+    setCapturingPhoto(true);
+    try {
+      const photo = await editCameraRef.current.takePictureAsync({ quality: 0.8, shutterSound: false });
+      if (!photo?.uri) throw new Error(t.captureError || 'The photo could not be captured.');
+      setShowCamera(false);
+      await saveSelectedImage(photo.uri);
+    } catch (error) {
+      Alert.alert(t.errorTitle || 'Error', error?.message || t.captureError || 'The photo could not be saved.');
+    } finally {
+      setCapturingPhoto(false);
     }
   };
 
@@ -324,6 +372,40 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
             </View>
           </ScrollView>
         </Animated.View>
+
+        {showCamera && (
+          <View style={[StyleSheet.absoluteFillObject, styles.cameraOverlay]}>
+            <CameraView
+              ref={editCameraRef}
+              style={StyleSheet.absoluteFill}
+              facing="back"
+              flash={cameraFlash}
+            />
+            <Pressable
+              onPress={() => setShowCamera(false)}
+              style={[styles.cameraClose, { top: insets.top + 12 }]}
+              accessibilityRole="button"
+              accessibilityLabel={t.cancel}
+            >
+              <Ionicons name="close" size={26} color="#fff" />
+            </Pressable>
+            <View style={[styles.editCameraControls, { bottom: Math.max(insets.bottom, 20) + 24 }]}>
+              <Pressable onPress={() => setCameraFlash(value => value === 'off' ? 'on' : 'off')} style={styles.cameraFlashButton}>
+                <Ionicons name={cameraFlash === 'on' ? 'flash' : 'flash-off'} size={22} color="#fff" />
+              </Pressable>
+              <Pressable
+                onPress={captureEditPhoto}
+                disabled={capturingPhoto}
+                style={[styles.cameraShutter, capturingPhoto && { opacity: 0.5 }]}
+                accessibilityRole="button"
+                accessibilityLabel={t.cameraShort || 'Take photo'}
+              >
+                <View style={styles.cameraShutterInner} />
+              </Pressable>
+              <View style={styles.cameraControlSpacer} />
+            </View>
+          </View>
+        )}
       </View>
 
       {/* Category Picker Modal */}
@@ -459,5 +541,57 @@ const styles = StyleSheet.create({
     marginTop: 6,
     color: 'rgba(255,255,255,0.55)',
     fontSize: 12,
+  },
+  cameraOverlay: {
+    zIndex: 100,
+    elevation: 100,
+    backgroundColor: '#000',
+  },
+  cameraClose: {
+    position: 'absolute',
+    left: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  editCameraControls: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    paddingHorizontal: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cameraFlashButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  cameraShutter: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 4,
+    borderColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.28)',
+  },
+  cameraShutterInner: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#fff',
+  },
+  cameraControlSpacer: {
+    width: 52,
+    height: 52,
   },
 });
