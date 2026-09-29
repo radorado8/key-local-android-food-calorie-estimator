@@ -76,7 +76,7 @@ async function prepareImageForAnalysis(asset) {
 
 export default function ScannerScreen({ navigation, route }) {
   const t = useTranslation();
-  const { dailyGoal, aiModel, aiProvider, claudeVoiceProvider, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds } = useSettings();
+  const { dailyGoal, aiModel, aiProvider, claudeVoiceProvider, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds, burnedCalories, healthConnectEnabled } = useSettings();
   const insets = useSafeAreaInsets();
   const audioRecordingRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -823,6 +823,8 @@ export default function ScannerScreen({ navigation, route }) {
         <View onLayout={event => measureDashboardPart('summary', event.nativeEvent.layout.height)} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <DailySummary
             dailyGoal={dailyGoal}
+            burnedCalories={burnedCalories}
+            healthConnectEnabled={healthConnectEnabled}
             colors={colors}
             useLocalStorage={useLocalStorage}
             onPress={() => navigation.navigate('History')}

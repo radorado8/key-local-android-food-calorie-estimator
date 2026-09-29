@@ -5,7 +5,7 @@ import { subscribeToMeals } from '../api/mealService';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSettings } from '../state/SettingsContext';
 
-export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress }) {
+export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress, burnedCalories = null, healthConnectEnabled = false }) {
   const t = useTranslation();
   const { language, macroGoals } = useSettings();
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
@@ -150,34 +150,50 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
   }, [useLocalStorage]);
 
   const todayCalories = totals.calories;
-  const remaining = dailyGoal - todayCalories;
+  const showBurnedCalories = healthConnectEnabled && Number.isFinite(burnedCalories);
+  const effectiveDailyGoal = Number(dailyGoal);
+  const remaining = effectiveDailyGoal - todayCalories;
   const isOverGoal = remaining < 0;
 
   const [weekData, setWeekData] = useState([]);
 
   const progress = useMemo(() => {
-    const goalSafe = Number.isFinite(dailyGoal) && dailyGoal > 0 ? dailyGoal : 1;
+    const goalSafe = Number.isFinite(effectiveDailyGoal) && effectiveDailyGoal > 0 ? effectiveDailyGoal : 1;
     return Math.max(0, Math.min(1, todayCalories / goalSafe));
-  }, [dailyGoal, todayCalories]);
+  }, [effectiveDailyGoal, todayCalories]);
 
   const size = 280;
   const ringHeight = 220;
   const stroke = 18;
-  const r = 116;
   const cx = size / 2;
   const cy = 125;
-  const arcOffset = r / Math.SQRT2;
-  const ringArc = `M ${cx - arcOffset} ${cy + arcOffset} A ${r} ${r} 0 1 1 ${cx + arcOffset} ${cy + arcOffset}`;
-  const ringLength = 1.5 * Math.PI * r;
+  const splitStroke = 14.5;
+  const inwardArcExpansion = (splitStroke - 8) / 2;
+  const ringRadiusX = showBurnedCalories ? 128.5 - inwardArcExpansion : 116;
+  const ringRadiusY = showBurnedCalories ? 121 - inwardArcExpansion : 116;
+  const createRingArc = (radiusX, radiusY) => {
+    const arcOffsetX = radiusX / Math.SQRT2;
+    const arcOffsetY = radiusY / Math.SQRT2;
+    return `M ${cx - arcOffsetX} ${cy + arcOffsetY} A ${radiusX} ${radiusY} 0 1 1 ${cx + arcOffsetX} ${cy + arcOffsetY}`;
+  };
+  const getArcLength = (radiusX, radiusY) => 0.75 * Math.PI * (3 * (radiusX + radiusY) - Math.sqrt((3 * radiusX + radiusY) * (radiusX + 3 * radiusY)));
+  const ringArc = createRingArc(ringRadiusX, ringRadiusY);
+  const ringLength = getArcLength(ringRadiusX, ringRadiusY);
+  const burnedRadiusX = ringRadiusX - splitStroke;
+  const burnedRadiusY = ringRadiusY - splitStroke;
+  const burnedArc = createRingArc(burnedRadiusX, burnedRadiusY);
+  const burnedRingLength = getArcLength(burnedRadiusX, burnedRadiusY);
+  const burnedProgress = Math.max(0, Math.min(1, Number(burnedCalories) / (Number(dailyGoal) || 1)));
+  const burnedColor = colors.macros?.carbs || colors.accent;
 
   // Chart settings (matching web)
-  const maxChartVal = Math.max(dailyGoal, ...weekData.map(d => d.calories)) * 1.1;
+  const maxChartVal = Math.max(effectiveDailyGoal, ...weekData.map(d => d.calories)) * 1.1;
   const safeMax = maxChartVal || 2000;
   const barWidth = 10;
   const barGap = 6;
   const chartWidth = weekData.length * (barWidth + barGap) - barGap;
   const startX = (size - chartWidth) / 2;
-  const chartBaseY = 87;
+  const chartBaseY = 97;
 
   if (loading) {
     return (
@@ -204,28 +220,27 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
 
       <View style={styles.ringWrap}>
         <Svg width={size} height={ringHeight} viewBox={`0 0 ${size} ${ringHeight}`}>
-          <Path
-            d={ringArc}
-            stroke={colors.border || "rgba(255,255,255,0.12)"}
-            strokeWidth={stroke}
-            fill="none"
-            strokeLinecap="round"
-          />
-          {progress > 0 && <Path
-            d={ringArc}
-            stroke={colors.accent || "#2DD4BF"}
-            strokeWidth={stroke}
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={`${ringLength * progress} ${ringLength}`}
-          />}
+          {showBurnedCalories ? (
+            <>
+              <Path d={ringArc} stroke={colors.border || "rgba(255,255,255,0.12)"} strokeWidth={splitStroke} fill="none" strokeLinecap="round" />
+              {progress > 0 && <Path d={ringArc} stroke={colors.calories} strokeWidth={splitStroke} fill="none" strokeLinecap="round" strokeDasharray={`${ringLength * progress} ${ringLength}`} />}
+              <Path d={burnedArc} stroke={colors.border || "rgba(255,255,255,0.12)"} strokeWidth={splitStroke} fill="none" strokeLinecap="round" />
+              {burnedProgress > 0 && <Path d={burnedArc} stroke={burnedColor} strokeWidth={splitStroke} fill="none" strokeLinecap="round" strokeDasharray={`${burnedRingLength * burnedProgress} ${burnedRingLength}`} />}
+            </>
+          ) : (
+            <>
+              <Path d={ringArc} stroke={colors.border || "rgba(255,255,255,0.12)"} strokeWidth={stroke} fill="none" strokeLinecap="round" />
+              {progress > 0 && <Path d={ringArc} stroke={colors.accent || "#2DD4BF"} strokeWidth={stroke} fill="none" strokeLinecap="round" strokeDasharray={`${ringLength * progress} ${ringLength}`} />}
+            </>
+          )}
 
           {/* 7-Day Mini Chart */}
           <G x={startX} y={chartBaseY}>
             {weekData.map((d, i) => {
               const GOAL_HEIGHT = 30; // Reduced height to fit better
               // Cap at 150% like HistoryScreen
-              const pct = Math.min((d.calories / (dailyGoal || 1)), 1.5);
+              const dayGoal = d.isToday ? effectiveDailyGoal : dailyGoal;
+              const pct = Math.min((d.calories / (dayGoal || 1)), 1.5);
               const barHeight = pct * GOAL_HEIGHT;
               const x = i * (barWidth + barGap);
               const isToday = d.isToday;
@@ -278,13 +293,28 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
         </Svg>
 
         <Pressable
-          style={styles.center}
+          style={[styles.center, showBurnedCalories && styles.splitCenter]}
           onPress={onPress}
         >
-          <View style={styles.centerRow}>
-            <Text style={[styles.kcalValue, { color: colors.calories }]}>{Math.round(todayCalories).toLocaleString()}</Text>
-            <Text style={[styles.kcalUnit, { color: colors.calories }]}>kcal</Text>
-          </View>
+          {showBurnedCalories ? (
+            <>
+              <View style={styles.splitLabeledRow}>
+                <Text style={[styles.calorieCaption, { color: colors.muted }]}>{t.caloriesIntakeLabel}</Text>
+                <Text style={[styles.splitKcalValue, { color: colors.calories }]}>{Math.round(todayCalories).toLocaleString()}</Text>
+                <Text style={[styles.splitKcalUnit, { color: colors.calories }]}>kcal</Text>
+              </View>
+              <View style={styles.splitLabeledRow}>
+                <Text style={[styles.calorieCaption, { color: colors.muted }]}>{t.caloriesBurnedLabel}</Text>
+                <Text style={[styles.burnedKcalValue, { color: burnedColor }]}>{Math.round(burnedCalories).toLocaleString()}</Text>
+                <Text style={[styles.burnedKcalUnit, { color: burnedColor }]}>kcal</Text>
+              </View>
+            </>
+          ) : (
+            <View style={styles.centerRow}>
+              <Text style={[styles.kcalValue, { color: colors.calories }]}>{Math.round(todayCalories).toLocaleString()}</Text>
+              <Text style={[styles.kcalUnit, { color: colors.calories }]}>kcal</Text>
+            </View>
+          )}
           <Text style={[styles.goalText, { color: colors.muted }]}>{t.dailyGoalLabel}: {Number(dailyGoal).toLocaleString()} kcal</Text>
           <Text style={[styles.remainingText, { color: isOverGoal ? colors.danger : colors.accent }]}>
             {Math.round(Math.abs(remaining)).toLocaleString()} kcal {isOverGoal ? t.overGoal : t.remainingLabel}
@@ -343,6 +373,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
+  },
+  splitCenter: {
+    top: 103,
+    gap: 1,
+  },
+  splitLabeledRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  calorieCaption: {
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 13,
+  },
+  splitCenterRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  splitKcalValue: {
+    fontSize: 27,
+    fontWeight: '800',
+    lineHeight: 30,
+  },
+  splitKcalUnit: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  burnedRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  burnedKcalValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: 24,
+  },
+  burnedKcalUnit: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   centerRow: {
     flexDirection: 'row',

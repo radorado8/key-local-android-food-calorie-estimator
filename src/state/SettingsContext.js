@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useColorScheme } from 'react-native';
+import { AppState, Platform, useColorScheme } from 'react-native';
 import * as Localization from 'expo-localization';
 import { DEFAULT_PUBLIC_MODEL_ID } from '../config/aiModels';
 import { DEFAULT_MODELS, isAIProvider } from '../config/aiProviders';
 import { resolveMacroGoals, validMacroGoals } from '../utils/macroGoals';
 
 import { COLOR_THEMES, getPalette } from '../theme/palette';
+import { getTodayBurnedCalories } from '../api/healthConnect';
 
 const STORAGE_KEY = 'settings.v1';
 
@@ -38,6 +39,8 @@ export function SettingsProvider({ children }) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [autoSaveSeconds, setAutoSaveSeconds] = useState(10);
+  const [healthConnectEnabled, setHealthConnectEnabled] = useState(false);
+  const [burnedCalories, setBurnedCalories] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +76,7 @@ export function SettingsProvider({ children }) {
           if (typeof parsed?.termsAccepted === 'boolean') setTermsAccepted(parsed.termsAccepted);
           if (typeof parsed?.autoSaveEnabled === 'boolean') setAutoSaveEnabled(parsed.autoSaveEnabled);
           if (Number.isFinite(parsed?.autoSaveSeconds)) setAutoSaveSeconds(parsed.autoSaveSeconds);
+          if (typeof parsed?.healthConnectEnabled === 'boolean') setHealthConnectEnabled(parsed.healthConnectEnabled);
           // Enforce local storage for this version
           setUseLocalStorage(true);
           setHydrated(true);
@@ -91,9 +95,36 @@ export function SettingsProvider({ children }) {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds })
+      JSON.stringify({ aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled })
     ).catch(() => { });
-  }, [aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, hydrated]);
+  }, [aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, hydrated]);
+
+  const refreshBurnedCalories = async () => {
+    if (!['android', 'ios'].includes(Platform.OS) || !healthConnectEnabled) {
+      setBurnedCalories(null);
+      return null;
+    }
+    try {
+      const calories = await getTodayBurnedCalories();
+      setBurnedCalories(calories);
+      return calories;
+    } catch {
+      setBurnedCalories(null);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    if (!['android', 'ios'].includes(Platform.OS) || !healthConnectEnabled) {
+      setBurnedCalories(null);
+      return undefined;
+    }
+    refreshBurnedCalories();
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') refreshBurnedCalories();
+    });
+    return () => subscription.remove();
+  }, [healthConnectEnabled]);
 
   const colorScheme = useColorScheme();
 
@@ -140,8 +171,12 @@ export function SettingsProvider({ children }) {
       setAutoSaveEnabled,
       autoSaveSeconds,
       setAutoSaveSeconds,
+      healthConnectEnabled,
+      setHealthConnectEnabled,
+      burnedCalories,
+      refreshBurnedCalories,
     };
-  }, [aiProvider, providerModels, claudeVoiceProvider, hydrated, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, colorScheme]);
+  }, [aiProvider, providerModels, claudeVoiceProvider, hydrated, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, burnedCalories, colorScheme]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

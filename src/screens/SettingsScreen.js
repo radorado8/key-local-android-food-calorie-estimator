@@ -33,9 +33,18 @@ import { clearCategoryFromFavorites, getFavoriteImageUris } from '../api/favorit
 import { escapeCsvField, parseCsvRow, parseFiniteNumber } from '../utils/csv';
 import TermsModal from '../components/TermsModal';
 import MacroGoalsDialog from '../components/MacroGoalsDialog';
+import { connectHealthConnect, openHealthConnectSettingsScreen } from '../api/healthConnect';
 function clampDailyGoal(value) {
   if (!Number.isFinite(value)) return 2100;
   return Math.max(500, Math.min(10000, Math.round(value)));
+}
+
+function getHealthConnectErrorMessage(availability, translations) {
+  if (availability === 'update-required') return translations.healthConnectUpdateRequired;
+  if (availability === 'unavailable') {
+    return Platform.OS === 'ios' ? translations.appleHealthUnavailable : translations.healthConnectUnavailable;
+  }
+  return translations.healthConnectPermissionDenied;
 }
 
 const HISTORY_EXPORT_FORMAT = 'calories-ai-history';
@@ -190,7 +199,7 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { showLatestMeal, setShowLatestMeal, dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds } = useSettings();
+  const { showLatestMeal, setShowLatestMeal, dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled, burnedCalories, refreshBurnedCalories } = useSettings();
 
   const { colors } = useSettings();
 
@@ -198,6 +207,7 @@ export default function SettingsScreen() {
   const [macroGoalsOpen, setMacroGoalsOpen] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [autoSaveSecondsInput, setAutoSaveSecondsInput] = useState(String(autoSaveSeconds));
+  const [healthConnectBusy, setHealthConnectBusy] = useState(false);
 
   const providerCustomModels = useMemo(() => customModels.filter(model => modelProvider(model) === aiProvider), [customModels, aiProvider]);
   const allowedModels = useMemo(() => [...PROVIDER_MODELS[aiProvider], ...providerCustomModels], [aiProvider, providerCustomModels]);
@@ -718,6 +728,53 @@ export default function SettingsScreen() {
     setNewCategoryName('');
   };
 
+  const handleHealthConnect = async () => {
+    if (healthConnectBusy) return;
+    setHealthConnectBusy(true);
+    try {
+      const result = await connectHealthConnect();
+      if (!result.connected) {
+        const message = getHealthConnectErrorMessage(result.availability, t);
+        Alert.alert(Platform.OS === 'ios' ? t.appleHealthTitle : t.healthConnectTitle, message);
+        return;
+      }
+      setHealthConnectEnabled(true);
+    } catch (error) {
+      Alert.alert(Platform.OS === 'ios' ? t.appleHealthTitle : t.healthConnectTitle, error?.message || t.healthConnectError);
+    } finally {
+      setHealthConnectBusy(false);
+    }
+  };
+
+  const handleHealthConnectSyncToggle = async (enabled) => {
+    if (!enabled) {
+      setHealthConnectEnabled(false);
+      return;
+    }
+    await handleHealthConnect();
+  };
+
+  const handleHealthConnectRefresh = async () => {
+    if (healthConnectBusy) return;
+    setHealthConnectBusy(true);
+    try {
+      let calories = await refreshBurnedCalories();
+      if (calories === null) {
+        const result = await connectHealthConnect();
+        if (result.connected) {
+          setHealthConnectEnabled(true);
+          calories = await refreshBurnedCalories();
+        } else {
+          setHealthConnectEnabled(false);
+          const message = getHealthConnectErrorMessage(result.availability, t);
+          Alert.alert(Platform.OS === 'ios' ? t.appleHealthTitle : t.healthConnectTitle, message);
+        }
+      }
+    } finally {
+      setHealthConnectBusy(false);
+    }
+  };
+
   return (
 
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
@@ -743,6 +800,54 @@ export default function SettingsScreen() {
             <Text style={[styles.unit, { color: colors.muted }]}>kcal</Text>
           </View>
         </View>
+
+        {['android', 'ios'].includes(Platform.OS) && (
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: colors.text }]}>{Platform.OS === 'ios' ? t.appleHealthTitle : t.healthConnectTitle}</Text>
+                <Text style={[styles.hint, { color: colors.muted, marginBottom: 0 }]}>{Platform.OS === 'ios' ? t.appleHealthHint : t.healthConnectHint}</Text>
+              </View>
+              <Switch
+                value={healthConnectEnabled}
+                onValueChange={handleHealthConnectSyncToggle}
+                disabled={healthConnectBusy}
+                accessibilityLabel={Platform.OS === 'ios' ? t.appleHealthTitle : t.healthConnectTitle}
+                trackColor={{ false: colors.elemBg, true: colors.accent }}
+              />
+            </View>
+
+            {healthConnectEnabled && (
+              <View style={{ marginTop: 14, padding: 12, borderRadius: 12, backgroundColor: colors.elemBg }}>
+                <Text style={{ color: colors.text, fontWeight: '700' }}>
+                  {t.healthConnectToday}: {Math.round(burnedCalories).toLocaleString()} kcal
+                </Text>
+                <Text style={[styles.hint, { color: colors.muted, marginBottom: 0 }]}>{t.healthConnectTotalCaloriesHint}</Text>
+              </View>
+            )}
+
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              <Pressable
+                onPress={healthConnectEnabled ? handleHealthConnectRefresh : handleHealthConnect}
+                disabled={healthConnectBusy}
+                style={({ pressed }) => [styles.actionBtn, { flex: 1, alignItems: 'center', backgroundColor: colors.elemBg, borderColor: colors.elemBorder, opacity: healthConnectBusy ? 0.5 : 1 }, pressed && styles.pressed]}
+              >
+                <Text style={{ color: colors.accent, fontWeight: '700' }}>
+                  {healthConnectBusy ? t.loading : healthConnectEnabled ? t.healthConnectRefresh : t.healthConnectConnect}
+                </Text>
+              </Pressable>
+              {Platform.OS === 'android' && (
+                <Pressable
+                  onPress={openHealthConnectSettingsScreen}
+                  style={({ pressed }) => [styles.actionBtn, { flex: 1, alignItems: 'center', backgroundColor: colors.elemBg, borderColor: colors.elemBorder }, pressed && styles.pressed]}
+                >
+                  <Text style={{ color: colors.text, fontWeight: '700' }}>{t.healthConnectManage}</Text>
+                </Pressable>
+              )}
+            </View>
+
+          </View>
+        )}
 
         <Pressable onPress={() => setMacroGoalsOpen(true)} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
           <Ionicons name="nutrition-outline" size={24} color={colors.accent} />
