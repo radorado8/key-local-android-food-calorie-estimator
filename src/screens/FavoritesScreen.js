@@ -1,3 +1,4 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { typography } from '../theme/palette';
 import React, { useDeferredValue, useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
@@ -34,7 +35,7 @@ import usdaCommonFoods from '../data/usdaCommonFoods.json';
 const EXPANDED_KEY = 'favorites.expandedCategories';
 const ACTIVE_LIST_KEY = 'favorites.activeList';
 
-export default function FavoritesScreen() {
+export default function FavoritesScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const t = useTranslation();
     const { theme, showImagesInHistory, useLocalStorage, foodCategories, language } = useSettings();
@@ -57,6 +58,17 @@ export default function FavoritesScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const searchInputRef = useRef(null);
     const deferredSearchQuery = useDeferredValue(searchQuery);
+    useFocusEffect(useCallback(() => {
+        if (!route.params?.openSearch) return;
+        setSearchQuery('');
+        setIsSearching(true);
+        const timer = setTimeout(() => {
+            searchInputRef.current?.focus();
+            navigation.setParams({ openSearch: undefined });
+        }, 250);
+        return () => clearTimeout(timer);
+    }, [route.params?.openSearch, navigation]));
+
 
     const openFavoriteImage = async (uri) => {
         if (!uri) return;
@@ -313,7 +325,7 @@ export default function FavoritesScreen() {
                         selectTextOnFocus
                         value={searchQuery}
                         onChangeText={setSearchQuery}
-                        placeholder={t.searchFood || 'Hľadať jedlo'}
+                        placeholder={t.searchFavoritesPlaceholder}
                         placeholderTextColor={colors.muted}
                         style={[styles.searchInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.card }]}
                         returnKeyType="search"

@@ -76,7 +76,7 @@ async function prepareImageForAnalysis(asset) {
 
 export default function ScannerScreen({ navigation, route }) {
   const t = useTranslation();
-  const { dailyGoal, aiModel, aiProvider, claudeVoiceProvider, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds, burnedCalories, healthConnectEnabled } = useSettings();
+  const { dailyGoal, aiModel, aiProvider, claudeVoiceProvider, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds, burnedCalories, estimatedBurnedCalories, expenditureEstimateEnabled, healthConnectEnabled } = useSettings();
   const insets = useSafeAreaInsets();
   const audioRecordingRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -824,6 +824,8 @@ export default function ScannerScreen({ navigation, route }) {
           <DailySummary
             dailyGoal={dailyGoal}
             burnedCalories={burnedCalories}
+            estimatedBurnedCalories={estimatedBurnedCalories}
+            expenditureEstimateEnabled={expenditureEstimateEnabled}
             healthConnectEnabled={healthConnectEnabled}
             colors={colors}
             useLocalStorage={useLocalStorage}
@@ -844,9 +846,9 @@ export default function ScannerScreen({ navigation, route }) {
             }, pressed && styles.sectionFramePressed]}
             onPress={isRecording ? finishVoiceRecording : startVoiceRecording}
           >
-            <View style={styles.voiceLabel}>
+            <View style={[styles.voiceLabel, styles.voiceRecordingLabel]}>
               <Ionicons name={isRecording ? 'stop' : 'mic'} size={20} color={isRecording ? colors.onAccent : colors.btnText} />
-              <Text style={[styles.sectionTitle, { color: isRecording ? colors.onAccent : colors.btnText, textTransform: isRecording ? 'uppercase' : 'none' }]}>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65} style={[styles.sectionTitle, { flexShrink: 1, color: isRecording ? colors.onAccent : colors.btnText, textTransform: 'none' }]}>
                 {isRecording ? t.voiceStop : t.addFoodVoice}
               </Text>
             </View>
@@ -866,6 +868,19 @@ export default function ScannerScreen({ navigation, route }) {
             <View style={styles.voiceLabel}>
               <Ionicons name="create-outline" size={20} color={colors.btnText} />
               <Text style={[styles.sectionTitle, { color: colors.btnText, textTransform: 'none' }]}>{t.addFoodText}</Text>
+            </View>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t.homeSearch}
+            accessibilityHint={t.homeSearchHint}
+            style={({ pressed }) => [styles.sectionFrame, styles.entryButton, { height: dashboardSizes.text, backgroundColor: colors.btn, borderColor: colors.border }, pressed && styles.sectionFramePressed]}
+            onPress={() => navigation.navigate('Favorites', { openSearch: Date.now() })}
+            onLongPress={() => navigation.navigate('History', { openSearch: Date.now() })}
+          >
+            <View style={styles.voiceLabel}>
+              <Ionicons name="search" size={20} color={colors.btnText} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.sectionTitle, { color: colors.btnText, textTransform: 'none', flexShrink: 1 }]}>{t.homeSearch}</Text>
             </View>
           </Pressable>
         </View>
@@ -1009,8 +1024,8 @@ const styles = StyleSheet.create({
   dashboardContainer: {
     flexGrow: 1,
     padding: 16,
-    paddingBottom: 16,
-    gap: 10,
+    paddingBottom: 4,
+    gap: 6,
     justifyContent: 'flex-start',
     width: '100%',
     maxWidth: 600,
@@ -1019,7 +1034,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 4,
     borderRadius: 18,
     borderWidth: 1,
   },
@@ -1056,12 +1071,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   voiceActivity: {
+    maxWidth: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
   },
+  voiceRecordingLabel: {
+    width: '100%',
+    minWidth: 0,
+  },
   voiceTimer: {
+    flexShrink: 1,
     marginLeft: 4,
     fontSize: 11,
     fontWeight: '700',

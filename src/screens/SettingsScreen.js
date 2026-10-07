@@ -32,6 +32,7 @@ import { getAllMeals, importMeals, clearAllMeals } from '../api/mealService';
 import { clearCategoryFromFavorites, getFavoriteImageUris } from '../api/favoritesService';
 import { escapeCsvField, parseCsvRow, parseFiniteNumber } from '../utils/csv';
 import TermsModal from '../components/TermsModal';
+import ExpenditureSettings from '../components/ExpenditureSettings';
 import MacroGoalsDialog from '../components/MacroGoalsDialog';
 import { connectHealthConnect, openHealthConnectSettingsScreen } from '../api/healthConnect';
 function clampDailyGoal(value) {
@@ -199,7 +200,7 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { showLatestMeal, setShowLatestMeal, dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled, burnedCalories, refreshBurnedCalories } = useSettings();
+  const { showCalorieFatEquivalent, setShowCalorieFatEquivalent, showLatestMeal, setShowLatestMeal, dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled, burnedCalories, refreshBurnedCalories } = useSettings();
 
   const { colors } = useSettings();
 
@@ -758,6 +759,11 @@ export default function SettingsScreen() {
     if (healthConnectBusy) return;
     setHealthConnectBusy(true);
     try {
+      const access = await connectHealthConnect();
+      if (!access.connected) {
+        Alert.alert(Platform.OS === 'ios' ? t.appleHealthTitle : t.healthConnectTitle, getHealthConnectErrorMessage(access.availability, t));
+        return;
+      }
       let calories = await refreshBurnedCalories();
       if (calories === null) {
         const result = await connectHealthConnect();
@@ -820,7 +826,7 @@ export default function SettingsScreen() {
             {healthConnectEnabled && (
               <View style={{ marginTop: 14, padding: 12, borderRadius: 12, backgroundColor: colors.elemBg }}>
                 <Text style={{ color: colors.text, fontWeight: '700' }}>
-                  {t.healthConnectToday}: {Math.round(burnedCalories).toLocaleString()} kcal
+                  {t.healthConnectToday}: {Number.isFinite(burnedCalories) ? `${Math.round(burnedCalories).toLocaleString()} kcal` : '—'}
                 </Text>
                 <Text style={[styles.hint, { color: colors.muted, marginBottom: 0 }]}>{t.healthConnectTotalCaloriesHint}</Text>
               </View>
@@ -848,6 +854,8 @@ export default function SettingsScreen() {
 
           </View>
         )}
+
+        <ExpenditureSettings colors={colors} />
 
         <Pressable onPress={() => setMacroGoalsOpen(true)} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
           <Ionicons name="nutrition-outline" size={24} color={colors.accent} />
@@ -907,6 +915,16 @@ export default function SettingsScreen() {
         />
 
         <ColorThemePicker />
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.label, { color: colors.text }]}>{t.showCalorieFatEquivalentTitle}</Text>
+              <Text style={[styles.hint, { color: colors.muted }]}>{t.showCalorieFatEquivalentHint}</Text>
+            </View>
+            <Switch value={showCalorieFatEquivalent} onValueChange={setShowCalorieFatEquivalent}
+              accessibilityLabel={t.showCalorieFatEquivalentTitle} trackColor={{ false: colors.elemBg, true: colors.accent }} />
+          </View>
+        </View>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={{ flex: 1 }}>

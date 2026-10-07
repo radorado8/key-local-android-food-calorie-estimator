@@ -10,8 +10,8 @@ function minimumButtonHeights(fontScale = 1) {
 
 export function dashboardContentFits(viewport, fixedContent, hasLatestMeal, fontScale = 1) {
   const { text, actions } = minimumButtonHeights(fontScale);
-  const gaps = (hasLatestMeal ? 3 : 2) * 10;
-  return viewport >= fixedContent + 32 + gaps + text + actions;
+  const gaps = (hasLatestMeal ? 3 : 2) * 6;
+  return viewport >= fixedContent + 20 + gaps + text + actions;
 }
 
 export function dashboardButtonHeights(viewport, fixedContent, hasLatestMeal, fontScale = 1) {
@@ -20,10 +20,10 @@ export function dashboardButtonHeights(viewport, fixedContent, hasLatestMeal, fo
   // visually lighter than the primary photo actions below.
   const textMax = Math.max(168, textMin);
   const actionMax = Math.max(116, actionMin);
-  const gaps = (hasLatestMeal ? 3 : 2) * 10;
-  const available = Math.max(0, viewport - fixedContent - 32 - gaps);
+  const gaps = (hasLatestMeal ? 3 : 2) * 6;
+  const available = Math.max(0, viewport - fixedContent - 20 - gaps);
   const extra = Math.max(0, available - textMin - actionMin);
-  const text = clamp(textMin + extra * 0.2, textMin, textMax);
+  const text = clamp(textMin + extra * 0.4, textMin, textMax);
   const actions = clamp(actionMin + Math.max(0, extra - (text - textMin)), actionMin, actionMax);
   return { text, actions };
 }

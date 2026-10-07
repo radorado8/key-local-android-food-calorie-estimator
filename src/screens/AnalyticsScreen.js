@@ -1,6 +1,7 @@
 import { typography } from '../theme/palette';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -13,6 +14,7 @@ import Svg, { Rect, G, Line, Text as SvgText, Path, Circle } from 'react-native-
 import { Ionicons } from '@expo/vector-icons';
 import { subscribeToMeals } from '../api/mealService';
 import { useSettings } from '../state/SettingsContext';
+import { summarizeBurnedDays } from '../utils/burnedHistory';
 import { useTranslation } from '../hooks/useTranslation';
 
 function getLocalDateKey(d) {
@@ -24,12 +26,15 @@ function getLocalDateKey(d) {
 
 export default function AnalyticsScreen() {
     const t = useTranslation();
-    const { theme, dailyGoal, useLocalStorage, language } = useSettings();
+    const { theme, dailyGoal, useLocalStorage, language, showCalorieFatEquivalent, healthConnectEnabled, burnedCaloriesHistory } = useSettings();
+    const burnedLabel = language === 'sk' ? 'Spálené' : t.caloriesBurnedLabel;
+    const showBurned = Platform.OS === "android" && healthConnectEnabled;
+    const [selectedDay, setSelectedDay] = useState(null);
     const { width: screenWidth } = useWindowDimensions();
 
     const { colors } = useSettings();
 
-    const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
+    const [viewMode, setViewMode] = useState('week'); // 'week' | 'fortnight' | 'month'
     const [meals, setMeals] = useState([]);
     const [chartWidth, setChartWidth] = useState(Math.max(240, screenWidth - 64));
 
@@ -40,7 +45,7 @@ export default function AnalyticsScreen() {
         return () => unsub();
     }, [useLocalStorage]);
 
-    const numDays = viewMode === 'week' ? 7 : 30;
+    const numDays = viewMode === 'week' ? 7 : viewMode === 'fortnight' ? 14 : 30;
 
     const dailyData = useMemo(() => {
         const today = new Date();
@@ -57,6 +62,7 @@ export default function AnalyticsScreen() {
                 label: viewMode === 'week'
                     ? d.toLocaleDateString(language, { weekday: 'short' })
                     : `${d.getDate()}`,
+                burned: showBurned ? (burnedCaloriesHistory[key]?.calories ?? null) : null,
                 calories: 0,
                 protein: 0,
                 carbs: 0,
@@ -78,7 +84,7 @@ export default function AnalyticsScreen() {
         });
 
         return days;
-    }, [meals, numDays, viewMode, language]);
+    }, [meals, numDays, viewMode, language, showBurned, burnedCaloriesHistory]);
 
     const summary = useMemo(() => {
         const daysWithData = dailyData.filter(d => d.calories > 0);
@@ -92,11 +98,14 @@ export default function AnalyticsScreen() {
         return { totalCals, totalProtein, totalCarbs, totalFat, avgCals, highest, lowest, daysTracked: daysWithData.length };
     }, [dailyData]);
 
+    const burnedSummary = useMemo(() => summarizeBurnedDays(dailyData), [dailyData]);
+    const selected = dailyData.find(day => day.key === selectedDay) || dailyData[dailyData.length - 1];
+
     // ---- BAR CHART ----
     const chartPadding = { left: 40, right: 16, top: 20, bottom: 30 };
     const chartW = Math.max(1, chartWidth - chartPadding.left - chartPadding.right);
     const chartH = 180;
-    const maxVal = Math.max(dailyGoal * 1.3, ...dailyData.map(d => d.calories)) || 2000;
+    const maxVal = Math.max(dailyGoal * 1.3, ...dailyData.map(d => Math.max(d.calories, d.burned ?? 0))) || 2000;
     const barGap = viewMode === 'week' ? 8 : 2;
     const barW = Math.max(1, (chartW - barGap * (dailyData.length - 1)) / dailyData.length);
     const goalY = chartH - (dailyGoal / maxVal) * chartH;
@@ -144,6 +153,12 @@ export default function AnalyticsScreen() {
                         onPress={() => setViewMode('week')}
                     >
                         <Text style={[styles.segmentText, { color: viewMode === 'week' ? colors.onAccent : colors.muted }]}>{t.weekView || 'Týždeň'}</Text>
+                    </Pressable>
+                    <Pressable
+                        style={[styles.segmentBtn, viewMode === 'fortnight' && [styles.segmentActive, { backgroundColor: colors.accent }]]}
+                        onPress={() => setViewMode('fortnight')}
+                    >
+                        <Text style={[styles.segmentText, { color: viewMode === 'fortnight' ? colors.onAccent : colors.muted }]}>{t.fortnightView}</Text>
                     </Pressable>
                     <Pressable
                         style={[styles.segmentBtn, viewMode === 'month' && [styles.segmentActive, { backgroundColor: colors.accent }]]}
@@ -194,8 +209,10 @@ export default function AnalyticsScreen() {
                                     const barColor = d.isToday ? colors.accent : (isOver ? colors.danger : colors.calories);
 
                                     return (
-                                        <G key={d.key}>
-                                            <Rect x={x} y={chartH - barH} width={barW} height={barH} rx={viewMode === 'week' ? 4 : 2} fill={barColor} />
+                                        <G key={d.key} onPress={() => setSelectedDay(d.key)}>
+                                            <Rect x={x} y={0} width={barW} height={chartH} fill="transparent" />
+                                            <Rect x={x} y={chartH - barH} width={showBurned ? barW * 0.46 : barW} height={barH} rx={viewMode === 'week' ? 4 : 2} fill={barColor} />
+                                            {showBurned && d.burned !== null && <Rect x={x + barW * 0.54} y={chartH - Math.max(2, d.burned / maxVal * chartH)} width={barW * 0.46} height={Math.max(2, d.burned / maxVal * chartH)} rx={viewMode === "week" ? 3 : 1} fill={colors.macros.carbs} />}
                                             {viewMode === 'week' && (
                                                 <SvgText
                                                     x={x + barW / 2} y={chartH + 16}
@@ -203,7 +220,7 @@ export default function AnalyticsScreen() {
                                                     fontSize="10" fontWeight={d.isToday ? '800' : '600'} textAnchor="middle"
                                                 >{d.label}</SvgText>
                                             )}
-                                            {viewMode === 'month' && i % 5 === 0 && (
+                                            {viewMode !== 'week' && i % (viewMode === 'fortnight' ? 2 : 5) === 0 && (
                                                 <SvgText
                                                     x={x + barW / 2} y={chartH + 14}
                                                     fill={colors.muted}
@@ -216,11 +233,18 @@ export default function AnalyticsScreen() {
                             </G>
                         </Svg>
                     </View>
+                    {showBurned && selected && <Text style={{ color: colors.text, fontSize: 13, textAlign: 'center', marginTop: 6 }}>
+                        {selected.date.toLocaleDateString(language)} · {t.caloriesIntakeLabel}: {Math.round(selected.calories)} kcal · {burnedLabel}: {selected.burned === null ? '—' : `${selected.burned} kcal`}
+                    </Text>}
                     <View style={styles.legendRow}>
                         <View style={styles.legendItem}>
                             <View style={[styles.legendDot, { backgroundColor: colors.calories }]} />
-                            <Text style={[styles.legendText, { color: colors.muted }]}>{t.caloriesLabel || 'Kalórie'}</Text>
+                            <Text style={[styles.legendText, { color: colors.muted }]}>{showBurned ? t.caloriesIntakeLabel : (t.caloriesLabel || 'Kalórie')}</Text>
                         </View>
+                        {showBurned && <View style={styles.legendItem}>
+                            <View style={[styles.legendDot, { backgroundColor: colors.macros.carbs }]} />
+                            <Text style={[styles.legendText, { color: colors.muted }]}>{burnedLabel}</Text>
+                        </View>}
                         <View style={styles.legendItem}>
                             <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
                             <Text style={[styles.legendText, { color: colors.muted }]}>{t.dailyGoalLabel || 'Denný cieľ'}</Text>
@@ -234,12 +258,12 @@ export default function AnalyticsScreen() {
 
                 {/* Summary Cards Row */}
                 <View style={styles.summaryRow}>
-                    <SummaryCard label={t.totalCalories || 'Celkové kalórie'} value={`${summary.totalCals}`} unit="kcal" icon="nutrition" iconColor={colors.accent} colors={colors} />
-                    <SummaryCard label={t.avgCalories || 'Priemer/deň'} value={`${summary.avgCals}`} unit="kcal" icon="flame" iconColor={colors.calories} colors={colors} />
+                    <SummaryCard label={t.totalCalories || 'Celkové kalórie'} burned={showBurned ? burnedSummary.total : undefined} burnedLabel={burnedLabel} consumedLabel={showBurned ? t.caloriesIntakeLabel : null} difference={showBurned ? (burnedSummary.total === null ? null : summary.totalCals - burnedSummary.total) : undefined} showFatEquivalent={showCalorieFatEquivalent} fatEquivalentLabel={t.calorieFatEquivalent} language={language} differenceLabel={t.calorieDifference} value={`${summary.totalCals}`} unit="kcal" icon="nutrition" iconColor={colors.accent} colors={colors} />
+                    <SummaryCard label={t.avgCalories || 'Priemer/deň'} burned={showBurned ? burnedSummary.average : undefined} burnedLabel={burnedLabel} consumedLabel={showBurned ? t.caloriesIntakeLabel : null} difference={showBurned ? (burnedSummary.average === null ? null : summary.avgCals - burnedSummary.average) : undefined} showFatEquivalent={showCalorieFatEquivalent} fatEquivalentLabel={t.calorieFatEquivalent} language={language} differenceLabel={t.calorieDifference} value={`${summary.avgCals}`} unit="kcal" icon="flame" iconColor={colors.calories} colors={colors} />
                 </View>
                 <View style={styles.summaryRow}>
-                    <SummaryCard label={t.lowestDay || 'Najnižší deň'} value={`${summary.lowest}`} unit="kcal" icon="arrow-down" iconColor={colors.accent} colors={colors} />
-                    <SummaryCard label={t.highestDay || 'Najvyšší deň'} value={`${summary.highest}`} unit="kcal" icon="arrow-up" iconColor={colors.danger} colors={colors} />
+                    <SummaryCard label={t.lowestDay || 'Najnižší deň'} burned={showBurned ? burnedSummary.lowest : undefined} burnedLabel={burnedLabel} consumedLabel={showBurned ? t.caloriesIntakeLabel : null} value={`${summary.lowest}`} unit="kcal" icon="arrow-down" iconColor={colors.accent} colors={colors} />
+                    <SummaryCard label={t.highestDay || 'Najvyšší deň'} burned={showBurned ? burnedSummary.highest : undefined} burnedLabel={burnedLabel} consumedLabel={showBurned ? t.caloriesIntakeLabel : null} value={`${summary.highest}`} unit="kcal" icon="arrow-up" iconColor={colors.danger} colors={colors} />
                 </View>
 
                 {/* Macros Donut + Details */}
@@ -300,17 +324,27 @@ export default function AnalyticsScreen() {
     );
 }
 
-function SummaryCard({ label, value, unit, icon, iconColor, colors }) {
+function SummaryCard({ label, value, unit, icon, iconColor, colors, burned, burnedLabel, consumedLabel, difference, differenceLabel, showFatEquivalent, fatEquivalentLabel, language }) {
     return (
         <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.summaryIcon, { backgroundColor: iconColor + '18' }]}>
                 <Ionicons name={icon} size={20} color={iconColor} />
             </View>
             <Text style={[styles.summaryLabel, { color: colors.muted }]}>{label}</Text>
+            {consumedLabel && <Text style={{ color: colors.muted, fontSize: 11 }}>{consumedLabel}</Text>}
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
                 <Text style={[styles.summaryValue, { color: colors.text }]}>{value}</Text>
                 <Text style={{ color: colors.muted, fontSize: 12, fontWeight: '600' }}>{unit}</Text>
             </View>
+            {burned !== undefined && <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 6, gap: 3 }}>
+                <Text style={{ color: colors.muted, fontSize: 11 }}>{burnedLabel}</Text>
+                <Text style={{ color: colors.macros.carbs, fontSize: 20, fontWeight: '800' }}>{burned === null ? '—' : `${burned} kcal`}</Text>
+            </View>}
+            {difference !== undefined && <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 6, gap: 3 }}>
+                <Text style={{ color: colors.muted, fontSize: 11 }}>{differenceLabel}</Text>
+                <Text style={{ color: colors.text, fontSize: 20, fontWeight: '800' }}>{difference === null ? '—' : `${difference} kcal`}</Text>
+                {showFatEquivalent && difference !== null && <Text style={{ color: colors.muted, fontSize: 11 }}>{fatEquivalentLabel.replace('{value}', (difference / 9).toLocaleString(language, { maximumFractionDigits: 1 }))}</Text>}
+            </View>}
         </View>
     );
 }
@@ -345,7 +379,7 @@ const styles = StyleSheet.create({
     cardTitle: { fontSize: 16, fontWeight: '800', marginBottom: 10 },
     chartHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 10 },
     chartDays: { flexShrink: 1, fontSize: 12, fontWeight: '600', textAlign: 'right' },
-    legendRow: { flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 10 },
+    legendRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 10 },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     legendDot: { width: 8, height: 8, borderRadius: 4 },
     legendText: { fontSize: 11, fontWeight: '600' },

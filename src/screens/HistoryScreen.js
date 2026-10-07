@@ -94,7 +94,7 @@ function formatDateLabelLong(dateObj, t, language, now) {
   return dateStr;
 }
 
-export default function HistoryScreen() {
+export default function HistoryScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const t = useTranslation();
   const { theme, useLocalStorage, language, dailyGoal, showImagesInHistory, showUniqueHistorySearchResults } = useSettings();
@@ -103,7 +103,7 @@ export default function HistoryScreen() {
   const scrollRef = React.useRef(null);
   const [now, setNow] = useState(new Date());
 
-  // Nested expansion state: 
+  // Nested expansion state:
   // expandedDays: { [dateKey]: boolean }
   // expandedCategories: { [dateKey_categoryLabel]: boolean }
   const [expandedDays, setExpandedDays] = useState({});
@@ -118,6 +118,17 @@ export default function HistoryScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = React.useRef(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
+    useFocusEffect(useCallback(() => {
+        if (!route.params?.openSearch) return;
+        setSearchQuery('');
+        setIsSearching(true);
+        const timer = setTimeout(() => {
+            searchInputRef.current?.focus();
+            navigation.setParams({ openSearch: undefined });
+        }, 250);
+        return () => clearTimeout(timer);
+    }, [route.params?.openSearch, navigation]));
+
 
   const openMealImage = async (uri) => {
     if (!uri) return;
@@ -348,7 +359,7 @@ export default function HistoryScreen() {
             selectTextOnFocus
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder={t.searchFood || 'Hľadať jedlo'}
+            placeholder={t.searchHistoryPlaceholder}
             placeholderTextColor={colors.muted}
             style={[styles.searchInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.card }]}
             returnKeyType="search"

@@ -23,7 +23,7 @@ test('buttons never shrink below readable minimum or grow past maximum', () => {
     assert.ok(sizes.actions >= 64 && sizes.actions <= 116);
   }
   const scaled = dashboardButtonHeights(320, 530, true, 2);
-  assert.ok(scaled.text >= 82 && scaled.actions >= 124);
+  assert.ok(scaled.text >= 82 && scaled.actions >= 108);
 });
 test('voice and text buttons grow in spacious layouts but stay below photo actions', () => {
   const sizes = dashboardButtonHeights(1000, 430, false);

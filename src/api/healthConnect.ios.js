@@ -4,6 +4,8 @@ import {
   requestAuthorization,
 } from '@kingstinct/react-native-healthkit';
 
+import { estimateDailyExpenditure, getExpenditureDateRanges, localDateKey, validEnergy } from '../utils/calorieExpenditure';
+
 const ENERGY_TYPES = [
   'HKQuantityTypeIdentifierActiveEnergyBurned',
   'HKQuantityTypeIdentifierBasalEnergyBurned',
@@ -37,25 +39,50 @@ export async function hasTotalCaloriesPermission() {
   return (await getHealthConnectAvailability()) === 'available';
 }
 
+async function readEnergy(identifier, startDate, endDate) {
+  const result = await queryStatisticsForQuantity(identifier, ['cumulativeSum'], {
+    unit: 'kcal', filter: { date: { startDate, endDate } },
+  });
+  return validEnergy(result.sumQuantity?.quantity);
+}
+
+export async function getCalorieExpenditure({ garminMode = false } = {}) {
+  const { todayStart, yesterdayStart, now } = getExpenditureDateRanges();
+  const empty = { date: localDateKey(now), burnedCalories: null, estimatedBurnedCalories: null,
+    todayActiveCalories: null, todayRestingCalories: null, yesterdayRestingCalories: null };
+  if (!(await hasTotalCaloriesPermission())) return empty;
+  const todayEnd = new Date(todayStart);
+  todayEnd.setDate(todayEnd.getDate() + 1);
+  const end = garminMode ? todayEnd : now;
+  // HealthKit has no separate total-energy quantity. Read both components
+  // only to form the measured total; Garmin mode derives activity from that
+  // total and the configured resting budget, ignoring the active component.
+  const results = await Promise.allSettled([
+    readEnergy(ENERGY_TYPES[0], todayStart, end),
+    readEnergy(ENERGY_TYPES[1], todayStart, end),
+    garminMode ? Promise.resolve(null) : readEnergy(ENERGY_TYPES[1], yesterdayStart, todayStart),
+  ]);
+  const [activeToday, restingToday, yesterdayResting] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+  return {
+    ...empty,
+    sampledAt: new Date().toISOString(),
+    rawBurnedCalories: activeToday === null && restingToday === null
+      ? null : (activeToday ?? 0) + (restingToday ?? 0),
+    burnedCalories: activeToday === null && restingToday === null
+      ? null : Math.round((activeToday ?? 0) + (restingToday ?? 0)),
+    todayActiveCalories: garminMode ? null : activeToday,
+    todayRestingCalories: garminMode ? null : restingToday,
+    yesterdayRestingCalories: yesterdayResting,
+    estimatedBurnedCalories: garminMode ? null : estimateDailyExpenditure(yesterdayResting, activeToday),
+  };
+}
+
 export async function getTodayBurnedCalories() {
-  if (!(await hasTotalCaloriesPermission())) return null;
-
-  const startDate = new Date();
-  startDate.setHours(0, 0, 0, 0);
-  const endDate = new Date();
-
-  const totals = await Promise.all(ENERGY_TYPES.map(async identifier => {
-    const result = await queryStatisticsForQuantity(identifier, ['cumulativeSum'], {
-      unit: 'kcal',
-      filter: { date: { startDate, endDate } },
-    });
-    return result.sumQuantity?.quantity ?? 0;
-  }));
-
-  const total = totals.reduce((sum, value) => sum + value, 0);
-  return Number.isFinite(total) ? Math.max(0, Math.round(total)) : null;
+  return (await getCalorieExpenditure()).burnedCalories;
 }
 
 export function openHealthConnectSettingsScreen() {
   // iOS exposes Health permissions in Settings > Health > Data Access & Devices.
 }
+
+export async function getHistoricalBurnedCalories() { return {}; }

@@ -5,11 +5,13 @@ import { subscribeToMeals } from '../api/mealService';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSettings } from '../state/SettingsContext';
 
-export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress, burnedCalories = null, healthConnectEnabled = false }) {
+export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress, burnedCalories = null, estimatedBurnedCalories = null, expenditureEstimateEnabled = false, healthConnectEnabled = false }) {
   const t = useTranslation();
-  const { language, macroGoals } = useSettings();
+  const { language, macroGoals, activeCalories } = useSettings();
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [loading, setLoading] = useState(true);
+  const [ringWidth, setRingWidth] = useState(312);
+  const ringScale = Math.min(1, ringWidth / 312);
 
   // Time & Meal Type Logic
   const [dateStr, setDateStr] = useState('');
@@ -150,7 +152,8 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
   }, [useLocalStorage]);
 
   const todayCalories = totals.calories;
-  const showBurnedCalories = healthConnectEnabled && Number.isFinite(burnedCalories);
+  const showEstimatedCalories = healthConnectEnabled && expenditureEstimateEnabled && Number.isFinite(estimatedBurnedCalories);
+  const showBurnedCalories = healthConnectEnabled && (Number.isFinite(burnedCalories) || showEstimatedCalories);
   const effectiveDailyGoal = Number(dailyGoal);
   const remaining = effectiveDailyGoal - todayCalories;
   const isOverGoal = remaining < 0;
@@ -162,18 +165,19 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
     return Math.max(0, Math.min(1, todayCalories / goalSafe));
   }, [effectiveDailyGoal, todayCalories]);
 
-  const size = 280;
-  const ringHeight = 220;
+  const size = 312;
+  const ringHeight = 248;
   const stroke = 18;
   const cx = size / 2;
-  const cy = 125;
-  const splitStroke = 14.5;
+  const cy = 145;
+  const splitStroke = showEstimatedCalories ? 10 : 14.5;
   const inwardArcExpansion = (splitStroke - 8) / 2;
-  const ringRadiusX = showBurnedCalories ? 128.5 - inwardArcExpansion : 116;
-  const ringRadiusY = showBurnedCalories ? 121 - inwardArcExpansion : 116;
-  const createRingArc = (radiusX, radiusY) => {
+  const ringRadiusX = showBurnedCalories ? 149.5 - inwardArcExpansion : 143;
+  const ringRadiusY = showBurnedCalories ? 138 - inwardArcExpansion : 133;
+  const createRingArc = (radiusX, radiusY, reverse = false) => {
     const arcOffsetX = radiusX / Math.SQRT2;
     const arcOffsetY = radiusY / Math.SQRT2;
+    if (reverse) return `M ${cx + arcOffsetX} ${cy + arcOffsetY} A ${radiusX} ${radiusY} 0 1 0 ${cx - arcOffsetX} ${cy + arcOffsetY}`;
     return `M ${cx - arcOffsetX} ${cy + arcOffsetY} A ${radiusX} ${radiusY} 0 1 1 ${cx + arcOffsetX} ${cy + arcOffsetY}`;
   };
   const getArcLength = (radiusX, radiusY) => 0.75 * Math.PI * (3 * (radiusX + radiusY) - Math.sqrt((3 * radiusX + radiusY) * (radiusX + 3 * radiusY)));
@@ -185,6 +189,18 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
   const burnedRingLength = getArcLength(burnedRadiusX, burnedRadiusY);
   const burnedProgress = Math.max(0, Math.min(1, Number(burnedCalories) / (Number(dailyGoal) || 1)));
   const burnedColor = colors.macros?.carbs || colors.accent;
+  const activeColor = colors.danger;
+  const activeShare = Number.isFinite(activeCalories) && Number.isFinite(burnedCalories) && burnedCalories > 0
+    ? Math.max(0, Math.min(1, activeCalories / burnedCalories)) : 0;
+  const activeRingLength = burnedRingLength * burnedProgress * activeShare;
+  const passiveRingLength = burnedRingLength * burnedProgress - activeRingLength;
+
+  const estimatedRadiusX = burnedRadiusX - splitStroke;
+  const estimatedRadiusY = burnedRadiusY - splitStroke;
+  const estimatedArc = createRingArc(estimatedRadiusX, estimatedRadiusY);
+  const estimatedRingLength = getArcLength(estimatedRadiusX, estimatedRadiusY);
+  const estimatedProgress = Math.max(0, Math.min(1, Number(estimatedBurnedCalories) / (Number(dailyGoal) || 1)));
+  const estimatedColor = colors.accent;
 
   // Chart settings (matching web)
   const maxChartVal = Math.max(effectiveDailyGoal, ...weekData.map(d => d.calories)) * 1.1;
@@ -193,7 +209,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
   const barGap = 6;
   const chartWidth = weekData.length * (barWidth + barGap) - barGap;
   const startX = (size - chartWidth) / 2;
-  const chartBaseY = 97;
+  const chartBaseY = 93;
 
   if (loading) {
     return (
@@ -218,19 +234,25 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
         </View>
       </View>
 
-      <View style={styles.ringWrap}>
-        <Svg width={size} height={ringHeight} viewBox={`0 0 ${size} ${ringHeight}`}>
+      <View style={[styles.ringWrap, { height: ringHeight * ringScale }]} onLayout={event => setRingWidth(event.nativeEvent.layout.width)}>
+        <Svg width="100%" height={ringHeight * ringScale} viewBox={`0 0 ${size} ${ringHeight}`}>
           {showBurnedCalories ? (
             <>
               <Path d={ringArc} stroke={colors.border || "rgba(255,255,255,0.12)"} strokeWidth={splitStroke} fill="none" strokeLinecap="round" />
               {progress > 0 && <Path d={ringArc} stroke={colors.calories} strokeWidth={splitStroke} fill="none" strokeLinecap="round" strokeDasharray={`${ringLength * progress} ${ringLength}`} />}
               <Path d={burnedArc} stroke={colors.border || "rgba(255,255,255,0.12)"} strokeWidth={splitStroke} fill="none" strokeLinecap="round" />
               {burnedProgress > 0 && <Path d={burnedArc} stroke={burnedColor} strokeWidth={splitStroke} fill="none" strokeLinecap="round" strokeDasharray={`${burnedRingLength * burnedProgress} ${burnedRingLength}`} />}
+              {activeRingLength > 0 && <Path d={burnedArc} stroke={activeColor} strokeWidth={splitStroke} fill="none" strokeLinecap="round"
+                strokeDasharray={`${activeRingLength} ${burnedRingLength}`} strokeDashoffset={-passiveRingLength} />}
+              {showEstimatedCalories && <>
+                <Path d={estimatedArc} stroke={colors.border || "rgba(255,255,255,0.12)"} strokeWidth={splitStroke} fill="none" strokeLinecap="round" />
+                {estimatedProgress > 0 && <Path d={estimatedArc} stroke={estimatedColor} strokeWidth={splitStroke} fill="none" strokeLinecap="round" strokeDasharray={`${estimatedRingLength * estimatedProgress} ${estimatedRingLength}`} />}
+              </>}
             </>
           ) : (
             <>
               <Path d={ringArc} stroke={colors.border || "rgba(255,255,255,0.12)"} strokeWidth={stroke} fill="none" strokeLinecap="round" />
-              {progress > 0 && <Path d={ringArc} stroke={colors.accent || "#2DD4BF"} strokeWidth={stroke} fill="none" strokeLinecap="round" strokeDasharray={`${ringLength * progress} ${ringLength}`} />}
+              {progress > 0 && <Path d={ringArc} stroke={colors.calories} strokeWidth={stroke} fill="none" strokeLinecap="round" strokeDasharray={`${ringLength * progress} ${ringLength}`} />}
             </>
           )}
 
@@ -254,7 +276,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
                     width={barWidth}
                     height={GOAL_HEIGHT}
                     rx={3}
-                    fill="rgba(59, 130, 246, 0.3)"
+                    fill={colors.border}
                   />
 
                   {/* Fill (Orange, or Teal for Today) */}
@@ -264,7 +286,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
                     width={barWidth}
                     height={Math.max(2, barHeight)}
                     rx={3}
-                    fill={isToday ? colors.accent : colors.calories}
+                    fill={colors.calories}
                   />
 
                   {/* Goal Marker (Blue Line at 100%) */}
@@ -273,13 +295,13 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
                     y={-GOAL_HEIGHT - 1} // Centered on top edge of track roughly
                     width={barWidth}
                     height={2}
-                    fill="#3B82F6"
+                    fill={colors.muted}
                   />
 
                   <SvgText
                     x={x + barWidth / 2}
                     y={14}
-                    fill={isToday ? colors.accent : colors.muted}
+                    fill={colors.muted}
                     fontSize="10"
                     fontWeight={isToday ? "800" : "600"}
                     textAnchor="middle"
@@ -293,32 +315,30 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
         </Svg>
 
         <Pressable
-          style={[styles.center, showBurnedCalories && styles.splitCenter]}
+          style={[styles.center, showBurnedCalories && styles.splitCenter, showEstimatedCalories && styles.estimatedCenter, { top: (showBurnedCalories ? 110 : 76) * ringScale }]}
           onPress={onPress}
         >
           {showBurnedCalories ? (
-            <>
-              <View style={styles.splitLabeledRow}>
-                <Text style={[styles.calorieCaption, { color: colors.muted }]}>{t.caloriesIntakeLabel}</Text>
-                <Text style={[styles.splitKcalValue, { color: colors.calories }]}>{Math.round(todayCalories).toLocaleString()}</Text>
-                <Text style={[styles.splitKcalUnit, { color: colors.calories }]}>kcal</Text>
-              </View>
-              <View style={styles.splitLabeledRow}>
-                <Text style={[styles.calorieCaption, { color: colors.muted }]}>{t.caloriesBurnedLabel}</Text>
-                <Text style={[styles.burnedKcalValue, { color: burnedColor }]}>{Math.round(burnedCalories).toLocaleString()}</Text>
-                <Text style={[styles.burnedKcalUnit, { color: burnedColor }]}>kcal</Text>
-              </View>
-            </>
-          ) : (
-            <View style={styles.centerRow}>
-              <Text style={[styles.kcalValue, { color: colors.calories }]}>{Math.round(todayCalories).toLocaleString()}</Text>
-              <Text style={[styles.kcalUnit, { color: colors.calories }]}>kcal</Text>
+            <View style={[styles.calorieTable, { width: 204 * ringScale, transform: [{ translateX: -12 * ringScale }] }]}>
+              <CalorieRow scale={ringScale} label={t.caloriesIntakeLabel} value={todayCalories} color={colors.calories} colors={colors} emphasized />
+              {showEstimatedCalories && <CalorieRow scale={ringScale} label={t.caloriesDailyExpenditureLabel} value={estimatedBurnedCalories} color={estimatedColor} colors={colors} />}
+              <CalorieRow scale={ringScale} label={t.caloriesBurnedLabel} value={burnedCalories} color={burnedColor} colors={colors} />
+              <CalorieRow scale={ringScale} label={t.caloriesActiveLabel} value={activeCalories} color={activeColor} colors={colors} />
+              <CalorieRow scale={ringScale} label={t.dailyGoalLabel} value={dailyGoal} color={colors.muted} colors={colors} secondary />
+              <CalorieRow scale={ringScale} label={isOverGoal ? t.overGoal : t.remainingLabel} value={Math.abs(remaining)} color={isOverGoal ? colors.danger : colors.muted} colors={colors} secondary />
             </View>
+          ) : (
+            <>
+              <View style={styles.centerRow}>
+                <Text style={[styles.kcalValue, { color: colors.calories }]}>{Math.round(todayCalories).toLocaleString()}</Text>
+                <Text style={[styles.kcalUnit, { color: colors.calories }]}>kcal</Text>
+              </View>
+              <Text style={[styles.goalText, { color: colors.muted }]}>{t.dailyGoalLabel}: {Number(dailyGoal).toLocaleString()} kcal</Text>
+              <Text style={[styles.remainingText, { color: isOverGoal ? colors.danger : colors.muted }]}>
+                {Math.round(Math.abs(remaining)).toLocaleString()} kcal {isOverGoal ? t.overGoal : t.remainingLabel}
+              </Text>
+            </>
           )}
-          <Text style={[styles.goalText, { color: colors.muted }]}>{t.dailyGoalLabel}: {Number(dailyGoal).toLocaleString()} kcal</Text>
-          <Text style={[styles.remainingText, { color: isOverGoal ? colors.danger : colors.accent }]}>
-            {Math.round(Math.abs(remaining)).toLocaleString()} kcal {isOverGoal ? t.overGoal : t.remainingLabel}
-          </Text>
         </Pressable>
       </View>
 
@@ -329,19 +349,36 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
   );
 }
 
+function CalorieRow({ label, value, color, colors, secondary = false, emphasized = false, scale = 1 }) {
+  // Explicit line boxes avoid platform font metrics overflowing neighbouring rows.
+  // Scale the grid with the ring; each cell can also shrink long labels/numbers.
+  const rowHeight = (emphasized ? 28 : secondary ? 18 : 24) * scale;
+  const valueSize = (emphasized ? 26.4 : secondary ? 16.5 : 22) * scale;
+  return <View style={[styles.calorieTableRow, { height: rowHeight, gap: 3 * scale }]}>
+    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1}
+      style={[styles.tableLabel, { color: colors.muted, fontSize: 13.2 * scale, lineHeight: 17 * scale }]}>{label}</Text>
+    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1}
+      style={[styles.tableValue, { width: 80 * scale, color, fontSize: valueSize, lineHeight: rowHeight, fontWeight: secondary ? '600' : '800' }]}>
+      {Number.isFinite(Number(value)) && value != null ? Math.round(Number(value)).toLocaleString() : '—'}
+    </Text>
+    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={1}
+      style={[styles.tableUnit, { width: 25 * scale, color, fontSize: 11 * scale, lineHeight: 15 * scale, marginBottom: 2 * scale }]}>kcal</Text>
+  </View>;
+}
+
 function Macro({ label, value, goal, color, colors, goalLabel, onPress }) {
   const progress = Math.max(0, Math.min(1, value / goal));
-  const radius = 36;
+  const radius = 40;
   const offset = radius / Math.sqrt(2);
-  const arc = `M ${50 - offset} ${37 + offset} A ${radius} ${radius} 0 1 1 ${50 + offset} ${37 + offset}`;
+  const arc = `M ${50 - offset} ${41 + offset} A ${radius} ${radius} 0 1 1 ${50 + offset} ${41 + offset}`;
   const length = 1.5 * Math.PI * radius;
   return (
     <Pressable style={styles.macroItem} accessible accessibilityRole="button" accessibilityLabel={`${label}: ${Math.round(value)}g. ${goalLabel}: ${goal}g`} onPress={onPress}>
-      <Svg width="100%" height={80} viewBox="0 -3 100 80" accessible={false}>
-        <Path d={arc} stroke={color} strokeOpacity={0.15} strokeWidth={5.8} fill="none" strokeLinecap="round" />
-        {progress > 0 && <Path d={arc} stroke={color} strokeWidth={5.8} fill="none" strokeLinecap="round" strokeDasharray={`${length * progress} ${length}`} />}
-        <SvgText x={50} y={40} textAnchor="middle" fill={colors.muted} fontSize={Math.round(value) >= 1000 ? 17 : 22} fontWeight="800">{`${Math.round(value)}g`}</SvgText>
-        <SvgText x={50} y={61} textAnchor="middle" fill={colors.muted} fontSize={14} fontWeight="800">{`${goal}g`}</SvgText>
+      <Svg width="100%" height={64} viewBox="0 -3 100 80" accessible={false}>
+        <Path d={arc} stroke={color} strokeOpacity={0.15} strokeWidth={7.7} fill="none" strokeLinecap="round" />
+        {progress > 0 && <Path d={arc} stroke={color} strokeWidth={7.7} fill="none" strokeLinecap="round" strokeDasharray={`${length * progress} ${length}`} />}
+        <SvgText x={50} y={40} textAnchor="middle" fill={colors.muted} fontSize={Math.round(value) >= 1000 ? 20.05 : 24.05} fontWeight="800">{`${Math.round(value)}g`}</SvgText>
+        <SvgText x={50} y={61} textAnchor="middle" fill={colors.muted} fontSize={16} fontWeight="800">{`${goal}g`}</SvgText>
       </Svg>
       <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.macroLabel, { color: colors.muted }]}>{label}</Text>
     </Pressable>
@@ -361,12 +398,13 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
   },
   ringWrap: {
-    width: 280,
-    height: 220,
+    width: 312,
+    maxWidth: '100%',
+    height: 248,
   },
   center: {
     position: 'absolute',
-    top: 68,
+    top: 76,
     left: 0,
     right: 0,
     bottom: 0,
@@ -375,8 +413,21 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   splitCenter: {
-    top: 103,
+    top: 111,
     gap: 1,
+  },
+  estimatedCenter: {
+    top: 112,
+    bottom: 0,
+    gap: 0,
+  },
+  calorieTable: { width: 204, maxWidth: '100%', transform: [{ translateX: -12 }] },
+  calorieTableRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 3 },
+  tableLabel: { flex: 1, minWidth: 0, textAlign: 'right', fontSize: 13.2, fontWeight: '600', includeFontPadding: false },
+  tableValue: { width: 80, includeFontPadding: false, textAlign: 'right', fontSize: 22, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  tableUnit: { width: 25, fontSize: 11, fontWeight: '600', includeFontPadding: false },
+  estimatedLabeledRow: {
+    maxWidth: 174,
   },
   splitLabeledRow: {
     flexDirection: 'row',
@@ -398,6 +449,10 @@ const styles = StyleSheet.create({
     fontSize: 27,
     fontWeight: '800',
     lineHeight: 30,
+  },
+  estimatedIntakeValue: {
+    fontSize: 22,
+    lineHeight: 25,
   },
   splitKcalUnit: {
     fontSize: 11,
@@ -444,7 +499,7 @@ const styles = StyleSheet.create({
     color: '#F87171',
   },
   macros: {
-    height: 127,
+    height: 92,
     marginTop: 0,
     width: '100%',
     flexDirection: 'row',
@@ -464,6 +519,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   macroLabel: {
-    fontSize: 17,
+    fontSize: 17.95,
   },
 });
