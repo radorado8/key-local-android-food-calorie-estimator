@@ -1,3 +1,4 @@
+import LocalModelSettings from './LocalModelSettings';
 import { typography } from '../theme/palette';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -61,6 +62,7 @@ export default function ApiKeySettings({ colors, children }) {
           </Pressable>
         ))}
       </View>
+      {aiProvider === 'local' ? <LocalModelSettings colors={colors} /> : <>
       <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>{t.aiPrivacyHint}</Text>
       <Text style={[styles.subtitle, label]}>{providerLabel} · {t.aiKeysTitle}</Text>
       {!index && !busy && <Pressable onPress={() => run(listApiKeys)} style={[styles.button, button]}><Text style={label}>{t.aiReloadKeys}</Text></Pressable>}
@@ -88,11 +90,12 @@ export default function ApiKeySettings({ colors, children }) {
       </Pressable>
       <Text style={{ color: colors.muted, fontSize: 12 }}>{t.aiKeysHint}</Text>
       {children}
+      </>}
       {aiProvider === 'claude' && <>
         <Text style={[styles.subtitle, label]}>{t.aiVoiceTitle}</Text>
         <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>{t.aiVoiceHint}</Text>
         <View style={styles.row}>
-          {[{ id: 'none', label: t.aiVoiceOff }, ...AI_PROVIDERS.filter(item => item.id !== 'claude')].map(provider => (
+          {[{ id: 'none', label: t.aiVoiceOff }, ...AI_PROVIDERS.filter(item => ['gemini', 'openai'].includes(item.id))].map(provider => (
             <Pressable key={provider.id} accessibilityRole="radio" accessibilityState={{ selected: claudeVoiceProvider === provider.id }}
               onPress={() => setClaudeVoiceProvider(provider.id)} style={[styles.provider, button, claudeVoiceProvider === provider.id && { borderColor: colors.accent }]}>
               <Text style={{ color: claudeVoiceProvider === provider.id ? colors.accent : colors.text }}>{provider.label}</Text>

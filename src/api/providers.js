@@ -71,6 +71,7 @@ export async function analyzeWithProvider(payload) {
   const provider = payload.aiProvider || 'gemini';
   if (!isAIProvider(provider)) throw new Error('Invalid AI provider');
   checkAbort(payload.signal);
+  if (provider === 'local') return require('./localModel').analyzeLocally(payload);
   const key = await requireKey(provider);
   const model = payload.aiModel || DEFAULT_MODELS[provider];
   if (provider === 'gemini') {

@@ -1,5 +1,10 @@
 export const aiTranslations = {
   "sk": {
+    "localModelMissing": "Importuj model GGUF v Nastaveniach → Local AI.",
+    "localProjectorMissing": "Na fotografie importuj aj zodpovedajúci obrazový projektor mmproj.",
+    "localVoiceUnavailable": "Lokálny model zatiaľ nepodporuje hlas. Použi text alebo fotografiu.",
+    "localModelBusy": "Počkaj na dokončenie aktuálnej operácie s lokálnym modelom.",
+    "localVisionUnavailable": "Model a projektor nepovolili analýzu obrázkov. Over, či patria k sebe.",
     "aiProviderTitle": "Poskytovateľ AI",
     "aiKeysTitle": "API kľúče",
     "aiNoKeys": "Zatiaľ nemáš uložený žiadny kľúč.",
@@ -29,6 +34,12 @@ export const aiTranslations = {
     "aiModelExists": "Model s týmto ID už existuje."
   },
   "en": {
+    "localModelMissing": "Import a GGUF model in Settings → Local AI.",
+    "localProjectorMissing": "Import the matching mmproj image projector for photos.",
+    "localVoiceUnavailable": "The local model does not support voice yet. Use text or a photo.",
+    "localModelBusy": "Wait for the current local model operation to finish.",
+    "localVisionUnavailable": "The model and projector could not enable image analysis. Check that they match.",
+
     "aiProviderTitle": "AI provider",
     "aiKeysTitle": "API keys",
     "aiNoKeys": "No saved keys yet.",
@@ -58,6 +69,12 @@ export const aiTranslations = {
     "aiModelExists": "A model with this ID already exists."
   },
   "cs": {
+    "localModelMissing": "Importuj model GGUF v Nastavení → Local AI.",
+    "localProjectorMissing": "Pro fotografie importuj odpovídající obrazový projektor mmproj.",
+    "localVoiceUnavailable": "Lokální model zatím nepodporuje hlas. Použij text nebo fotografii.",
+    "localModelBusy": "Počkej na dokončení aktuální operace s lokálním modelem.",
+    "localVisionUnavailable": "Model a projektor neumožnily analýzu obrázků. Ověř, že patří k sobě.",
+
     "aiProviderTitle": "Poskytovatel AI",
     "aiKeysTitle": "API klíče",
     "aiNoKeys": "Zatím nemáš uložený žádný klíč.",
@@ -87,6 +104,12 @@ export const aiTranslations = {
     "aiModelExists": "Model s tímto ID už existuje."
   },
   "de": {
+    "localModelMissing": "Importiere ein GGUF-Modell unter Einstellungen → Local AI.",
+    "localProjectorMissing": "Importiere den passenden mmproj-Bildprojektor für Fotos.",
+    "localVoiceUnavailable": "Das lokale Modell unterstützt noch keine Spracheingabe. Verwende Text oder ein Foto.",
+    "localModelBusy": "Warte, bis der aktuelle Modellvorgang abgeschlossen ist.",
+    "localVisionUnavailable": "Modell und Projektor konnten die Bildanalyse nicht aktivieren. Prüfe, ob sie zusammenpassen.",
+
     "aiProviderTitle": "KI-Anbieter",
     "aiKeysTitle": "API-Schlüssel",
     "aiNoKeys": "Noch keine Schlüssel gespeichert.",
@@ -116,6 +139,12 @@ export const aiTranslations = {
     "aiModelExists": "Ein Modell mit dieser ID existiert bereits."
   },
   "es": {
+    "localModelMissing": "Importa un modelo GGUF en Ajustes → Local AI.",
+    "localProjectorMissing": "Importa el proyector mmproj correspondiente para las fotos.",
+    "localVoiceUnavailable": "El modelo local aún no admite voz. Usa texto o una foto.",
+    "localModelBusy": "Espera a que termine la operación del modelo local.",
+    "localVisionUnavailable": "El modelo y el proyector no pudieron activar el análisis de imágenes. Comprueba que sean compatibles.",
+
     "aiProviderTitle": "Proveedor de IA",
     "aiKeysTitle": "Claves API",
     "aiNoKeys": "Aún no hay claves guardadas.",
@@ -145,6 +174,12 @@ export const aiTranslations = {
     "aiModelExists": "Ya existe un modelo con este ID."
   },
   "fr": {
+    "localModelMissing": "Importez un modèle GGUF dans Paramètres → Local AI.",
+    "localProjectorMissing": "Importez le projecteur mmproj correspondant pour les photos.",
+    "localVoiceUnavailable": "Le modèle local ne prend pas encore en charge la voix. Utilisez du texte ou une photo.",
+    "localModelBusy": "Attendez la fin de l’opération du modèle local.",
+    "localVisionUnavailable": "Le modèle et le projecteur n’ont pas pu activer l’analyse des images. Vérifiez leur compatibilité.",
+
     "aiProviderTitle": "Fournisseur IA",
     "aiKeysTitle": "Clés API",
     "aiNoKeys": "Aucune clé enregistrée.",
@@ -174,6 +209,12 @@ export const aiTranslations = {
     "aiModelExists": "Un modèle avec cet ID existe déjà."
   },
   "it": {
+    "localModelMissing": "Importa un modello GGUF in Impostazioni → Local AI.",
+    "localProjectorMissing": "Importa il proiettore mmproj corrispondente per le foto.",
+    "localVoiceUnavailable": "Il modello locale non supporta ancora la voce. Usa testo o una foto.",
+    "localModelBusy": "Attendi il completamento dell’operazione del modello locale.",
+    "localVisionUnavailable": "Il modello e il proiettore non hanno attivato l’analisi delle immagini. Verifica che siano compatibili.",
+
     "aiProviderTitle": "Fornitore IA",
     "aiKeysTitle": "Chiavi API",
     "aiNoKeys": "Nessuna chiave salvata.",
@@ -203,6 +244,12 @@ export const aiTranslations = {
     "aiModelExists": "Esiste già un modello con questo ID."
   },
   "pl": {
+    "localModelMissing": "Zaimportuj model GGUF w Ustawieniach → Local AI.",
+    "localProjectorMissing": "Do zdjęć zaimportuj odpowiedni projektor mmproj.",
+    "localVoiceUnavailable": "Model lokalny nie obsługuje jeszcze głosu. Użyj tekstu lub zdjęcia.",
+    "localModelBusy": "Poczekaj na zakończenie operacji modelu lokalnego.",
+    "localVisionUnavailable": "Model i projektor nie włączyły analizy obrazów. Sprawdź ich zgodność.",
+
     "aiProviderTitle": "Dostawca AI",
     "aiKeysTitle": "Klucze API",
     "aiNoKeys": "Brak zapisanych kluczy.",

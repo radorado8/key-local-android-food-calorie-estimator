@@ -15,6 +15,14 @@ export function getFriendlyError(err, t) {
   const msg = err?.message || 'Unknown error';
   const getText = (key, fallback) => t?.[key] || fallback;
   const provider = AI_PROVIDERS.find(item => item.id === err?.provider)?.label || 'AI';
+  const localErrors = {
+    local_model_missing: ['localModelMissing', 'Import a GGUF model in Settings → Local AI.'],
+    local_projector_missing: ['localProjectorMissing', 'Import the matching image projector (mmproj) in Settings → Local AI.'],
+    local_voice_unavailable: ['localVoiceUnavailable', 'This local model does not support voice yet. Use text or a photo.'],
+    local_model_busy: ['localModelBusy', 'Wait for the current local model operation to finish.'],
+    local_vision_unavailable: ['localVisionUnavailable', 'The model and projector could not enable image analysis. Check that they are a matching pair.'],
+  };
+  if (localErrors[msg]) return { title: 'Local AI', message: getText(...localErrors[msg]) };
   if (msg === 'missing_api_key') return { title: getText('errorTitle', 'Error'), message: provider + ': ' + getText('aiMissingKey', 'Add and select an API key in Settings.') };
   if (msg === 'claude_voice_setup') return { title: 'Claude', message: getText('aiVoiceHint', 'Select Gemini or OpenAI for voice transcription in Settings.') };
   if (msg === 'invalid_api_key') return { title: getText('errorTitle', 'Error'), message: getText('aiInvalidKey', 'Enter an API key without spaces.') };

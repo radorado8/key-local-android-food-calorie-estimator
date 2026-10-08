@@ -3,7 +3,7 @@
     "name": "Calories AI Local",
     "slug": "android-food-calorie-estimator",
     "scheme": "keylocalfoodestimator",
-    "version": "1.0.40",
+    "version": "1.0.41",
     "orientation": "default",
     "icon": "./assets/icon_key_fire_android.png",
     "userInterfaceStyle": "automatic",
@@ -26,7 +26,7 @@
     },
     "android": {
       "package": "com.rados.keylocalandroidfoodcalorieestimator",
-      "versionCode": 218,
+      "versionCode": 219,
       "permissions": [
         "android.permission.health.READ_TOTAL_CALORIES_BURNED",
         "android.permission.health.READ_ACTIVE_CALORIES_BURNED"
@@ -56,7 +56,7 @@
               "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g",
               "android.r8.optimizedResourceShrinking": "true"
             },
-            "extraProguardRules": "-keep class expo.modules.** { *; }"
+            "extraProguardRules": "-keep class expo.modules.** { *; }\n-keep class com.rnllama.** { *; }"
           },
           "ios": {
             "deploymentTarget": "15.1",
@@ -110,7 +110,15 @@
           }
         }
       ],
-      "./plugins/withIosFmtCompatibility"
+      "./plugins/withIosFmtCompatibility",
+      [
+        "llama.rn",
+        {
+          "enableEntitlements": false,
+          "enableOpenCLAndHexagon": false
+        }
+      ],
+      "./plugins/withLocalModelRuntime"
     ],
     "extra": {
       "allowedEmails": [],

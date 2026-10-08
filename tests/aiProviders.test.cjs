@@ -148,6 +148,7 @@ const response = (provider, result = food) => provider === 'openai'
 function apiClient(replies, options = {}) {
   const calls = [], keyRequests = [];
   const load = loader({
+    './localModel': { analyzeLocally: async () => { throw new Error('Unexpected local inference'); } },
     'react-native': { Platform: { OS: 'android' } },
     '../utils/apiKeys': { getActiveApiKey: async provider => { keyRequests.push(provider); return options.missing === provider ? null : provider + '-test-secret'; } },
   }, {
@@ -293,6 +294,7 @@ test('settings migration preserves the Gemini model and remembers a separate mod
     const states = [], dependencies = [], effects = [];
     let stateCursor = 0, effectCursor = 0;
     const react = {
+      useRef: value => ({ current: value }),
       createContext: () => ({ Provider: 'Provider' }),
       createElement: (_, props) => props.value,
       useState: initial => { const i = stateCursor++; if (!(i in states)) states[i] = initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; },
@@ -304,7 +306,8 @@ test('settings migration preserves the Gemini model and remembers a separate mod
     };
     const { SettingsProvider } = loader({
       react,
-      'react-native': { useColorScheme: () => 'light' },
+      '../api/healthConnect': { getHistoricalBurnedCalories: async () => [], getCalorieExpenditure: async () => ({}) },
+      'react-native': { Platform: { OS: 'android' }, AppState: { addEventListener: () => ({ remove() {} }) }, useColorScheme: () => 'light' },
       'expo-localization': { getLocales: () => [{ languageCode: 'sk' }] },
       '@react-native-async-storage/async-storage': { getItem: async () => persisted, setItem: async (_, value) => { persisted = value; } },
     })('src/state/SettingsContext.js');

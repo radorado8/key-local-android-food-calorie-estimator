@@ -1,6 +1,6 @@
 {
   "name": "android-food-calorie-estimator",
-  "version": "1.0.40",
+  "version": "1.0.41",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
@@ -34,6 +34,7 @@
     "expo-sharing": "~14.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
+    "llama.rn": "0.13.0-rc.7",
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-health-connect": "^4.0.0",
