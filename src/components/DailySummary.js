@@ -355,13 +355,13 @@ function CalorieRow({ label, value, color, colors, secondary = false, emphasized
   const rowHeight = (emphasized ? 28 : secondary ? 18 : 24) * scale;
   const valueSize = (emphasized ? 26.4 : secondary ? 16.5 : 22) * scale;
   return <View style={[styles.calorieTableRow, { height: rowHeight, gap: 3 * scale }]}>
-    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1}
+    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} allowFontScaling={false}
       style={[styles.tableLabel, { color: colors.muted, fontSize: 13.2 * scale, lineHeight: 17 * scale }]}>{label}</Text>
-    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1}
+    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} allowFontScaling={false}
       style={[styles.tableValue, { width: 80 * scale, color, fontSize: valueSize, lineHeight: rowHeight, fontWeight: secondary ? '600' : '800' }]}>
       {Number.isFinite(Number(value)) && value != null ? Math.round(Number(value)).toLocaleString() : '—'}
     </Text>
-    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={1}
+    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}
       style={[styles.tableUnit, { width: 25 * scale, color, fontSize: 11 * scale, lineHeight: 15 * scale, marginBottom: 2 * scale }]}>kcal</Text>
   </View>;
 }
