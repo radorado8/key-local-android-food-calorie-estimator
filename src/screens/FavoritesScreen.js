@@ -1,3 +1,4 @@
+import useFoodSearchInput from '../hooks/useFoodSearchInput';
 import { useFocusEffect } from '@react-navigation/native';
 import { typography } from '../theme/palette';
 import React, { useDeferredValue, useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -58,6 +59,10 @@ export default function FavoritesScreen({ route, navigation }) {
     const [searchQuery, setSearchQuery] = useState('');
     const searchInputRef = useRef(null);
     const deferredSearchQuery = useDeferredValue(searchQuery);
+    const { selectAll: selectSearchText, blurInput: blurSearchInput } = useFoodSearchInput({
+        navigation, inputRef: searchInputRef, query: searchQuery,
+        setQuery: setSearchQuery, setSearching: setIsSearching,
+    });
     useFocusEffect(useCallback(() => {
         if (!route.params?.openSearch) return;
         setSearchQuery('');
@@ -155,6 +160,7 @@ export default function FavoritesScreen({ route, navigation }) {
     }, []);
 
     const handleAddToLog = async (item) => {
+        blurSearchInput();
         try {
             await createMeal({
                 name: item.name,
@@ -174,6 +180,7 @@ export default function FavoritesScreen({ route, navigation }) {
     };
 
     const handleAddToLogWithWeight = async (item, newWeightG) => {
+        blurSearchInput();
         try {
             const origWeight = Number(item.weight_g);
             const hasOrigWeight = origWeight > 0;
@@ -323,6 +330,8 @@ export default function FavoritesScreen({ route, navigation }) {
                     <TextInput
                         ref={searchInputRef}
                         selectTextOnFocus
+            onFocus={selectSearchText}
+            onPressIn={selectSearchText}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         placeholder={t.searchFavoritesPlaceholder}

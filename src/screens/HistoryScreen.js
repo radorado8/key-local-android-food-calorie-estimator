@@ -1,3 +1,4 @@
+import useFoodSearchInput from '../hooks/useFoodSearchInput';
 import { typography } from '../theme/palette';
 import React, { useDeferredValue, useEffect, useMemo, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
@@ -118,6 +119,10 @@ export default function HistoryScreen({ route, navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = React.useRef(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
+    const { selectAll: selectSearchText, blurInput: blurSearchInput } = useFoodSearchInput({
+        navigation, inputRef: searchInputRef, query: searchQuery,
+        setQuery: setSearchQuery, setSearching: setIsSearching,
+    });
     useFocusEffect(useCallback(() => {
         if (!route.params?.openSearch) return;
         setSearchQuery('');
@@ -312,6 +317,7 @@ export default function HistoryScreen({ route, navigation }) {
   };
 
   const repeatMealInLog = async (item, weightG = null) => {
+    blurSearchInput();
     try {
       const originalWeight = Number(item.weight_g);
       const shouldScale = Number(weightG) > 0 && originalWeight > 0;
@@ -357,6 +363,8 @@ export default function HistoryScreen({ route, navigation }) {
           <TextInput
             ref={searchInputRef}
             selectTextOnFocus
+            onFocus={selectSearchText}
+            onPressIn={selectSearchText}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder={t.searchHistoryPlaceholder}
