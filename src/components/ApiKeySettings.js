@@ -126,7 +126,7 @@ export default function ApiKeySettings({ colors, children }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 12, marginBottom: 16 },
+  card: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 12 },
   title: { ...typography.sectionTitle,  }, subtitle: { fontSize: 15, fontWeight: '700', marginTop: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   provider: { flex: 1, minHeight: 44, borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center', padding: 6 },

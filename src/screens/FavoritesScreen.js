@@ -350,7 +350,7 @@ export default function FavoritesScreen({ route, navigation }) {
                         <Ionicons name="chevron-down" size={17} color={colors.muted} style={{ flexShrink: 0 }} />
                     </Pressable>
                 )}
-                <AddFoodButton colors={colors} t={t} onManual={() => setAddOpen(true)}
+                <AddFoodButton screen="favorites" colors={colors} t={t} onManual={() => setAddOpen(true)}
                     onCamera={() => setCameraContext({ timestamp: Date.now(), returnScreen: 'Favorites', saveDestination: 'favorites', favoriteListId: activeList?.id || 'default' })} />
             </View>
 

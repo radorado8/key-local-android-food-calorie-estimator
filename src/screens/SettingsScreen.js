@@ -1091,11 +1091,9 @@ export default function SettingsScreen() {
           colors={colors}
         />
 
-        <View style={{ flex: 1 }} />
-
         {/* 6. Data Management */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.label, { color: colors.text }]}>{t.dataManagementTitle}</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, gap: 12 }]}>
+          <Text style={[styles.label, { color: colors.text, marginBottom: 0 }]}>{t.dataManagementTitle}</Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Pressable
               style={({ pressed }) => [
@@ -1284,7 +1282,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 12,
-    gap: 12,
+    gap: 16,
     paddingBottom: 40,
   },
   headerBlock: {
@@ -1311,6 +1309,7 @@ const styles = StyleSheet.create({
   hint: {
     color: 'rgba(255,255,255,0.6)',
     fontSize: 14,
+    lineHeight: 20,
   },
   row: {
     flexDirection: 'row',
@@ -1342,7 +1341,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   dropdownTrigger: {
-    marginTop: 10,
+    marginTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1408,7 +1407,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
-    marginTop: 4,
+    marginTop: 0,
   },
   pressed: {
     transform: [{ translateY: 1 }, { scale: 0.98 }],

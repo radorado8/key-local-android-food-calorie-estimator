@@ -25,7 +25,7 @@ export default function ExpenditureSettings({ colors }) {
   return <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
     <Text style={[styles.title, { color: colors.text }]}>{t.caloriesEstimatedLabel}</Text>
     <Text style={[styles.hint, { color: colors.muted }]}>{garminMode ? t.garminEstimateHint : t.expenditureEstimateHint}</Text>
-    {['android', 'ios'].includes(Platform.OS) && <View style={styles.row}>
+    {['android', 'ios'].includes(Platform.OS) && <View style={[styles.row, { marginBottom: 12 }]}>
       <Text style={[styles.label, { flex: 1, color: colors.text }]}>{t.garminModeTitle}</Text>
       <Switch accessibilityLabel={t.garminModeTitle} value={garminModeEnabled} onValueChange={setGarminModeEnabled}
         trackColor={{ true: colors.accent, false: colors.border }} />
@@ -116,7 +116,7 @@ export function RestingProfileDialog({ colors, onClose }) {
 }
 
 const styles = StyleSheet.create({
-  card: { padding: 16, borderRadius: 18, borderWidth: 1, marginBottom: 16 },
+  card: { padding: 16, borderRadius: 18, borderWidth: 1 },
   title: { fontSize: 17, fontWeight: '700', marginBottom: 8 },
   label: { fontSize: 14, fontWeight: '700' },
   hint: { fontSize: 12, lineHeight: 18, marginTop: 4, marginBottom: 8 },

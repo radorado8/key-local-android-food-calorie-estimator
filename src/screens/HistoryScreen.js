@@ -380,7 +380,7 @@ export default function HistoryScreen({ route, navigation }) {
         ) : (
           <Text style={[styles.headerTitle, { color: colors.text }]}>{t.historyTitle}</Text>
         )}
-        <AddFoodButton colors={colors} t={t} onManual={() => setAddOpen(true)}
+        <AddFoodButton screen="history" colors={colors} t={t} onManual={() => setAddOpen(true)}
           onCamera={() => setCameraContext({ timestamp: Date.now(), returnScreen: 'History', saveDestination: 'diary' })} />
       </View>
 
