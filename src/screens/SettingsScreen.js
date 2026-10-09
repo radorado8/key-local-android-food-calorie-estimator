@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { DEFAULT_MODELS, PROVIDER_MODELS, modelProvider } from '../config/aiProviders';
+import { reasoningLevels } from '../config/reasoning';
 import ApiKeySettings from '../components/ApiKeySettings';
 
 import { useSettings } from '../state/SettingsContext';
@@ -126,7 +127,7 @@ async function readJsonLines(fileUri, onRecord) {
   }
 }
 
-const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
+const Dropdown = ({ label, value, options, onSelect, hint, colors, disabled = false }) => {
   const t = useTranslation();
   const [visible, setVisible] = useState(false);
   const selectedOption = options.find((opt) => opt.id === value);
@@ -142,6 +143,8 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
           { backgroundColor: colors.elemBg, borderColor: colors.elemBorder },
           pressed && styles.dropdownTriggerPressed,
         ]}
+        disabled={disabled}
+        accessibilityState={{ disabled }}
         onPress={() => setVisible(true)}
       >
         <Text style={[styles.dropdownValue, { color: colors.text }]}>
@@ -200,7 +203,7 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors }) => {
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { showCalorieFatEquivalent, setShowCalorieFatEquivalent, showLatestMeal, setShowLatestMeal, dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled, burnedCalories, refreshBurnedCalories } = useSettings();
+  const { showCalorieFatEquivalent, setShowCalorieFatEquivalent, showLatestMeal, setShowLatestMeal, dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, reasoningLevel, setReasoningLevel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled, burnedCalories, refreshBurnedCalories } = useSettings();
 
   const { colors } = useSettings();
 
@@ -869,6 +872,15 @@ export default function SettingsScreen() {
           value={aiModel}
           options={allowedModels}
           onSelect={setAiModel}
+          colors={colors}
+        />
+        <Dropdown
+          disabled={reasoningLevels(aiProvider, aiModel).length === 1}
+          label={t.aiReasoningTitle}
+          hint={reasoningLevels(aiProvider, aiModel).length === 1 ? t.aiReasoningUnsupported : t.aiReasoningHint}
+          value={reasoningLevel}
+          options={reasoningLevels(aiProvider, aiModel).map(id => ({ id, label: t['aiReasoning_' + id] }))}
+          onSelect={setReasoningLevel}
           colors={colors}
         />
         {/* Manage Custom Models */}

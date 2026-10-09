@@ -1,3 +1,5 @@
+import { analysisPhotos, photoInstructions } from './photoInput';
+import { reasoningConfig } from '../config/reasoning';
 import { getActiveApiKey } from '../utils/apiKeys';
 import { PROMPTS } from '../config/prompts';
 import { DEFAULT_PUBLIC_MODEL_ID } from '../config/aiModels';
@@ -10,7 +12,7 @@ function apiError(status) {
     return error;
 }
 
-export async function analyzeImage({ base64Data, mimeType, weightG, language = 'en', aiModel, signal, apiKey: suppliedKey }) {
+export async function analyzeImage({ base64Data, mimeType, images, text, weightG, language = 'en', aiModel, reasoningLevel, signal, apiKey: suppliedKey }) {
     const apiKey = suppliedKey || await getActiveApiKey('gemini');
     if (!apiKey) {
         throw new Error('Chýba API kľúč. Nastav ho v nastaveniach.');
@@ -27,7 +29,8 @@ export async function analyzeImage({ base64Data, mimeType, weightG, language = '
         ? prompts.weightKnown(weightG)
         : prompts.weightUnknown;
 
-    const textPrompt = prompts.instruction(weightInstruction);
+    const photos = analysisPhotos({ images, base64Data, mimeType });
+    const textPrompt = prompts.instruction(weightInstruction) + "\n" + photoInstructions(text);
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent`;
 
@@ -36,19 +39,15 @@ export async function analyzeImage({ base64Data, mimeType, weightG, language = '
             {
                 parts: [
                     { text: textPrompt },
-                    {
-                        inline_data: {
-                            mime_type: mimeType || 'image/jpeg',
-                            data: base64Data
-                        }
-                    }
+                    ...photos.map(photo => ({ inline_data: { mime_type: photo.mimeType || 'image/jpeg', data: photo.base64Data } }))
                 ]
             }
         ],
         generationConfig: {
             temperature: 0.2, // Low temperature for factual JSON
             maxOutputTokens: 1000,
-            responseMimeType: "application/json" // Enforce JSON mode
+            responseMimeType: "application/json",
+            ...reasoningConfig('gemini', modelId, reasoningLevel)
         }
     };
 
@@ -129,7 +128,7 @@ const OUTPUT_LANGUAGES = {
 };
 
 /** Analyze a transcribed or typed food description, without an image. */
-export async function analyzeFoodDescription({ text, language = 'en', aiModel, signal, apiKey: suppliedKey }) {
+export async function analyzeFoodDescription({ text, language = 'en', aiModel, reasoningLevel, signal, apiKey: suppliedKey }) {
     const apiKey = suppliedKey || await getActiveApiKey('gemini');
     if (!apiKey) throw new Error('Chýba API kľúč. Nastav ho v nastaveniach.');
 
@@ -159,7 +158,7 @@ Return ONLY a raw JSON string, nothing else. If it is not food, return {"error":
             headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
             body: JSON.stringify({
                 contents: [{ parts }],
-                generationConfig: { temperature: 0.2, maxOutputTokens: 1000, responseMimeType: 'application/json' }
+                generationConfig: { temperature: 0.2, maxOutputTokens: 1000, responseMimeType: 'application/json', ...reasoningConfig('gemini', modelId, reasoningLevel) }
             }),
             signal
         }

@@ -296,6 +296,7 @@ test('settings migration preserves the Gemini model and remembers a separate mod
       createContext: () => ({ Provider: 'Provider' }),
       createElement: (_, props) => props.value,
       useState: initial => { const i = stateCursor++; if (!(i in states)) states[i] = initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; },
+      useRef: initial => ({ current: initial }),
       useMemo: fn => fn(),
       useEffect: (fn, deps) => {
         const i = effectCursor++;
@@ -304,7 +305,8 @@ test('settings migration preserves the Gemini model and remembers a separate mod
     };
     const { SettingsProvider } = loader({
       react,
-      'react-native': { useColorScheme: () => 'light' },
+      'react-native': { Platform: { OS: 'web' }, AppState: { addEventListener: () => ({ remove() {} }) }, useColorScheme: () => 'light' },
+      '../api/healthConnect': { getHistoricalBurnedCalories: async () => ({}), getCalorieExpenditure: async () => ({}) },
       'expo-localization': { getLocales: () => [{ languageCode: 'sk' }] },
       '@react-native-async-storage/async-storage': { getItem: async () => persisted, setItem: async (_, value) => { persisted = value; } },
     })('src/state/SettingsContext.js');
@@ -325,7 +327,14 @@ test('settings migration preserves the Gemini model and remembers a separate mod
   app.value.setAiProvider('openai');
   let value = await app.render();
   assert.equal(value.aiModel, 'gpt-4.1-mini');
+  value.setAiModel('gpt-6-luna');
+  value = await app.render();
+  value.setReasoningLevel('low');
+  value = await app.render();
+  assert.equal(value.reasoningLevel, 'low');
   value.setAiModel('gpt-4.1');
+  value = await app.render();
+  assert.equal(value.reasoningLevel, 'default');
   value = await app.render();
   value.setAiProvider('claude');
   value = await app.render();
@@ -344,5 +353,75 @@ test('settings migration preserves the Gemini model and remembers a separate mod
   value.setAiProvider('openai');
   value = await restarted.render();
   assert.equal(value.aiModel, 'gpt-4.1');
+  value.setAiModel('gpt-6-luna');
+  value = await restarted.render();
+  assert.equal(value.reasoningLevel, 'low');
   assert.equal(value.dailyGoal, 2500);
+});
+
+test('reasoning defaults and unknown custom models never send thinking parameters', async () => {
+  for (const [provider, model] of [['openai', 'gpt-6-luna'], ['gemini', 'gemini-3-flash-preview'], ['claude', 'claude-sonnet-4-6'], ['openai', 'unknown-model'], ['gemini', 'gemini-3-future'], ['claude', 'claude-haiku-future']]) {
+    const client = apiClient([response(provider)]);
+    await client.analyze({ aiProvider: provider, aiModel: model, reasoningLevel: model.includes('future') || model === 'unknown-model' ? 'high' : 'default', text: '100 g apple' });
+    const body = client.calls[0].body;
+    assert.equal(body.reasoning, undefined);
+    assert.equal(body.thinking, undefined);
+    assert.equal(body.generationConfig?.thinkingConfig, undefined);
+  }
+});
+
+test('reasoning applies to text and photos using provider-specific supported settings', async () => {
+  for (const mode of ['text', 'image']) {
+    for (const [provider, model] of [['openai', 'gpt-6-luna'], ['openai', 'gpt-6.1-sol'], ['gemini', 'gemini-3-flash-preview'], ['claude', 'claude-sonnet-4-6'], ['claude', 'claude-haiku-4-5']]) {
+      const client = apiClient([response(provider)]);
+      await client.analyze({ aiProvider: provider, aiModel: model, reasoningLevel: 'high', ...(mode === 'text' ? { text: 'apple' } : { base64Data: 'IMAGE' }) });
+      const body = client.calls[0].body;
+      if (provider === 'openai') assert.equal(body.reasoning.effort, 'high');
+      if (provider === 'gemini') assert.equal(body.generationConfig.thinkingConfig.thinkingLevel, 'high');
+      if (model === 'claude-sonnet-4-6') { assert.equal(body.thinking.type, 'adaptive'); assert.equal(body.output_config.effort, 'high'); }
+      if (model === 'claude-haiku-4-5') { assert.equal(body.thinking.budget_tokens, 8192); assert.ok(body.max_tokens > 8192); assert.equal(body.tool_choice.type, 'auto'); }
+    }
+  }
+});
+
+test('model capability constraints reject unsupported effort and removed Gemini models', () => {
+  const load = loader();
+  const { reasoningLevels, reasoningConfig } = load('src/config/reasoning.js');
+  assert.ok(!reasoningLevels('openai', 'gpt-6.1-sol').includes('none'));
+  assert.equal(JSON.stringify(reasoningConfig('openai', 'gpt-6.1-sol', 'none')), '{}');
+  assert.equal(reasoningLevels('openai', 'gpt-4.1-mini').length, 1);
+  assert.equal(reasoningLevels('gemini', 'gemini-2.5-flash').length, 1);
+  assert.ok(load('src/config/aiModels.js').MODEL_CATALOG.every(m => !m.id.startsWith('gemini-2.5')));
+});
+
+test('Claude manual thinking accepts final JSON text while excluding thought blocks', async () => {
+  const client = apiClient([{ stop_reason: 'end_turn', content: [{ type: 'thinking', thinking: 'private reasoning' }, { type: 'text', text: JSON.stringify(food) }] }]);
+  assert.equal((await client.analyze({ aiProvider: 'claude', aiModel: 'claude-haiku-4-5', reasoningLevel: 'low', text: 'apple' })).calories, 52);
+});
+
+for (const provider of ['gemini', 'openai', 'claude']) {
+  test(`${provider}: four complementary photos and description produce one analysis`, async () => {
+    const client = apiClient([response(provider)]);
+    const images = Array.from({ length: 4 }, (_, i) => ({ base64Data: `PHOTO${i}`, mimeType: 'image/jpeg' }));
+    await client.analyze({ aiProvider: provider, images, text: 'I ate half the package', weightG: 150, language: 'sk' });
+    assert.equal(client.calls.length, 1);
+    const body = client.calls[0].body;
+    const parts = provider === 'gemini' ? body.contents[0].parts : provider === 'openai' ? body.input[0].content : body.messages[0].content;
+    const photos = parts.filter(part => part.inline_data || part.type === 'image' || part.type === 'input_image');
+    assert.equal(photos.length, 4);
+    const prompt = parts.find(part => part.type === 'text' || part.type === 'input_text' || part.text)?.text;
+    assert.match(prompt, /half the package/);
+    assert.match(prompt, /must not be counted as multiple portions/);
+    assert.match(prompt, /150/);
+    for (let i = 0; i < 4; i++) assert.ok(JSON.stringify(photos[i]).includes(`PHOTO${i}`));
+  });
+}
+
+test('photo count and invalid photo validation happens before retrieving keys or sending requests', async () => {
+  const client = apiClient([]);
+  for (const images of [Array.from({ length: 5 }, () => ({ base64Data: 'PHOTO' })), [{ mimeType: 'image/jpeg' }], 'invalid']) {
+    await assert.rejects(client.analyze({ aiProvider: 'openai', images }), /invalid_analysis_photos/);
+  }
+  assert.equal(client.calls.length, 0);
+  assert.equal(client.keyRequests.length, 0);
 });

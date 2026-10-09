@@ -11,6 +11,8 @@ import { calculateRestingProfile, estimateGarminExpenditure, estimateDailyExpend
 import { burnedHistoryDates, sanitizeBurnedHistory } from '../utils/burnedHistory';
 import { getHistoricalBurnedCalories, getCalorieExpenditure } from '../api/healthConnect';
 
+import { normalizeReasoning } from '../config/reasoning';
+
 const STORAGE_KEY = 'settings.v1';
 
 const SettingsContext = createContext(null);
@@ -23,6 +25,7 @@ export function SettingsProvider({ children }) {
   const [aiModel, setAiModel] = useState(DEFAULT_PUBLIC_MODEL_ID);
   const [aiProvider, setAiProvider] = useState('gemini');
   const [providerModels, setProviderModels] = useState({});
+  const [modelReasoning, setModelReasoning] = useState({});
   const [claudeVoiceProvider, setClaudeVoiceProvider] = useState('none');
 
   const systemLang = Localization.getLocales()[0]?.languageCode;
@@ -94,6 +97,7 @@ export function SettingsProvider({ children }) {
           if (typeof parsed?.aiModel === 'string') {
             setAiModel(parsed.aiModel === 'gemini-flash-latest' ? DEFAULT_PUBLIC_MODEL_ID : parsed.aiModel);
           }
+          if (parsed?.modelReasoning && typeof parsed.modelReasoning === 'object' && !Array.isArray(parsed.modelReasoning)) setModelReasoning(parsed.modelReasoning);
           if (isAIProvider(parsed?.aiProvider)) setAiProvider(parsed.aiProvider);
           if (parsed?.providerModels && typeof parsed.providerModels === 'object') {
             setProviderModels(Object.fromEntries(Object.entries(parsed.providerModels).filter(([id, model]) => isAIProvider(id) && typeof model === 'string' && model.trim())));
@@ -139,9 +143,9 @@ export function SettingsProvider({ children }) {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ burnedCaloriesHistory, aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, expenditureEstimateEnabled, garminModeEnabled, garminRestingCalories, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, dailyEnergyReading })
+      JSON.stringify({ modelReasoning, burnedCaloriesHistory, aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, expenditureEstimateEnabled, garminModeEnabled, garminRestingCalories, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, dailyEnergyReading })
     ).catch(() => { });
-  }, [aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, expenditureEstimateEnabled, garminModeEnabled, garminRestingCalories, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, dailyEnergyReading, burnedCaloriesHistory, hydrated]);
+  }, [modelReasoning, aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, expenditureEstimateEnabled, garminModeEnabled, garminRestingCalories, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, dailyEnergyReading, burnedCaloriesHistory, hydrated]);
 
   useEffect(() => {
     if (!hydrated || !healthConnectEnabled) return;
@@ -215,6 +219,8 @@ export function SettingsProvider({ children }) {
       setAiProvider,
       claudeVoiceProvider,
       setClaudeVoiceProvider,
+      reasoningLevel: normalizeReasoning(aiProvider, aiProvider === 'gemini' ? aiModel : (providerModels[aiProvider] || DEFAULT_MODELS[aiProvider]), modelReasoning[`${aiProvider}:${aiProvider === 'gemini' ? aiModel : (providerModels[aiProvider] || DEFAULT_MODELS[aiProvider])}`]),
+      setReasoningLevel: level => setModelReasoning(previous => ({ ...previous, [`${aiProvider}:${aiProvider === 'gemini' ? aiModel : (providerModels[aiProvider] || DEFAULT_MODELS[aiProvider])}`]: level })),
       aiModel: aiProvider === 'gemini' ? aiModel : (providerModels[aiProvider] || DEFAULT_MODELS[aiProvider]),
       setAiModel: model => aiProvider === 'gemini' ? setAiModel(model) : setProviderModels(previous => ({ ...previous, [aiProvider]: model })),
       language,
@@ -268,7 +274,7 @@ export function SettingsProvider({ children }) {
       setGarminRestingCalories,
       refreshBurnedCalories,
     };
-  }, [aiProvider, providerModels, claudeVoiceProvider, hydrated, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, burnedCaloriesHistory, burnedCalories, estimatedBurnedCalories, expenditureEstimateEnabled, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, garminModeEnabled, garminRestingCalories, activeCalories, currentHealth.todayActiveCalories, activeCaloriesAvailable, restingBaseline.calories, restingBaseline.source, colorScheme]);
+  }, [modelReasoning, aiProvider, providerModels, claudeVoiceProvider, hydrated, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, burnedCaloriesHistory, burnedCalories, estimatedBurnedCalories, expenditureEstimateEnabled, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, garminModeEnabled, garminRestingCalories, activeCalories, currentHealth.todayActiveCalories, activeCaloriesAvailable, restingBaseline.calories, restingBaseline.source, colorScheme]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

@@ -1,3 +1,4 @@
+import { MAX_ANALYSIS_PHOTOS } from '../api/photoInput';
 import { dashboardButtonHeights, latestMealFitsInitially } from '../utils/dashboardLayout';
 import LatestMealBar from '../components/LatestMealBar';
 import { getLatestMeal } from '../utils/latestMeal';
@@ -5,6 +6,7 @@ import { typography } from '../theme/palette';
 import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   Alert,
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -76,7 +78,7 @@ async function prepareImageForAnalysis(asset) {
 
 export default function ScannerScreen({ navigation, route }) {
   const t = useTranslation();
-  const { dailyGoal, aiModel, aiProvider, claudeVoiceProvider, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds, burnedCalories, estimatedBurnedCalories, expenditureEstimateEnabled, healthConnectEnabled } = useSettings();
+  const { dailyGoal, aiModel, reasoningLevel, aiProvider, claudeVoiceProvider, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds, burnedCalories, estimatedBurnedCalories, expenditureEstimateEnabled, healthConnectEnabled } = useSettings();
   const insets = useSafeAreaInsets();
   const audioRecordingRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -158,6 +160,12 @@ export default function ScannerScreen({ navigation, route }) {
   const cameraRef = useRef(null);
   const analysisActiveRef = useRef(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [photoDraft, setPhotoDraft] = useState([]);
+  const [photoDescription, setPhotoDescription] = useState('');
+  const [showPhotoReview, setShowPhotoReview] = useState(false);
+  const [photoDraftWeight, setPhotoDraftWeight] = useState(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [cameraDraftMode, setCameraDraftMode] = useState(false);
   const [facing, setFacing] = useState('back');
   const [flash, setFlash] = useState('off');
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -248,8 +256,9 @@ export default function ScannerScreen({ navigation, route }) {
       try {
         const pendingResult = await ImagePicker.getPendingResultAsync();
         if (pendingResult && pendingResult.assets?.[0]) {
-          const asset = await prepareImageForAnalysis(pendingResult.assets[0]);
-          await analyzePickedImage(asset, null);
+          const photos = [];
+          for (const asset of pendingResult.assets.slice(0, MAX_ANALYSIS_PHOTOS)) photos.push(await prepareImageForAnalysis(asset));
+          setPhotoDraft(photos); setPhotoDescription(''); setPhotoDraftWeight(null); setShowPhotoReview(true);
         }
       } catch (err) {
         // Ignore - no pending result
@@ -416,6 +425,7 @@ export default function ScannerScreen({ navigation, route }) {
         audioMimeType: audio?.mimeType,
         language,
         aiModel,
+        reasoningLevel,
         signal: controller.signal,
       });
       if (currentAnalysisIdRef.current !== analysisId || !analysisActiveRef.current) return;
@@ -478,7 +488,7 @@ export default function ScannerScreen({ navigation, route }) {
   const currentAnalysisIdRef = useRef(null);
   const abortControllerRef = useRef(null); // Controller for network cancellation
 
-  const analyzePickedImage = async (asset, weightG) => {
+  const analyzePickedImage = async (asset, weightG, extraPhotos = [], description = '') => {
     if (!asset?.base64) {
       throw new Error('Chýba base64 obrázka (ImagePicker).');
     }
@@ -513,7 +523,10 @@ export default function ScannerScreen({ navigation, route }) {
           aiProvider,
           base64Data: asset.base64,
           mimeType,
+          images: [asset, ...extraPhotos].map(photo => ({ base64Data: photo.base64, mimeType: photo.mimeType || 'image/jpeg' })),
+          text: description,
           aiModel,
+        reasoningLevel,
           weightG,
           language,
           signal: controller.signal // Pass signal
@@ -563,7 +576,8 @@ export default function ScannerScreen({ navigation, route }) {
     }
   };
 
-  const pickFromGallery = async (weightG = null) => {
+  const pickFromGallery = async (weightG = null, append = false) => {
+    if (append && photoDraft.length >= MAX_ANALYSIS_PHOTOS) return;
     if (!checkLimit()) return;
     if (pickingRef.current) return;
 
@@ -578,13 +592,20 @@ export default function ScannerScreen({ navigation, route }) {
 
       const res = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: MAX_ANALYSIS_PHOTOS - (append ? photoDraft.length : 0),
         quality: 0.5,
         base64: false, // More stable to read manually
       });
 
       if (!res.canceled && res.assets?.[0]) {
-        const asset = await prepareImageForAnalysis(res.assets[0]);
-        await analyzePickedImage(asset, weightG);
+        const photos = [];
+        for (const asset of res.assets.slice(0, MAX_ANALYSIS_PHOTOS - (append ? photoDraft.length : 0))) {
+          photos.push(await prepareImageForAnalysis(asset));
+        }
+        setPhotoDraft(previous => append ? [...previous, ...photos].slice(0, MAX_ANALYSIS_PHOTOS) : photos);
+        if (!append) { setPhotoDescription(''); setPhotoDraftWeight(weightG); }
+        setShowPhotoReview(true);
       }
     } catch (err) {
       // Handle ActivityResultLauncher error (occurs after Android config changes)
@@ -606,7 +627,8 @@ export default function ScannerScreen({ navigation, route }) {
     }
   };
 
-  const takePhoto = async (weightG = null) => {
+  const takePhoto = async (weightG = null, append = false) => {
+    if (append && photoDraft.length >= MAX_ANALYSIS_PHOTOS) return;
     if (!checkLimit()) return;
     setWeightForCamera(weightG);
 
@@ -618,12 +640,16 @@ export default function ScannerScreen({ navigation, route }) {
       }
     }
 
+    if (!append) { setPhotoDraft([]); setPhotoDescription(''); setPhotoDraftWeight(weightG); }
+    setCameraDraftMode(append);
+    setShowPhotoReview(false);
+    if (append && Platform.OS === 'ios') await new Promise(resolve => setTimeout(resolve, 400));
     setShowCamera(true);
   };
 
 
 
-  const handleCapture = async () => {
+  const handleCapture = async (review = false) => {
     if (!cameraRef.current || pickingRef.current) return;
 
     try {
@@ -643,7 +669,13 @@ export default function ScannerScreen({ navigation, route }) {
       setShowCamera(false);
 
       const asset = await prepareImageForAnalysis(photo);
-      await analyzePickedImage(asset, weightForCamera);
+      if (review || cameraDraftMode) {
+        if (Platform.OS === 'ios') await new Promise(resolve => setTimeout(resolve, 400));
+        setPhotoDraft(previous => [...previous, asset].slice(0, MAX_ANALYSIS_PHOTOS));
+        setShowPhotoReview(true);
+      } else {
+        await analyzePickedImage(asset, weightForCamera);
+      }
 
     } catch (err) {
       console.error('Capture Error:', err);
@@ -961,7 +993,7 @@ export default function ScannerScreen({ navigation, route }) {
         visible={showCamera}
         animationType="slide"
         transparent={false}
-        onRequestClose={() => setShowCamera(false)}
+        onRequestClose={() => { setShowCamera(false); if (photoDraft.length) setShowPhotoReview(true); }}
       >
         <View style={styles.cameraOverlay}>
           <CameraView
@@ -976,17 +1008,21 @@ export default function ScannerScreen({ navigation, route }) {
                 { backgroundColor: 'black', opacity: shutterOpacity, pointerEvents: 'none', zIndex: 1 }
               ]}
             />
+            <Pressable onPress={() => handleCapture(true)} disabled={photoDraft.length >= 4}
+              style={{ position: 'absolute', bottom: 205, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.75)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 24 }}>
+              <Text style={{ color: 'white', fontWeight: '700', fontSize: 16 }}>{t.photoMultipleButton}</Text>
+            </Pressable>
             <View style={styles.cameraControls}>
               <Pressable
                 style={styles.camBtnSecondary}
-                onPress={() => setShowCamera(false)}
+                onPress={() => { setShowCamera(false); if (photoDraft.length) setShowPhotoReview(true); }}
               >
                 <Text style={styles.camBtnText}>{t.cancel}</Text>
               </Pressable>
 
               <Pressable
                 style={styles.camBtnMain}
-                onPress={handleCapture}
+                onPress={() => handleCapture()}
               >
                 <View style={styles.camBtnInner} />
               </Pressable>
@@ -1000,6 +1036,60 @@ export default function ScannerScreen({ navigation, route }) {
             </View>
           </CameraView>
         </View>
+      </Modal>
+
+      <Modal visible={showPhotoReview} animationType="slide" transparent={false}
+        onRequestClose={() => { if (!photoBusy) setShowPhotoReview(false); }}>
+        <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1, backgroundColor: colors.bg, paddingTop: Math.max(insets.top, 48) }}>
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, gap: 16, flexGrow: 1 }}>
+              <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t.photoAnalysisTitle} ({photoDraft.length}/4)</Text>
+              <Text style={{ color: colors.muted }}>{t.photoAnalysisHint}</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                {photoDraft.map((photo, index) => <View key={photo.uri + index} style={{ width: '46%' }}>
+                  <Image source={{ uri: photo.uri }} style={{ width: '100%', height: 150, borderRadius: 12 }} />
+                  <Pressable disabled={photoBusy} onPress={() => setPhotoDraft(previous => previous.filter((_, i) => i !== index))}
+                    accessibilityLabel={t.photoRemove + ' ' + (index + 1)} style={{ paddingVertical: 10 }}>
+                    <Text style={{ color: colors.danger, textAlign: 'center' }}>{t.photoRemove} {index + 1}</Text>
+                  </Pressable>
+                </View>)}
+              </View>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <Pressable disabled={photoBusy || photoDraft.length >= 4} onPress={() => takePhoto(photoDraftWeight, true)}
+                  style={{ flex: 1, padding: 16, borderRadius: 12, backgroundColor: colors.btn, opacity: photoDraft.length >= 4 ? 0.4 : 1 }}>
+                  <Text style={{ color: colors.btnText, textAlign: 'center' }}>{t.cameraShort} +</Text>
+                </Pressable>
+                <Pressable disabled={photoBusy || photoDraft.length >= 4} onPress={() => pickFromGallery(photoDraftWeight, true)}
+                  style={{ flex: 1, padding: 16, borderRadius: 12, backgroundColor: colors.btn, opacity: photoDraft.length >= 4 ? 0.4 : 1 }}>
+                  <Text style={{ color: colors.btnText, textAlign: 'center' }}>{t.galleryShort} +</Text>
+                </Pressable>
+              </View>
+              <TextInput value={photoDescription} onChangeText={setPhotoDescription} multiline maxLength={2000}
+                editable={!photoBusy} placeholder={t.photoDescriptionPlaceholder} placeholderTextColor={colors.muted}
+                style={{ minHeight: 100, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.border, color: colors.text, textAlignVertical: 'top' }} />
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 'auto' }}>
+                <Pressable disabled={photoBusy} onPress={() => { setShowPhotoReview(false); setPhotoDraft([]); setPhotoDescription(''); }}
+                  style={{ flex: 1, padding: 18, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
+                  <Text style={{ color: colors.text, textAlign: 'center' }}>{t.cancel}</Text>
+                </Pressable>
+                <Pressable disabled={photoBusy || !photoDraft.length} onPress={async () => {
+                  if (photoBusy || pickingRef.current || !photoDraft.length || !checkLimit()) return;
+                  setPhotoBusy(true); pickingRef.current = true;
+                  setShowPhotoReview(false);
+                  try {
+                    await analyzePickedImage(photoDraft[0], photoDraftWeight, photoDraft.slice(1), photoDescription.trim());
+                    setPhotoDraft([]); setPhotoDescription('');
+                  } catch (error) {
+                    const friendly = getFriendlyError(error, t);
+                    Alert.alert(friendly.title, friendly.message); setShowPhotoReview(true);
+                  } finally { setPhotoBusy(false); pickingRef.current = false; }
+                }} style={{ flex: 1, padding: 18, borderRadius: 12, backgroundColor: colors.btn, opacity: !photoDraft.length ? 0.4 : 1 }}>
+                  <Text style={{ color: colors.btnText, textAlign: 'center', fontWeight: '700' }}>{t.confirm}</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
       </Modal>
 
       <WeightDialog

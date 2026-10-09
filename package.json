@@ -1,6 +1,6 @@
 {
   "name": "android-food-calorie-estimator",
-  "version": "1.0.42",
+  "version": "1.0.46",
   "main": "index.js",
   "scripts": {
     "start": "expo start",

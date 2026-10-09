@@ -176,7 +176,7 @@ export default function AnalyticsScreen() {
                             {t.daysTracked || 'Sledované dni'}: {summary.daysTracked}/{numDays}
                         </Text>
                     </View>
-                    <View onLayout={event => setChartWidth(event.nativeEvent.layout.width)}>
+                    <View style={{ position: 'relative' }} onLayout={event => setChartWidth(event.nativeEvent.layout.width)}>
                         <Svg
                             width="100%"
                             height={chartH + chartPadding.top + chartPadding.bottom}
@@ -209,8 +209,14 @@ export default function AnalyticsScreen() {
                                     const barColor = d.isToday ? colors.accent : (isOver ? colors.danger : colors.calories);
 
                                     return (
-                                        <G key={d.key} onPress={() => setSelectedDay(d.key)}>
-                                            <Rect x={x} y={0} width={barW} height={chartH} fill="transparent" />
+                                        <G key={d.key}>
+                                            {selected?.key === d.key && <Rect
+                                                x={Math.max(0, x - barGap / 2)} y={-6}
+                                                width={Math.min(barW + barGap, chartW - Math.max(0, x - barGap / 2))}
+                                                height={chartH + 29} rx={4}
+                                                fill={colors.accent} fillOpacity={0.1}
+                                                stroke={colors.accent} strokeWidth={1.5}
+                                            />}
                                             <Rect x={x} y={chartH - barH} width={showBurned ? barW * 0.46 : barW} height={barH} rx={viewMode === 'week' ? 4 : 2} fill={barColor} />
                                             {showBurned && d.burned !== null && <Rect x={x + barW * 0.54} y={chartH - Math.max(2, d.burned / maxVal * chartH)} width={barW * 0.46} height={Math.max(2, d.burned / maxVal * chartH)} rx={viewMode === "week" ? 3 : 1} fill={colors.macros.carbs} />}
                                             {viewMode === 'week' && (
@@ -232,9 +238,24 @@ export default function AnalyticsScreen() {
                                 })}
                             </G>
                         </Svg>
+                        {/* Native touch areas cover bars, gaps and day labels, including empty days. */}
+                        <View style={{ position: 'absolute', left: chartPadding.left, right: chartPadding.right, top: 0, bottom: 0 }}>
+                            {dailyData.map((day, index) => {
+                                const left = index === 0 ? 0 : index * (barW + barGap) - barGap / 2;
+                                const right = index === dailyData.length - 1 ? chartW : (index + 1) * (barW + barGap) - barGap / 2;
+                                return <Pressable
+                                    key={day.key}
+                                    onPress={() => setSelectedDay(day.key)}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`${day.date.toLocaleDateString(language)}, ${Math.round(day.calories)} kcal`}
+                                    accessibilityState={{ selected: selected?.key === day.key }}
+                                    style={{ position: 'absolute', left, width: right - left, top: 0, bottom: 0 }}
+                                />;
+                            })}
+                        </View>
                     </View>
-                    {showBurned && selected && <Text style={{ color: colors.text, fontSize: 13, textAlign: 'center', marginTop: 6 }}>
-                        {selected.date.toLocaleDateString(language)} · {t.caloriesIntakeLabel}: {Math.round(selected.calories)} kcal · {burnedLabel}: {selected.burned === null ? '—' : `${selected.burned} kcal`}
+                    {selected && <Text style={{ color: colors.text, fontSize: 13, textAlign: 'center', marginTop: 6 }}>
+                        {selected.date.toLocaleDateString(language)} · {t.caloriesIntakeLabel}: {Math.round(selected.calories)} kcal{showBurned ? ` · ${burnedLabel}: ${selected.burned === null ? '—' : `${selected.burned} kcal`}` : ''}
                     </Text>}
                     <View style={styles.legendRow}>
                         <View style={styles.legendItem}>

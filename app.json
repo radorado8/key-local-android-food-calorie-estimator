@@ -3,7 +3,7 @@
     "name": "Calories AI Local",
     "slug": "android-food-calorie-estimator",
     "scheme": "keylocalfoodestimator",
-    "version": "1.0.42",
+    "version": "1.0.46",
     "orientation": "default",
     "icon": "./assets/icon_key_fire_android.png",
     "userInterfaceStyle": "automatic",
@@ -14,11 +14,12 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "buildNumber": "221",
+      "buildNumber": "224",
       "supportsTablet": true,
       "icon": "./assets/icon_key_fire_ios.png",
       "bundleIdentifier": "com.rados.caloriesai",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDisplayName": "Calories AI",
         "NSHealthShareUsageDescription": "Calories AI reads your active and resting energy from Apple Health to show today's total calories burned.",
         "NSHealthUpdateUsageDescription": "Calories AI uses Apple Health energy data to display calories burned and estimate daily energy expenditure. This version only reads energy data and does not write or modify your health records."
@@ -26,7 +27,7 @@
     },
     "android": {
       "package": "com.rados.keylocalandroidfoodcalorieestimator",
-      "versionCode": 220,
+      "versionCode": 224,
       "permissions": [
         "android.permission.health.READ_TOTAL_CALORIES_BURNED",
         "android.permission.health.READ_ACTIVE_CALORIES_BURNED"

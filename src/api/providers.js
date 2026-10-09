@@ -1,3 +1,5 @@
+import { analysisPhotos } from './photoInput';
+import { reasoningConfig, reasoningLevels } from '../config/reasoning';
 import { Platform } from 'react-native';
 import { getActiveApiKey } from '../utils/apiKeys';
 import { DEFAULT_MODELS, isAIProvider } from '../config/aiProviders';
@@ -68,6 +70,7 @@ async function transcribeGemini(payload, key) {
 }
 
 export async function analyzeWithProvider(payload) {
+  const photos = analysisPhotos(payload);
   const provider = payload.aiProvider || 'gemini';
   if (!isAIProvider(provider)) throw new Error('Invalid AI provider');
   checkAbort(payload.signal);
@@ -75,7 +78,7 @@ export async function analyzeWithProvider(payload) {
   const model = payload.aiModel || DEFAULT_MODELS[provider];
   if (provider === 'gemini') {
     const options = { ...payload, apiKey: key, aiModel: model };
-    if (payload.base64Data) return analyzeImage(options);
+    if (photos.length) return analyzeImage({ ...options, images: photos });
     if (payload.audioUri || payload.audioBase64) {
       const transcript = await transcribeGemini(payload, key);
       checkAbort(payload.signal);
@@ -94,28 +97,30 @@ export async function analyzeWithProvider(payload) {
   }
   checkAbort(payload.signal);
   const prompt = foodPrompt({ ...payload, text });
+  const thinking = reasoningConfig(provider, model, payload.reasoningLevel);
   if (provider === 'openai') {
     const content = [{ type: 'input_text', text: prompt }];
-    if (payload.base64Data) content.push({ type: 'input_image', image_url: `data:${payload.mimeType || 'image/jpeg'};base64,${payload.base64Data}` });
+    photos.forEach(photo => content.push({ type: 'input_image', image_url: `data:${photo.mimeType || 'image/jpeg'};base64,${photo.base64Data}` }));
     const data = await request('https://api.openai.com/v1/responses', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, signal: payload.signal,
-      body: JSON.stringify({ model, store: false, max_output_tokens: 2000, input: [{ role: 'user', content }],
-        text: { format: { type: 'json_schema', name: 'food_analysis', strict: true, schema: foodResultSchema } } }),
+      body: JSON.stringify({ model, store: false, max_output_tokens: reasoningLevels(provider, model).length > 1 ? 16000 : 2000, input: [{ role: 'user', content }],
+        text: { format: { type: 'json_schema', name: 'food_analysis', strict: true, schema: foodResultSchema } }, ...thinking }),
     }, provider);
     if (data.status !== 'completed') throw new Error('Invalid format from AI');
     const result = data.output?.filter(item => item.type === 'message').flatMap(item => item.content || []).filter(item => item.type === 'output_text').map(item => item.text).join('');
     return parseFoodResult(result);
   }
   const content = [];
-  if (payload.base64Data) content.push({ type: 'image', source: { type: 'base64', media_type: payload.mimeType || 'image/jpeg', data: payload.base64Data } });
-  content.push({ type: 'text', text: prompt });
+  photos.forEach(photo => content.push({ type: 'image', source: { type: 'base64', media_type: photo.mimeType || 'image/jpeg', data: photo.base64Data } }));
+  content.push({ type: 'text', text: thinking.thinking?.type === 'enabled' ? prompt + '\nReturn the result by calling food_analysis. If you cannot call it, return only the JSON object.' : prompt });
   const data = await request('https://api.anthropic.com/v1/messages', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01',
       ...(Platform.OS === 'web' ? { 'anthropic-dangerous-direct-browser-access': 'true' } : {}) }, signal: payload.signal,
     body: JSON.stringify({ model, max_tokens: 1500, messages: [{ role: 'user', content }],
       tools: [{ name: 'food_analysis', description: 'Return the estimated nutritional values of one food portion.', input_schema: foodResultSchema }],
-      tool_choice: { type: 'tool', name: 'food_analysis' } }),
+      tool_choice: { type: 'tool', name: 'food_analysis' }, ...thinking }),
   }, provider);
+  if (thinking.thinking?.type === 'enabled' && data.stop_reason === 'end_turn') return parseFoodResult(data.content?.filter(item => item.type === 'text').map(item => item.text).join(''));
   if (data.stop_reason !== 'tool_use') throw new Error('Invalid format from AI');
   return parseFoodResult(data.content?.find(item => item.type === 'tool_use' && item.name === 'food_analysis')?.input);
 }
