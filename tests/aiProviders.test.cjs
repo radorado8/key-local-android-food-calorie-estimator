@@ -425,3 +425,50 @@ test('photo count and invalid photo validation happens before retrieving keys or
   assert.equal(client.calls.length, 0);
   assert.equal(client.keyRequests.length, 0);
 });
+
+for (const provider of ['gemini', 'openai', 'claude']) {
+  test(`${provider}: favorite photo requests only weight and scales saved nutrition locally`, async () => {
+    const estimate = { error: null, weight_g: 250, confidence: 0.8 };
+    const reply = response(provider, estimate);
+    if (provider === 'claude') reply.content[0].name = 'portion_weight';
+    const client = apiClient([reply]);
+    const reference = { name: 'Saved food', calories: 200, protein: 10, carbs: 20, fat: 5, weight_g: 100 };
+    const result = await client.analyze({ aiProvider: provider, images: [{ base64Data: 'PHOTO' }], weightReference: reference });
+    assert.equal(result.name, reference.name);
+    assert.equal(result.weight_g, 250);
+    assert.equal(result.calories, 500);
+    assert.equal(result.protein, 25);
+    assert.equal(result.carbs, 50);
+    assert.equal(result.fat, 12.5);
+    assert.equal(reference.weight_g, 100);
+    assert.equal(client.calls.length, 1);
+    const body = client.calls[0].body;
+    const schema = provider === 'openai' ? body.text.format.schema : provider === 'gemini' ? body.generationConfig.responseJsonSchema : body.tools[0].input_schema;
+    assert.deepEqual(Array.from(schema.required), ['error', 'weight_g', 'confidence']);
+    assert.ok(!JSON.stringify(body).includes('"calories":200'));
+  });
+}
+
+test('weight estimation rejects missing baseline, zero weight and non-food without changing saved food', async () => {
+  const { parseWeightResult, scaleFavoriteByWeight } = loader()('src/api/weightAnalysis.js');
+  for (const weight_g of [0, -1, NaN, '100']) assert.throws(() => parseWeightResult({ error: null, weight_g, confidence: 0.5 }), /Invalid format/);
+  assert.throws(() => parseWeightResult({ error: 'not_food', weight_g: 0, confidence: 0 }), /not_food/);
+  assert.throws(() => scaleFavoriteByWeight({ weight_g: 0 }, { weight_g: 100 }), /invalid_reference_weight/);
+  const client = apiClient([]);
+  await assert.rejects(client.analyze({ aiProvider: 'openai', images: [{ base64Data: 'PHOTO' }], weightReference: { name: 'Food', weight_g: 0 } }), /invalid_reference_weight/);
+  assert.equal(client.calls.length, 0);
+});
+
+test('analytics periods navigate contiguous local weeks and calendar months including leap years', () => {
+  const { analyticsPeriod } = loader()('src/utils/analyticsPeriod.js');
+  const now = new Date(2024, 2, 10, 12);
+  for (const mode of ['week', 'fortnight', 'month']) {
+    const current = analyticsPeriod(mode, 0, now), previous = analyticsPeriod(mode, 1, now);
+    const nextDay = new Date(previous.end); nextDay.setDate(nextDay.getDate() + 1);
+    assert.equal(nextDay.getTime(), current.start.getTime());
+    assert.equal(previous.dates[0].getHours(), 0);
+    assert.equal(current.end.getDate(), 10);
+    if (mode === 'month') { assert.equal(previous.dates.length, 29); assert.equal(previous.start.getMonth(), 1); }
+    else assert.equal(previous.dates.length, mode === 'week' ? 7 : 14);
+  }
+});

@@ -1,3 +1,5 @@
+import ScannerScreen from './ScannerScreen';
+import AddFoodButton from '../components/AddFoodButton';
 import useFoodSearchInput from '../hooks/useFoodSearchInput';
 import { typography } from '../theme/palette';
 import React, { useDeferredValue, useEffect, useMemo, useState, useCallback } from 'react';
@@ -111,6 +113,7 @@ export default function HistoryScreen({ route, navigation }) {
   const [expandedCategories, setExpandedCategories] = useState({});
   const [editOpen, setEditOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [cameraContext, setCameraContext] = useState(null);
   const [editMeal, setEditMeal] = useState(null);
   const [weightDialogOpen, setWeightDialogOpen] = useState(false);
   const [repeatMeal, setRepeatMeal] = useState(null);
@@ -377,12 +380,8 @@ export default function HistoryScreen({ route, navigation }) {
         ) : (
           <Text style={[styles.headerTitle, { color: colors.text }]}>{t.historyTitle}</Text>
         )}
-        <Pressable
-          style={({ pressed }) => [styles.headerIcon, { right: 16, backgroundColor: colors.card, borderColor: colors.border }, pressed && { opacity: 0.7 }]}
-          onPress={() => setAddOpen(true)}
-        >
-          <Ionicons name="add" size={24} color={colors.text} />
-        </Pressable>
+        <AddFoodButton colors={colors} t={t} onManual={() => setAddOpen(true)}
+          onCamera={() => setCameraContext({ timestamp: Date.now(), returnScreen: 'History', saveDestination: 'diary' })} />
       </View>
 
       <SectionList
@@ -717,6 +716,8 @@ export default function HistoryScreen({ route, navigation }) {
         )}
       />
 
+      {cameraContext && <ScannerScreen navigation={navigation} route={route}
+        cameraContext={cameraContext} onCameraFlowClose={() => setCameraContext(null)} />}
     </SafeAreaView>
   );
 }
@@ -795,6 +796,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { ...typography.screenTitle,
     textAlign: 'center',
+    marginLeft: 52, marginRight: 80,
   },
   headerIcon: {
     position: 'absolute',
@@ -806,7 +808,7 @@ const styles = StyleSheet.create({
   searchInput: {
     position: 'absolute',
     left: 58,
-    right: 58,
+    right: 86,
     top: 13,
     height: 42,
     paddingHorizontal: 12,

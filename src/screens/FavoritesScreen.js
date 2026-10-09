@@ -1,3 +1,5 @@
+import ScannerScreen from './ScannerScreen';
+import AddFoodButton from '../components/AddFoodButton';
 import useFoodSearchInput from '../hooks/useFoodSearchInput';
 import { useFocusEffect } from '@react-navigation/native';
 import { typography } from '../theme/palette';
@@ -50,6 +52,7 @@ export default function FavoritesScreen({ route, navigation }) {
     const [listBusy, setListBusy] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [addOpen, setAddOpen] = useState(false);
+  const [cameraContext, setCameraContext] = useState(null);
     const [editItem, setEditItem] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null);
     const [weightDialogOpen, setWeightDialogOpen] = useState(false);
@@ -347,12 +350,8 @@ export default function FavoritesScreen({ route, navigation }) {
                         <Ionicons name="chevron-down" size={17} color={colors.muted} style={{ flexShrink: 0 }} />
                     </Pressable>
                 )}
-                <Pressable
-                    style={({ pressed }) => [styles.headerIcon, { right: 16, backgroundColor: colors.card, borderColor: colors.border }, pressed && { opacity: 0.7 }]}
-                    onPress={() => setAddOpen(true)}
-                >
-                    <Ionicons name="add" size={24} color={colors.text} />
-                </Pressable>
+                <AddFoodButton colors={colors} t={t} onManual={() => setAddOpen(true)}
+                    onCamera={() => setCameraContext({ timestamp: Date.now(), returnScreen: 'Favorites', saveDestination: 'favorites', favoriteListId: activeList?.id || 'default' })} />
             </View>
 
             <SectionList
@@ -395,6 +394,13 @@ export default function FavoritesScreen({ route, navigation }) {
                             t={t}
                             showImage={showImagesInHistory}
                             onAddToLog={() => handleAddToLog(item)}
+                            onEstimateWeight={() => {
+                                Keyboard.dismiss();
+                                if (!(Number(item.weight_g) > 0) || !['calories', 'protein', 'carbs', 'fat'].every(key => Number.isFinite(Number(item[key])) && Number(item[key]) >= 0)) {
+                                    Alert.alert(t.errorTitle, t.photoWeightMissing); return;
+                                }
+                                setCameraContext({ timestamp: Date.now(), returnScreen: 'Favorites', saveDestination: 'diary', weightReference: { name: item.name, weight_g: item.weight_g, calories: item.calories, protein: item.protein, carbs: item.carbs, fat: item.fat } });
+                            }}
                             onAddToLogLongPress={() => {
                                 Keyboard.dismiss();
                                 setWeightItem(item);
@@ -575,11 +581,13 @@ export default function FavoritesScreen({ route, navigation }) {
                     </View>
                 )}
             />
+      {cameraContext && <ScannerScreen navigation={navigation} route={route}
+        cameraContext={cameraContext} onCameraFlowClose={() => setCameraContext(null)} />}
         </SafeAreaView>
     );
 }
 
-const FavoriteMealItem = ({ item, colors, t, onAddToLog, onAddToLogLongPress, onEdit, onDelete, onImagePress, showImage }) => (
+const FavoriteMealItem = ({ item, colors, t, onAddToLog, onAddToLogLongPress, onEstimateWeight, onEdit, onDelete, onImagePress, showImage }) => (
     <Pressable
         accessibilityRole="button"
         accessibilityLabel={t.editMealTitle || 'Upraviť jedlo'}
@@ -612,6 +620,10 @@ const FavoriteMealItem = ({ item, colors, t, onAddToLog, onAddToLogLongPress, on
                 onLongPress={onAddToLogLongPress}
             >
                 <Ionicons name="add" size={16} color={colors.accent} />
+            </Pressable>
+            <Pressable accessibilityLabel={t.photoWeightEstimate} onPress={onEstimateWeight}
+                style={({ pressed }) => [styles.miniAction, { borderColor: colors.border }, pressed && styles.actionBtnPressed]}>
+                <Ionicons name="camera-outline" size={16} color={colors.accent} />
             </Pressable>
             <Pressable
                 style={({ pressed }) => [styles.miniAction, styles.deleteAction, pressed && styles.actionBtnPressed]}
@@ -651,7 +663,7 @@ const styles = StyleSheet.create({
     listTitleButton: {
         position: 'absolute',
         left: 62,
-        right: 62,
+        right: 88,
         minWidth: 0,
         flexDirection: 'row',
         alignItems: 'center',
@@ -668,7 +680,7 @@ const styles = StyleSheet.create({
     searchInput: {
         position: 'absolute',
         left: 58,
-        right: 58,
+        right: 86,
         top: 13,
         height: 42,
         paddingHorizontal: 12,

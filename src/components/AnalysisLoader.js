@@ -87,7 +87,7 @@ export default function AnalysisLoader({ imageUri, inputType, inputText, onCance
                     { borderColor: colors.btnBorder, backgroundColor: pressed ? 'rgba(255,255,255,0.1)' : 'transparent' }
                 ]}
             >
-                <Text style={[styles.btnText, { color: colors.btnText }]}>{t.cancel}</Text>
+                <Text style={[styles.btnText, { color: colors.text }]}>{t.cancel}</Text>
             </Pressable>
         </View>
     );

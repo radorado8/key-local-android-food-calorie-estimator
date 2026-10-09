@@ -1,3 +1,4 @@
+import { analyticsPeriod, analyticsMaxOffset } from '../utils/analyticsPeriod';
 import { typography } from '../theme/palette';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -34,6 +35,8 @@ export default function AnalyticsScreen() {
 
     const { colors } = useSettings();
 
+    const [periodOffset, setPeriodOffset] = useState(0);
+    const changeViewMode = mode => { setViewMode(mode); setPeriodOffset(0); setSelectedDay(null); };
     const [viewMode, setViewMode] = useState('week'); // 'week' | 'fortnight' | 'month'
     const [meals, setMeals] = useState([]);
     const [chartWidth, setChartWidth] = useState(Math.max(240, screenWidth - 64));
@@ -45,16 +48,33 @@ export default function AnalyticsScreen() {
         return () => unsub();
     }, [useLocalStorage]);
 
-    const numDays = viewMode === 'week' ? 7 : viewMode === 'fortnight' ? 14 : 30;
+    const todayKey = getLocalDateKey(new Date());
+    const maxPeriodOffset = useMemo(() => {
+        let earliest = null;
+        const include = date => {
+            if (Number.isFinite(date.getTime()) && (!earliest || date < earliest)) earliest = date;
+        };
+        meals.forEach(meal => include(new Date(meal.dateObj || meal.timestamp)));
+        if (showBurned) Object.entries(burnedCaloriesHistory || {}).forEach(([key, value]) => {
+            if (value?.calories != null && Number.isFinite(Number(value.calories))) include(new Date(`${key}T00:00:00`));
+        });
+        return analyticsMaxOffset(viewMode, earliest);
+    }, [meals, showBurned, burnedCaloriesHistory, viewMode, todayKey]);
+    useEffect(() => {
+        if (periodOffset > maxPeriodOffset) {
+            setPeriodOffset(maxPeriodOffset);
+            setSelectedDay(null);
+        }
+    }, [periodOffset, maxPeriodOffset]);
+    const period = useMemo(() => analyticsPeriod(viewMode, periodOffset), [viewMode, periodOffset, todayKey]);
+    const numDays = period.dates.length;
 
     const dailyData = useMemo(() => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const days = [];
 
-        for (let i = numDays - 1; i >= 0; i--) {
-            const d = new Date(today);
-            d.setDate(d.getDate() - i);
+        for (const d of period.dates) {
             const key = getLocalDateKey(d);
             days.push({
                 key,
@@ -67,7 +87,7 @@ export default function AnalyticsScreen() {
                 protein: 0,
                 carbs: 0,
                 fat: 0,
-                isToday: i === 0,
+                isToday: getLocalDateKey(today) === key,
             });
         }
 
@@ -84,7 +104,7 @@ export default function AnalyticsScreen() {
         });
 
         return days;
-    }, [meals, numDays, viewMode, language, showBurned, burnedCaloriesHistory]);
+    }, [meals, period, viewMode, language, showBurned, burnedCaloriesHistory]);
 
     const summary = useMemo(() => {
         const daysWithData = dailyData.filter(d => d.calories > 0);
@@ -150,24 +170,35 @@ export default function AnalyticsScreen() {
                 <View style={[styles.segmentContainer, { backgroundColor: colors.elemBg, borderColor: colors.border }]}>
                     <Pressable
                         style={[styles.segmentBtn, viewMode === 'week' && [styles.segmentActive, { backgroundColor: colors.accent }]]}
-                        onPress={() => setViewMode('week')}
+                        onPress={() => changeViewMode('week')}
                     >
                         <Text style={[styles.segmentText, { color: viewMode === 'week' ? colors.onAccent : colors.muted }]}>{t.weekView || 'Týždeň'}</Text>
                     </Pressable>
                     <Pressable
                         style={[styles.segmentBtn, viewMode === 'fortnight' && [styles.segmentActive, { backgroundColor: colors.accent }]]}
-                        onPress={() => setViewMode('fortnight')}
+                        onPress={() => changeViewMode('fortnight')}
                     >
                         <Text style={[styles.segmentText, { color: viewMode === 'fortnight' ? colors.onAccent : colors.muted }]}>{t.fortnightView}</Text>
                     </Pressable>
                     <Pressable
                         style={[styles.segmentBtn, viewMode === 'month' && [styles.segmentActive, { backgroundColor: colors.accent }]]}
-                        onPress={() => setViewMode('month')}
+                        onPress={() => changeViewMode('month')}
                     >
                         <Text style={[styles.segmentText, { color: viewMode === 'month' ? colors.onAccent : colors.muted }]}>{t.monthView || 'Mesiac'}</Text>
                     </Pressable>
                 </View>
 
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <Pressable accessibilityLabel={t.previousPeriod} disabled={periodOffset >= maxPeriodOffset} onPress={() => { setPeriodOffset(value => Math.min(maxPeriodOffset, value + 1)); setSelectedDay(null); }} style={{ padding: 12, opacity: periodOffset >= maxPeriodOffset ? 0.3 : 1 }}>
+                        <Ionicons name="chevron-back" size={24} color={colors.accent} />
+                    </Pressable>
+                    <Text style={{ flex: 1, textAlign: 'center', color: colors.text, fontWeight: '600', fontSize: 14 }}>
+                        {period.start.toLocaleDateString(language)} – {period.end.toLocaleDateString(language)}
+                    </Text>
+                    <Pressable accessibilityLabel={t.nextPeriod} disabled={periodOffset === 0} onPress={() => { setPeriodOffset(value => Math.max(0, value - 1)); setSelectedDay(null); }} style={{ padding: 12, opacity: periodOffset === 0 ? 0.3 : 1 }}>
+                        <Ionicons name="chevron-forward" size={24} color={colors.accent} />
+                    </Pressable>
+                </View>
                 {/* Bar Chart Card */}
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={styles.chartHeader}>

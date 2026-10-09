@@ -155,7 +155,7 @@ function AppContent({ startupError }) {
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
             if (route.name === 'Scanner') {
-              iconName = focused ? 'camera' : 'camera-outline';
+              iconName = focused ? 'home' : 'home-outline';
             } else if (route.name === 'History') {
               iconName = focused ? 'list' : 'list-outline';
             } else if (route.name === 'Favorites') {

@@ -1,3 +1,4 @@
+import { requestWeightAnalysis } from './weightAnalysis';
 import { analysisPhotos } from './photoInput';
 import { reasoningConfig, reasoningLevels } from '../config/reasoning';
 import { Platform } from 'react-native';
@@ -76,6 +77,7 @@ export async function analyzeWithProvider(payload) {
   checkAbort(payload.signal);
   const key = await requireKey(provider);
   const model = payload.aiModel || DEFAULT_MODELS[provider];
+  if (payload.weightReference) return requestWeightAnalysis(payload, photos, provider, model, key, reasoningConfig(provider, model, payload.reasoningLevel), request);
   if (provider === 'gemini') {
     const options = { ...payload, apiKey: key, aiModel: model };
     if (photos.length) return analyzeImage({ ...options, images: photos });

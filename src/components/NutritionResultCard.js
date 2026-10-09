@@ -11,7 +11,7 @@ function fmt(n, digits = 0) {
   return digits ? v.toFixed(digits) : String(Math.round(v));
 }
 
-export default function NutritionResultCard({ data, imageUri, todayCalories = 0, dailyGoal = 2000, onSave, onReset, onChange, saving, theme, colors, autoSaveEnabled = true, autoSaveSeconds = 10 }) {
+export default function NutritionResultCard({ data, imageUri, todayCalories = 0, dailyGoal = 2000, onSave, onReset, onChange, saving, theme, colors, autoSaveEnabled = true, autoSaveSeconds = 10, saveLabel }) {
   const t = useTranslation();
   if (!data) return null;
 
@@ -257,7 +257,7 @@ export default function NutritionResultCard({ data, imageUri, todayCalories = 0,
           onPress={() => { cancelAutoSave(); onSave(); }}
         >
           <Ionicons name={saving ? "time" : "save"} size={18} color={colors.onAccent} />
-          <Text style={[styles.btnPrimaryText, { color: colors.onAccent }]}>{saving ? t.saving : t.saveToLog}</Text>
+          <Text style={[styles.btnPrimaryText, { color: colors.onAccent }]}>{saving ? t.saving : (saveLabel || t.saveToLog)}</Text>
         </Pressable>
       </View>
     </View>

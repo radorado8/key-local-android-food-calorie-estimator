@@ -1,5 +1,16 @@
 export const aiTranslations = {
   "sk": {
+    "photoSaveDestination": "Uložiť do",
+    "photoDiary": "Denník jedál",
+    "photoFavorites": "Obľúbené",
+    "addFoodMethod": "Spôsob pridania",
+    "manualFood": "Ručne pridať jedlo",
+    "photoWeightEstimate": "Odhadnúť hmotnosť z fotky",
+    "photoWeightHint": "Nutričné hodnoty sa vypočítajú z obľúbenej položky.",
+    "photoWeightMissing": "Na odhad hmotnosti musí mať obľúbené jedlo uloženú hmotnosť a platné nutričné hodnoty.",
+    "previousPeriod": "Predchádzajúce obdobie",
+    "nextPeriod": "Nasledujúce obdobie",
+
     "photoAnalysisTitle": "Analýza fotiek",
     "photoAnalysisHint": "Pridaj najviac 4 fotky toho istého jedla, etikety alebo váhy. V histórii sa uloží prvá fotka.",
     "photoDescriptionPlaceholder": "Sprievodný text (voliteľné): napr. zjedol som polovicu balenia, 150 g…",
@@ -46,6 +57,17 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "Tento model nemá overené nastaviteľné uvažovanie. Použije sa Default."
   },
   "en": {
+    "photoSaveDestination": "Save to",
+    "photoDiary": "Food diary",
+    "photoFavorites": "Favorites",
+    "addFoodMethod": "Add food using",
+    "manualFood": "Add food manually",
+    "photoWeightEstimate": "Estimate weight from photo",
+    "photoWeightHint": "Nutrition is calculated from the favorite item.",
+    "photoWeightMissing": "Save a valid weight and nutritional values for this favorite before estimating its weight.",
+    "previousPeriod": "Previous period",
+    "nextPeriod": "Next period",
+
     "photoAnalysisTitle": "Photo analysis",
     "photoAnalysisHint": "Add up to 4 photos of the same meal, nutrition label or scale. History saves the first photo.",
     "photoDescriptionPlaceholder": "Optional description: e.g. I ate half the package, 150 g…",
@@ -92,6 +114,17 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "Configurable reasoning is not verified for this model. Its default is used."
   },
   "cs": {
+    "photoSaveDestination": "Uložit do",
+    "photoDiary": "Deník jídel",
+    "photoFavorites": "Oblíbené",
+    "addFoodMethod": "Způsob přidání",
+    "manualFood": "Ručně přidat jídlo",
+    "photoWeightEstimate": "Odhadnout hmotnost z fotky",
+    "photoWeightHint": "Nutriční hodnoty se vypočítají z oblíbené položky.",
+    "photoWeightMissing": "Pro odhad hmotnosti musí mít oblíbené jídlo uloženou hmotnost a platné nutriční hodnoty.",
+    "previousPeriod": "Předchozí období",
+    "nextPeriod": "Následující období",
+
     "photoAnalysisTitle": "Analýza fotek",
     "photoAnalysisHint": "Přidej nejvýše 4 fotky stejného jídla, etikety nebo váhy. Do historie se uloží první fotka.",
     "photoDescriptionPlaceholder": "Doprovodný text (volitelné): např. snědl jsem polovinu balení, 150 g…",
@@ -138,6 +171,17 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "Tento model nemá ověřené nastavitelné uvažování. Použije se Default."
   },
   "de": {
+    "photoSaveDestination": "Speichern in",
+    "photoDiary": "Ernährungstagebuch",
+    "photoFavorites": "Favoriten",
+    "addFoodMethod": "Hinzufügen mit",
+    "manualFood": "Essen manuell hinzufügen",
+    "photoWeightEstimate": "Gewicht anhand eines Fotos schätzen",
+    "photoWeightHint": "Nährwerte werden aus dem Favoriten berechnet.",
+    "photoWeightMissing": "Speichere zuerst ein gültiges Gewicht und Nährwerte für diesen Favoriten.",
+    "previousPeriod": "Vorheriger Zeitraum",
+    "nextPeriod": "Nächster Zeitraum",
+
     "photoAnalysisTitle": "Fotoanalyse",
     "photoAnalysisHint": "Bis zu 4 Fotos derselben Mahlzeit, Nährwerttabelle oder Waage. Im Verlauf wird das erste Foto gespeichert.",
     "photoDescriptionPlaceholder": "Optionale Beschreibung: z. B. eine halbe Packung, 150 g…",
@@ -184,6 +228,17 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "Für dieses Modell ist kein einstellbares Denken bestätigt. Der Standard wird verwendet."
   },
   "es": {
+    "photoSaveDestination": "Guardar en",
+    "photoDiary": "Diario de comidas",
+    "photoFavorites": "Favoritos",
+    "addFoodMethod": "Añadir mediante",
+    "manualFood": "Añadir comida manualmente",
+    "photoWeightEstimate": "Estimar peso con una foto",
+    "photoWeightHint": "Los nutrientes se calculan a partir del favorito.",
+    "photoWeightMissing": "Guarda primero un peso y valores nutricionales válidos para este favorito.",
+    "previousPeriod": "Periodo anterior",
+    "nextPeriod": "Periodo siguiente",
+
     "photoAnalysisTitle": "Análisis de fotos",
     "photoAnalysisHint": "Añade hasta 4 fotos de la misma comida, etiqueta o báscula. Se guarda la primera foto en el historial.",
     "photoDescriptionPlaceholder": "Descripción opcional: p. ej. comí medio paquete, 150 g…",
@@ -230,6 +285,17 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "No se ha verificado el razonamiento configurable de este modelo. Se usa el valor predeterminado."
   },
   "fr": {
+    "photoSaveDestination": "Enregistrer dans",
+    "photoDiary": "Journal alimentaire",
+    "photoFavorites": "Favoris",
+    "addFoodMethod": "Ajouter avec",
+    "manualFood": "Ajouter manuellement",
+    "photoWeightEstimate": "Estimer le poids avec une photo",
+    "photoWeightHint": "Les nutriments sont calculés à partir du favori.",
+    "photoWeightMissing": "Enregistrez un poids et des valeurs nutritionnelles valides pour ce favori.",
+    "previousPeriod": "Période précédente",
+    "nextPeriod": "Période suivante",
+
     "photoAnalysisTitle": "Analyse des photos",
     "photoAnalysisHint": "Ajoutez jusqu’à 4 photos du même repas, de l’étiquette ou de la balance. La première est enregistrée dans l’historique.",
     "photoDescriptionPlaceholder": "Description facultative : p. ex. la moitié du paquet, 150 g…",
@@ -276,6 +342,17 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "Le raisonnement configurable de ce modèle n’est pas vérifié. Le réglage par défaut est utilisé."
   },
   "it": {
+    "photoSaveDestination": "Salva in",
+    "photoDiary": "Diario alimentare",
+    "photoFavorites": "Preferiti",
+    "addFoodMethod": "Aggiungi con",
+    "manualFood": "Aggiungi manualmente",
+    "photoWeightEstimate": "Stima il peso dalla foto",
+    "photoWeightHint": "I nutrienti sono calcolati dal preferito.",
+    "photoWeightMissing": "Salva prima un peso e valori nutrizionali validi per questo preferito.",
+    "previousPeriod": "Periodo precedente",
+    "nextPeriod": "Periodo successivo",
+
     "photoAnalysisTitle": "Analisi delle foto",
     "photoAnalysisHint": "Aggiungi fino a 4 foto dello stesso pasto, etichetta o bilancia. La cronologia salva la prima foto.",
     "photoDescriptionPlaceholder": "Descrizione facoltativa: ad es. metà confezione, 150 g…",
@@ -322,6 +399,17 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "Il ragionamento configurabile di questo modello non è verificato. Viene usato il valore predefinito."
   },
   "pl": {
+    "photoSaveDestination": "Zapisz w",
+    "photoDiary": "Dziennik posiłków",
+    "photoFavorites": "Ulubione",
+    "addFoodMethod": "Sposób dodawania",
+    "manualFood": "Dodaj ręcznie",
+    "photoWeightEstimate": "Oszacuj masę ze zdjęcia",
+    "photoWeightHint": "Wartości odżywcze są obliczane z ulubionej pozycji.",
+    "photoWeightMissing": "Najpierw zapisz prawidłową masę i wartości odżywcze dla tej pozycji.",
+    "previousPeriod": "Poprzedni okres",
+    "nextPeriod": "Następny okres",
+
     "photoAnalysisTitle": "Analiza zdjęć",
     "photoAnalysisHint": "Dodaj do 4 zdjęć tego samego posiłku, etykiety lub wagi. Historia zapisuje pierwsze zdjęcie.",
     "photoDescriptionPlaceholder": "Opcjonalny opis: np. pół opakowania, 150 g…",
