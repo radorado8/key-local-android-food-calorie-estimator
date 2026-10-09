@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const babel = require('@babel/core');
-function setup({ complete, vision = true, failStore = false } = {}) {
+function setup({ complete, vision = true, failStore = false, architecture = 'qwen35' } = {}) {
   const values = new Map();
   const files = new Set();
   const calls = [];
@@ -14,12 +14,12 @@ function setup({ complete, vision = true, failStore = false } = {}) {
   const mocks = {
     '@react-native-async-storage/async-storage': { getItem: async key => values.get(key), setItem: async (key, value) => { if (failStore) throw new Error('disk full'); values.set(key, value); }, removeItem: async key => values.delete(key) },
     'expo-file-system/legacy': { documentDirectory: 'file:///new/Documents/', makeDirectoryAsync: async () => {}, copyAsync: async ({ to }) => files.add(to), deleteAsync: async uri => { calls.push(['delete', uri]); files.delete(uri); }, getInfoAsync: async uri => ({ exists: files.has(uri) }) },
-    'llama.rn': { loadLlamaModelInfo: async () => ({ 'general.architecture': 'qwen35' }), initLlama: async options => { calls.push(['init', options]); return context; } },
+    'llama.rn': { loadLlamaModelInfo: async () => ({ 'general.architecture': architecture }), initLlama: async options => { calls.push(['init', options]); return context; } },
   };
   function load(file) {
     const exports = {};
     const { code } = babel.transformSync(fs.readFileSync(file, 'utf8'), { configFile: false, babelrc: false, plugins: ['@babel/plugin-transform-modules-commonjs'] });
-    vm.runInNewContext(code, { exports, require: id => mocks[id] || (id === './foodResult' ? load('src/api/foodResult.js') : (() => { throw new Error(id); })()) });
+    vm.runInNewContext(code, { exports, require: id => { if (id === 'llama.rn') calls.push(['native-import']); return mocks[id] || (id === './foodResult' ? load('src/api/foodResult.js') : (() => { throw new Error(id); })()); } });
     return exports;
   }
   return { api: load('src/api/localModel.js'), values, files, calls };
@@ -70,4 +70,41 @@ test('failed import leaves no orphan weight and configuration stays untouched', 
   const env = setup({ failStore: true });
   await assert.rejects(env.api.importLocalModel({ name: 'model.gguf', uri: 'source' }), /disk full/);
   assert.equal(env.files.size, 0); assert.equal(env.values.size, 0);
+});
+
+test('Gemma 4 uses its required Jinja template while Boba retains its native template', async () => {
+  for (const architecture of ['gemma4', 'qwen35']) {
+    const env = setup({ architecture }); await seed(env);
+    await env.api.analyzeLocally({ text: '100 g jablko' });
+    assert.equal(env.calls.find(c => c[0] === 'completion')[1].jinja, architecture === 'gemma4');
+  }
+});
+
+test('local output defaults to English independently of input and interface language', async () => {
+  const env = setup(); await seed(env);
+  await env.api.analyzeLocally({ text: '100 g jablko', language: 'sk' });
+  const prompt = env.calls.find(c => c[0] === 'completion')[1].messages[0].content;
+  assert.match(prompt, /name in English/); assert.match(prompt, /100 g jablko/);
+  assert.equal((await env.api.getLocalModel()).outputLanguage, 'en');
+});
+test('app-language preference applies to text and photo and survives replacing or deleting models', async () => {
+  const env = setup(); await seed(env); await env.api.setLocalOutputLanguage('app');
+  await env.api.analyzeLocally({ text: 'jablko', language: 'sk' });
+  await env.api.analyzeLocally({ base64Data: 'PHOTO', language: 'de' });
+  const requests = env.calls.filter(c => c[0] === 'completion');
+  assert.match(requests[0][1].messages[0].content, /name in Slovak/);
+  assert.match(requests[1][1].messages[0].content[0].text, /name in German/);
+  await seed(env); assert.equal((await env.api.getLocalModel()).outputLanguage, 'app');
+  await env.api.deleteLocalModel(); assert.equal((await env.api.getLocalModel()).outputLanguage, 'app');
+  await env.api.setLocalOutputLanguage('en'); assert.equal((await env.api.getLocalModel()).outputLanguage, 'en');
+  await assert.rejects(env.api.setLocalOutputLanguage('invalid'), /local_language_invalid/);
+});
+
+test('startup and reading saved model settings never initialize native runtime or load weights', async () => {
+  const env = setup();
+  env.values.set('local-food-model.v1', JSON.stringify({ model: 'saved.gguf', projector: 'projector.gguf' }));
+  const files = await env.api.getLocalModel();
+  assert.match(files.model, /saved.gguf$/);
+  await env.api.setLocalOutputLanguage('en'); await env.api.getLocalModel();
+  assert.equal(env.calls.length, 0);
 });

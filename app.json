@@ -3,7 +3,7 @@
     "name": "Calories AI Local",
     "slug": "android-food-calorie-estimator",
     "scheme": "keylocalfoodestimator",
-    "version": "1.0.42",
+    "version": "1.0.43",
     "orientation": "default",
     "icon": "./assets/icon_key_fire_android.png",
     "userInterfaceStyle": "automatic",
@@ -26,7 +26,7 @@
     },
     "android": {
       "package": "com.rados.keylocalandroidfoodcalorieestimator",
-      "versionCode": 220,
+      "versionCode": 221,
       "permissions": [
         "android.permission.health.READ_TOTAL_CALORIES_BURNED",
         "android.permission.health.READ_ACTIVE_CALORIES_BURNED"
@@ -67,14 +67,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Povoliť prístup k fotkám pre analýzu jedla.",
-          "cameraPermission": "Povoliť prístup k fotoaparátu pre odfotenie jedla."
+          "photosPermission": "Povoli\u0165 pr\u00edstup k fotk\u00e1m pre anal\u00fdzu jedla.",
+          "cameraPermission": "Povoli\u0165 pr\u00edstup k fotoapar\u00e1tu pre odfotenie jedla."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Povoliť prístup k fotoaparátu pre odfotenie jedla."
+          "cameraPermission": "Povoli\u0165 pr\u00edstup k fotoapar\u00e1tu pre odfotenie jedla."
         }
       ],
       "expo-localization",
