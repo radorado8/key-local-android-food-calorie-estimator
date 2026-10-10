@@ -1,3 +1,4 @@
+import { energyCsvTranslations } from './energyCsvTranslations';
 import { aiTranslations } from './aiTranslations';
 
 export const translations = {
@@ -2670,5 +2671,9 @@ export const translations = {
 
 // Provider strings override older Gemini-only labels in all supported languages.
 for (const [language, values] of Object.entries(aiTranslations)) {
+    Object.assign(translations[language], values);
+}
+
+for (const [language, values] of Object.entries(energyCsvTranslations)) {
     Object.assign(translations[language], values);
 }

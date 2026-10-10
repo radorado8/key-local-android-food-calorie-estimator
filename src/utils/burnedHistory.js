@@ -15,7 +15,7 @@ export function burnedHistoryDates(history, now = new Date()) {
     day.setDate(day.getDate() - i);
     const key = localDateKey(day);
     // Reconcile yesterday once after midnight; older cached days need no reads.
-    if (!history[key] || (i === 1 && history[key].checkedOn !== today)) dates.push(key);
+    if (history[key]?.source !== 'csv' && (!history[key] || (i === 1 && history[key].checkedOn !== today))) dates.push(key);
   }
   return dates;
 }

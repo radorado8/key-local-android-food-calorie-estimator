@@ -162,8 +162,8 @@ export function SettingsProvider({ children }) {
       const expenditure = await getCalorieExpenditure({ requestMissingPermissions, garminMode });
       if (version !== healthReadVersion.current) return null;
       setCalorieExpenditure(expenditure);
-      if (Platform.OS === "android" && validEnergy(expenditure.burnedCalories) !== null) {
-        setBurnedCaloriesHistory(history => ({ ...history, [expenditure.date]: { calories: expenditure.burnedCalories, checkedOn: localDateKey() } }));
+      if (validEnergy(expenditure.burnedCalories) !== null) {
+        setBurnedCaloriesHistory(history => ({ ...history, [expenditure.date]: history[expenditure.date]?.source === 'csv' ? history[expenditure.date] : { calories: expenditure.burnedCalories, activeCalories: validEnergy(garminMode ? estimateGarminExpenditure(expenditure.rawBurnedCalories ?? expenditure.burnedCalories, garminRestingCalories, expenditure.sampledAt)?.active : expenditure.todayActiveCalories), restingCalories: validEnergy(expenditure.todayRestingCalories), checkedOn: localDateKey() } }));
       }
       if (!garminMode) setRestingCaloriesHistory(history => rememberRestingEnergy(history, expenditure.date, expenditure.todayRestingCalories));
       return expenditure.burnedCalories;
@@ -200,7 +200,7 @@ export function SettingsProvider({ children }) {
     if (!dates.length) return;
     historyReadInFlight.current = true;
     getHistoricalBurnedCalories(dates).then(values => {
-      if (Object.keys(values).length) setBurnedCaloriesHistory(history => ({ ...history, ...values }));
+      if (Object.keys(values).length) setBurnedCaloriesHistory(history => ({ ...history, ...Object.fromEntries(Object.entries(values).filter(([date]) => history[date]?.source !== 'csv')) }));
     }).catch(() => {}).finally(() => { historyReadInFlight.current = false; });
   }, [hydrated, healthConnectEnabled, currentHealth.date]);
 
@@ -256,6 +256,7 @@ export function SettingsProvider({ children }) {
       healthConnectEnabled,
       setHealthConnectEnabled,
       burnedCaloriesHistory,
+      importBurnedCalories: values => setBurnedCaloriesHistory(history => ({ ...history, ...sanitizeBurnedHistory(values) })),
       burnedCalories,
       estimatedBurnedCalories,
       expenditureEstimateEnabled,

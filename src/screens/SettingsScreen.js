@@ -1,3 +1,4 @@
+import { parseBurnedCaloriesCsv, exportBurnedCaloriesCsv } from '../utils/burnedCaloriesCsv';
 import ColorThemePicker from '../components/ColorThemePicker';
 import { typography } from '../theme/palette';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -203,7 +204,7 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors, disabled = fa
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { showCalorieFatEquivalent, setShowCalorieFatEquivalent, showLatestMeal, setShowLatestMeal, dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, reasoningLevel, setReasoningLevel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled, burnedCalories, refreshBurnedCalories } = useSettings();
+  const { showCalorieFatEquivalent, setShowCalorieFatEquivalent, showLatestMeal, setShowLatestMeal, dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, reasoningLevel, setReasoningLevel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled, burnedCalories, refreshBurnedCalories, burnedCaloriesHistory, importBurnedCalories } = useSettings();
 
   const { colors } = useSettings();
 
@@ -253,6 +254,33 @@ export default function SettingsScreen() {
   const [importingHistoryJson, setImportingHistoryJson] = useState(false);
   const [clearingHistory, setClearingHistory] = useState(false);
 
+  const [energyCsvBusy, setEnergyCsvBusy] = useState(false);
+  const handleEnergyImport = async () => {
+    try {
+      setEnergyCsvBusy(true);
+      const result = await DocumentPicker.getDocumentAsync({ type: ['text/csv', 'text/comma-separated-values', 'application/csv', 'text/plain'], copyToCacheDirectory: true });
+      if (result.canceled || !result.assets?.length) return;
+      const content = await FileSystem.readAsStringAsync(result.assets[0].uri);
+      const parsed = parseBurnedCaloriesCsv(content);
+      Alert.alert(t.importBurnedCsv, t.importBurnedConfirm.replace('{count}', String(Object.keys(parsed.values).length)).replace('{skipped}', String(parsed.skipped)), [
+        { text: t.cancel, style: 'cancel' },
+        { text: t.confirm, onPress: () => { importBurnedCalories(parsed.values); Alert.alert(t.info, t.importBurnedDone); } },
+      ]);
+    } catch { Alert.alert(t.error || 'Error', t.importBurnedError); }
+    finally { setEnergyCsvBusy(false); }
+  };
+  const handleEnergyExport = async () => {
+    try {
+      setEnergyCsvBusy(true);
+      if (!Object.keys(burnedCaloriesHistory).length) { Alert.alert(t.info, t.noBurnedData); return; }
+      const uri = FileSystem.documentDirectory + `burned_calories_${Date.now()}.csv`;
+      await FileSystem.writeAsStringAsync(uri, exportBurnedCaloriesCsv(burnedCaloriesHistory), { encoding: FileSystem.EncodingType.UTF8 });
+      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: 'text/csv', UTI: 'public.comma-separated-values-text' });
+      else Alert.alert(t.info, t.sharingUnavailable);
+    } catch { Alert.alert(t.error || 'Error', t.exportDataError); }
+    finally { setEnergyCsvBusy(false); }
+  };
+
   const handleImport = async () => {
     try {
       setImporting(true);
@@ -275,6 +303,19 @@ export default function SettingsScreen() {
         throw new Error(t.importErrorEmpty);
       }
 
+      const header = parseCsvRow(lines[0].replace(/^\uFEFF/, ''));
+      if (header.includes('celkove_kcal') && !header.includes('record_type')) {
+        importBurnedCalories(parseBurnedCaloriesCsv(content).values);
+        Alert.alert(t.success, t.importBurnedDone);
+        return;
+      }
+      const typeColumn = header.indexOf('record_type');
+      const energyRows = lines.slice(1).filter(line => typeColumn >= 0 && parseCsvRow(line)[typeColumn] === 'burned');
+      const energyValues = energyRows.length ? parseBurnedCaloriesCsv('datum,celkove_kcal,aktivne_kcal,pokojove_kcal\n' + energyRows.map(line => {
+        const row = parseCsvRow(line);
+        return [row[0], row[header.indexOf('celkove_kcal')], row[header.indexOf('aktivne_kcal')], row[header.indexOf('pokojove_kcal')]].map(escapeCsvField).join(',');
+      }).join('\n')).values : {};
+
       // We ignore the header row (index 0) and parse columns by order to support any language headers
       // Expected Order: Date, Name, Calories, Protein, Carbs, Fat, Weight
 
@@ -282,6 +323,7 @@ export default function SettingsScreen() {
 
       for (let i = 1; i < lines.length; i++) {
         const row = parseCsvRow(lines[i]);
+        if (typeColumn >= 0 && row[typeColumn] === 'burned') continue;
         if (row.length < 3) continue; // minimal valid row
 
         const dateStr = row[0]?.trim();
@@ -312,6 +354,7 @@ export default function SettingsScreen() {
       }
 
       const importedCount = await importMeals(mealsToImport);
+      importBurnedCalories(energyValues);
 
       Alert.alert(t.success, `${t.importedMsg} ${importedCount}`);
 
@@ -331,7 +374,7 @@ export default function SettingsScreen() {
       // Always local export now
       const meals = await getAllMeals(true);
       // Header
-      csvData = `\uFEFF${[t.csvHeaderDate, t.csvHeaderName, t.csvHeaderCals, t.csvHeaderProt, t.csvHeaderCarbs, t.csvHeaderFat, t.csvHeaderWeight].map(escapeCsvField).join(',')}\n`;
+      csvData = `\uFEFF${[t.csvHeaderDate, t.csvHeaderName, t.csvHeaderCals, t.csvHeaderProt, t.csvHeaderCarbs, t.csvHeaderFat, t.csvHeaderWeight, 'record_type', 'celkove_kcal', 'aktivne_kcal', 'pokojove_kcal'].map(escapeCsvField).join(',')}\n`;
 
       // Rows
       meals.forEach(m => {
@@ -342,8 +385,12 @@ export default function SettingsScreen() {
         const c = m.carbs || 0;
         const f = m.fat || 0;
         const w = m.weight_g || 0;
-        csvData += [date, name, cals, p, c, f, w].map(escapeCsvField).join(',') + '\n';
+        csvData += [date, name, cals, p, c, f, w, 'meal', '', '', ''].map(escapeCsvField).join(',') + '\n';
       });
+
+      for (const [date, entry] of Object.entries(burnedCaloriesHistory).sort(([a], [b]) => a.localeCompare(b))) {
+        csvData += [date, '', '', '', '', '', '', 'burned', entry.calories, entry.activeCalories ?? '', entry.restingCalories ?? ''].map(escapeCsvField).join(',') + '\n';
+      }
 
       const timestamp = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').slice(0, 16);
       const fileUri = FileSystem.documentDirectory + `meals_export_${timestamp}.csv`;
@@ -382,6 +429,7 @@ export default function SettingsScreen() {
         encoding: 'json-lines',
         exportedAt: new Date().toISOString(),
         mealCount: meals.length,
+        burnedCaloriesHistory,
       });
 
       // Each image and meal is released before the next one is loaded. This keeps
@@ -447,6 +495,7 @@ export default function SettingsScreen() {
       let photoDirectoryReady = false;
       let restoredImageCount = 0;
       const mealsToImport = [];
+      let energyValues = {};
 
       const restoreMeal = async (rawMeal, index) => {
         if (!rawMeal || typeof rawMeal !== 'object' || Array.isArray(rawMeal)) return;
@@ -503,6 +552,7 @@ export default function SettingsScreen() {
             if (record?.format !== HISTORY_EXPORT_FORMAT || record?.version !== HISTORY_STREAM_VERSION) {
               throw new Error('INVALID_HISTORY_JSON');
             }
+            energyValues = record.burnedCaloriesHistory || {};
             return;
           }
           await restoreMeal(record, lineNumber - 1);
@@ -515,12 +565,14 @@ export default function SettingsScreen() {
         if (payload?.format !== HISTORY_EXPORT_FORMAT || payload?.version !== 1 || !Array.isArray(payload?.meals)) {
           throw new Error('INVALID_HISTORY_JSON');
         }
+        energyValues = payload.burnedCaloriesHistory || {};
         for (let index = 0; index < payload.meals.length; index += 1) {
           await restoreMeal(payload.meals[index], index);
         }
       }
 
       const importedCount = await importMeals(mealsToImport);
+      importBurnedCalories(energyValues);
 
       Alert.alert(
         t.success || 'Hotovo',
@@ -1094,6 +1146,15 @@ export default function SettingsScreen() {
         {/* 6. Data Management */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, gap: 12 }]}>
           <Text style={[styles.label, { color: colors.text, marginBottom: 0 }]}>{t.dataManagementTitle}</Text>
+          <Text style={[styles.hint, { color: colors.muted }]}>{t.burnedCsvHint}</Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Pressable disabled={energyCsvBusy} onPress={handleEnergyExport} style={[styles.actionBtn, { flex: 1, backgroundColor: colors.elemBg, borderColor: colors.elemBorder }]}>
+              <Text style={[styles.btnText, { color: colors.accent }]}>{energyCsvBusy ? '...' : t.exportBurnedCsv}</Text>
+            </Pressable>
+            <Pressable disabled={energyCsvBusy} onPress={handleEnergyImport} style={[styles.actionBtn, { flex: 1, backgroundColor: colors.elemBg, borderColor: colors.elemBorder }]}>
+              <Text style={[styles.btnText, { color: colors.text }]}>{energyCsvBusy ? '...' : t.importBurnedCsv}</Text>
+            </Pressable>
+          </View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Pressable
               style={({ pressed }) => [

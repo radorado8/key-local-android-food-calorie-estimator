@@ -41,7 +41,7 @@ const ACTIVE_LIST_KEY = 'favorites.activeList';
 export default function FavoritesScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const t = useTranslation();
-    const { theme, showImagesInHistory, useLocalStorage, foodCategories, language } = useSettings();
+    const { burnedCaloriesHistory, importBurnedCalories, theme, showImagesInHistory, useLocalStorage, foodCategories, language } = useSettings();
     const [favorites, setFavorites] = useState([]);
     const [favoriteLists, setFavoriteLists] = useState([]);
     const [activeListId, setActiveListId] = useState('default');
@@ -287,7 +287,7 @@ export default function FavoritesScreen({ route, navigation }) {
         if (!activeList) return;
         try {
             setListBusy(true);
-            const payload = await exportFavoriteList(activeList.id);
+            const payload = { ...await exportFavoriteList(activeList.id), burnedCaloriesHistory };
             const safeName = activeList.name.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'favorites';
             const uri = `${FileSystem.documentDirectory}${safeName}_${Date.now()}.calories-favorites.json`;
             await FileSystem.writeAsStringAsync(uri, JSON.stringify(payload), { encoding: FileSystem.EncodingType.UTF8 });
@@ -302,7 +302,9 @@ export default function FavoritesScreen({ route, navigation }) {
             const result = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/json', 'text/plain'], copyToCacheDirectory: true });
             if (result.canceled || !result.assets?.[0]) return;
             const raw = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
-            const imported = await importFavoriteList(JSON.parse(raw), language);
+            const payload = JSON.parse(raw);
+            const imported = await importFavoriteList(payload, language);
+            importBurnedCalories(payload.burnedCaloriesHistory || {});
             selectList(imported.list.id);
             Alert.alert(t.success || 'Hotovo', `${imported.count} ${t.importedMsg || 'položiek importovaných.'}`);
         } catch (error) { Alert.alert(t.errorTitle || 'Chyba', error.message || 'Import zlyhal.'); }
@@ -448,7 +450,6 @@ export default function FavoritesScreen({ route, navigation }) {
             {/* Add Favorite Dialog */}
             <MealEditDialog
                 visible={addOpen}
-                initialMeal={{}}
                 mode="add"
                 colors={colors}
                 categories={foodCategories}

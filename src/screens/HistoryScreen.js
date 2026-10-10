@@ -666,7 +666,6 @@ export default function HistoryScreen({ route, navigation }) {
       {/* Add Meal Dialog */}
       <MealEditDialog
         visible={addOpen}
-        initialMeal={{}} // Empty for add
         mode="add"
         colors={colors}
         onCancel={() => setAddOpen(false)}

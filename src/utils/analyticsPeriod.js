@@ -1,5 +1,6 @@
 // Calendar dates are advanced locally, so daylight-saving days remain intact.
 export function analyticsMaxOffset(mode, earliest, now = new Date()) {
+  if (mode === 'year') return 0;
   if (!earliest || !Number.isFinite(earliest.getTime())) return 0;
   if (mode === 'month') return Math.max(0, (now.getFullYear() - earliest.getFullYear()) * 12 + now.getMonth() - earliest.getMonth());
   const dayNumber = date => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000;
@@ -9,7 +10,10 @@ export function analyticsMaxOffset(mode, earliest, now = new Date()) {
 export function analyticsPeriod(mode, offset = 0, now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   let start, end;
-  if (mode === 'month') {
+  if (mode === 'year') {
+    start = new Date(today.getFullYear(), today.getMonth() - 11, 1);
+    end = new Date(today);
+  } else if (mode === 'month') {
     start = new Date(today.getFullYear(), today.getMonth() - offset, 1);
     end = offset === 0 ? new Date(today) : new Date(start.getFullYear(), start.getMonth() + 1, 0);
   } else {
