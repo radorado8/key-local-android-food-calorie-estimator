@@ -188,7 +188,7 @@ export default function AnalyticsScreen() {
                     </Pressable>
                 </View>
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <View style={styles.dateRangeSelector}>
                     <Pressable accessibilityLabel={t.previousPeriod} disabled={periodOffset >= maxPeriodOffset} onPress={() => { setPeriodOffset(value => Math.min(maxPeriodOffset, value + 1)); setSelectedDay(null); }} style={{ padding: 12, opacity: periodOffset >= maxPeriodOffset ? 0.3 : 1 }}>
                         <Ionicons name="chevron-back" size={24} color={colors.accent} />
                     </Pressable>
@@ -421,6 +421,7 @@ const styles = StyleSheet.create({
     headerBlock: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 8, alignItems: 'center' },
     headerTitle: { ...typography.screenTitle, textAlign: 'center' },
     content: { padding: 16, paddingBottom: 100, gap: 12 },
+    dateRangeSelector: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: -4 },
     segmentContainer: {
         flexDirection: 'row', borderRadius: 12, borderWidth: 1, overflow: 'hidden',
     },

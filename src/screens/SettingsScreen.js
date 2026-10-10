@@ -1175,13 +1175,19 @@ export default function SettingsScreen() {
           </Text>
 
           <Text style={[styles.hint, { color: colors.muted, marginBottom: 4 }]}>Info:</Text>
-          <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 6 }} onPress={() => Linking.openURL('https://kalorie-jedlo-web-rot.web.app/')}>
+          <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 12 }} onPress={() => Linking.openURL('https://kalorie-jedlo-web-rot.web.app/')}>
             🌐 {t.website}
           </Text>
           <Pressable onPress={() => setShowTerms(true)}>
             <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 12 }}>
               📄 {t.termsConditions}
             </Text>
+          </Pressable>
+
+          <Pressable accessibilityRole="link" accessibilityLabel="GitHub" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}
+            onPress={() => Linking.openURL('https://github.com/radorado8/key-local-android-food-calorie-estimator')}>
+            <Ionicons name="logo-github" size={18} color={colors.accent} />
+            <Text style={{ color: colors.accent, fontWeight: '700' }}>GitHub</Text>
           </Pressable>
 
           <Text style={[styles.hint, { color: colors.muted, marginBottom: 4 }]}>Support:</Text>

@@ -358,7 +358,7 @@ export default function FavoritesScreen({ route, navigation }) {
                 sections={sections}
                 keyExtractor={(item) => item.id}
                 keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 }}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 1, paddingBottom: 100 }}
                 stickySectionHeadersEnabled={false}
                 renderSectionHeader={({ section }) => {
                     if (!section.title) return null; // uncategorized — no header
