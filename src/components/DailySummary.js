@@ -1,19 +1,23 @@
+import { getLatestMeal } from '../utils/latestMeal';
+import MealElapsedIndicator from './MealElapsedIndicator';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect, G, Path, Text as SvgText } from 'react-native-svg';
 import { subscribeToMeals } from '../api/mealService';
 import { useTranslation } from '../hooks/useTranslation';
 import { useSettings } from '../state/SettingsContext';
 
-export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress, burnedCalories = null, estimatedBurnedCalories = null, expenditureEstimateEnabled = false, healthConnectEnabled = false }) {
+export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress, burnedCalories = null, estimatedBurnedCalories = null, expenditureEstimateEnabled = false, healthConnectEnabled = false, latestMeal = null }) {
   const t = useTranslation();
-  const { language, macroGoals, activeCalories } = useSettings();
+  const { language, macroGoals, activeCalories, showMealElapsed } = useSettings();
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [loading, setLoading] = useState(true);
+  const [observedLatestMeal, setObservedLatestMeal] = useState(latestMeal);
   const [ringWidth, setRingWidth] = useState(312);
   const ringScale = Math.min(1, ringWidth / 312);
 
   // Time & Meal Type Logic
+  const [clockNow, setClockNow] = useState(Date.now());
   const [dateStr, setDateStr] = useState('');
   const [timeStr, setTimeStr] = useState('');
   const [mealTypeStr, setMealTypeStr] = useState('');
@@ -21,6 +25,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
+      setClockNow(now.getTime());
 
       // Date: "Pondelok, 6. Jan"
       const dateOpts = { weekday: 'long', day: 'numeric', month: 'short' };
@@ -44,8 +49,9 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
     };
 
     updateTime();
-    const timer = setInterval(updateTime, 10000); // every 10s is enough
-    return () => clearInterval(timer);
+    const timer = setInterval(updateTime, 10000);
+    const appStateListener = AppState.addEventListener('change', state => { if (state === 'active') updateTime(); });
+    return () => { clearInterval(timer); appStateListener.remove(); };
   }, [language, t]);
 
   // ... (useEffect remains same, omitted for brevity if using replace_file_content carefully)
@@ -60,6 +66,8 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
     sevenDaysAgo.setDate(today.getDate() - 6);
 
     const unsub = subscribeToMeals(useLocalStorage, (fetched) => {
+      setObservedLatestMeal(getLatestMeal(fetched));
+      setClockNow(Date.now());
       const next = { calories: 0, protein: 0, carbs: 0, fat: 0 };
       const dailyMap = {};
 
@@ -222,7 +230,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
   return (
     <View style={styles.container}>
       {/* Header Info inside the Card */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', marginBottom: 2, paddingHorizontal: 4 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: Platform.OS === 'android' ? 312 : '100%', maxWidth: '100%', marginBottom: 2, paddingLeft: Platform.OS === 'android' ? 0 : 4, paddingRight: 4, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <View>
           <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800' }}>{dateStr}</Text>
         </View>
@@ -313,6 +321,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
             })}
           </G>
         </Svg>
+        {showMealElapsed && <MealElapsedIndicator meal={observedLatestMeal} now={clockNow} colors={colors} onPress={onPress} />}
 
         <Pressable
           style={[styles.center, showBurnedCalories && styles.splitCenter, showEstimatedCalories && styles.estimatedCenter, { top: (showBurnedCalories ? 110 : 76) * ringScale }]}

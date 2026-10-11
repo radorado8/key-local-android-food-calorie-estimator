@@ -29,7 +29,7 @@ function toNumber(v) {
   return Number.isFinite(n) ? n : NaN;
 }
 
-export default function MealEditDialog({ visible, initialMeal, onCancel, onSave, colors, mode = 'edit', categories = [], imageStorageFolder = 'meal_photos' }) {
+export default function MealEditDialog({ visible, initialMeal, onCancel, onSave, colors, mode = 'edit', categories = [], imageStorageFolder = 'meal_photos', onReanalyze, analysisFlow }) {
   const t = useTranslation();
   const insets = useSafeAreaInsets();
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -40,6 +40,8 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
   const [fat, setFat] = useState('');
   const [weightG, setWeightG] = useState('');
   const [imageUri, setImageUri] = useState(null);
+  const [savingImage, setSavingImage] = useState(false);
+  const savingImageRef = useRef(false);
   const [showCamera, setShowCamera] = useState(false);
   const [cameraFlash, setCameraFlash] = useState('off');
   const [capturingPhoto, setCapturingPhoto] = useState(false);
@@ -66,6 +68,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
     setWeightG(String(initialMeal?.weight_g ?? (mode === 'add' ? '0' : '')));
     setImageUri(initialMeal?.imageUri || null);
     setCategoryId(initialMeal?.categoryId || null);
+    setShowDatePicker(false);
     translateY.setValue(0);
 
     if (initialMeal?.timestamp) {
@@ -83,7 +86,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
 
     const focusTimeout = setTimeout(() => {
       try {
-        nameRef.current?.focus?.();
+        if (!analysisFlow) nameRef.current?.focus?.();
       } catch {
         // ignore
       }
@@ -141,6 +144,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
 
   const currentColors = colors || {
     bg: '#0B0F14',
+    modalBg: '#161B22',
     card: 'rgba(255,255,255,0.06)',
     text: '#FFFFFF',
     muted: 'rgba(255,255,255,0.7)',
@@ -215,33 +219,61 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
     }
   };
 
+  const removeImage = () => Alert.alert(t.removeMealPhoto, t.removeMealPhotoConfirm, [
+    { text: t.cancel, style: 'cancel' },
+    { text: t.delete, style: 'destructive', onPress: () => setImageUri(null) },
+  ]);
+
+  const saveImageToGallery = async () => {
+    if (!imageUri || savingImageRef.current) return;
+    savingImageRef.current = true;
+    setSavingImage(true);
+    let temporaryUri;
+    try {
+      const MediaLibrary = await import('expo-media-library');
+      // Scoped storage permits adding photos without reading the user's gallery.
+      if (Platform.OS === 'ios' || (Platform.OS === 'android' && Number(Platform.Version) < 29)) {
+        const permission = await MediaLibrary.requestPermissionsAsync(true, ['photo']);
+        if (!permission.granted) { Alert.alert(t.errorTitle, t.saveMealPhotoPermission); return; }
+      }
+      const photo = await manipulateAsync(imageUri, [], { compress: 1, format: SaveFormat.JPEG });
+      temporaryUri = photo.uri;
+      await MediaLibrary.saveToLibraryAsync(temporaryUri);
+      Alert.alert(t.success, t.saveMealPhotoSuccess);
+    } catch (error) {
+      Alert.alert(t.errorTitle, t.saveMealPhotoError);
+    } finally {
+      if (temporaryUri && temporaryUri !== imageUri) await FileSystem.deleteAsync(temporaryUri, { idempotent: true }).catch(() => {});
+      savingImageRef.current = false;
+      setSavingImage(false);
+    }
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel} statusBarTranslucent={true}>
       <View style={styles.backdrop}>
-        <Animated.View style={[styles.card, { backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderColor: currentColors.border, transform: [{ translateY }] }]}>
+        <Animated.View style={[styles.card, { backgroundColor: currentColors.modalBg || (currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card), borderColor: currentColors.border, transform: [{ translateY }] }]}>
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {(imageUri) && (
               <View style={{ marginBottom: 4 }}>
                 <Image
                   source={{ uri: imageUri }}
-                  style={{ width: '100%', height: 100, borderRadius: 12, backgroundColor: currentColors.elemBg }}
+                  style={{ width: '100%', height: 156, paddingRight: 52, borderRadius: 12, backgroundColor: currentColors.elemBg }}
                   resizeMode="contain"
                 />
-                <Pressable
-                  onPress={() => setImageUri(null)}
-                  style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    backgroundColor: 'rgba(0,0,0,0.6)',
-                    borderRadius: 20,
-                    padding: 8,
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.2)'
-                  }}
-                >
-                  <Ionicons name="trash-outline" size={20} color={currentColors.danger} />
-                </Pressable>
+                <View style={styles.photoTools}>
+                  <Pressable onPress={removeImage} accessibilityLabel={t.removeMealPhoto} style={styles.photoTool}>
+                    <Ionicons name="trash-outline" size={20} color="#FF7B7B" />
+                  </Pressable>
+                  <Pressable onPress={saveImageToGallery} disabled={savingImage} accessibilityLabel={t.saveMealPhoto}
+                    style={[styles.photoTool, savingImage && { opacity: 0.5 }]}>
+                    <Ionicons name="download-outline" size={20} color="#FFFFFF" />
+                  </Pressable>
+                  {onReanalyze && <Pressable onPress={() => { Keyboard.dismiss(); onReanalyze({ ...parsed, imageUri }); }}
+                    accessibilityLabel={t.reanalyzeMealPhoto} style={styles.photoTool}>
+                    <Ionicons name="sparkles-outline" size={20} color="#FFFFFF" />
+                  </Pressable>}
+                </View>
               </View>
             )}
 
@@ -264,10 +296,10 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
               <View style={{ marginBottom: 8 }}>
                 <Text style={[styles.label, { color: currentColors.muted, marginBottom: 4 }]}>{t.dateLabel || 'Date & Time'}</Text>
 
-                {Platform.OS === 'android' && (
+                {(
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     <Pressable
-                      onPress={() => setShowDatePicker('date')}
+                      onPress={() => { Keyboard.dismiss(); setShowDatePicker('date'); }}
                       style={[styles.input, { flex: 1, backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, paddingVertical: 8, alignItems: 'center' }]}
                     >
                       <Text style={{ color: currentColors.text, fontWeight: '700' }}>
@@ -275,7 +307,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
                       </Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => setShowDatePicker('time')}
+                      onPress={() => { Keyboard.dismiss(); setShowDatePicker('time'); }}
                       style={[styles.input, { flex: 1, backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, paddingVertical: 8, alignItems: 'center' }]}
                     >
                       <Text style={{ color: currentColors.text, fontWeight: '700' }}>
@@ -283,7 +315,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
                       </Text>
                     </Pressable>
 
-                    {!!showDatePicker && (
+                    {Platform.OS === 'android' && !!showDatePicker && (
                       <DateTimePicker
                         value={date}
                         mode={showDatePicker} // 'date' or 'time'
@@ -304,6 +336,33 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
                         }}
                       />
                     )}
+                  </View>
+                )}
+                {Platform.OS === 'ios' && !!showDatePicker && (
+                  <View style={{ backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, borderWidth: 1, borderRadius: 12, marginTop: 8, padding: 8 }}>
+                    <DateTimePicker
+                      value={date}
+                      mode={showDatePicker}
+                      display="spinner"
+                      themeVariant={['#FFFFFF', '#F3F6FA'].includes(currentColors.text) ? 'dark' : 'light'}
+                      textColor={currentColors.text}
+                      style={{ width: '100%' }}
+                      onChange={(_event, selectedDate) => {
+                        if (!selectedDate) return;
+                        setDate(previous => {
+                          const next = new Date(previous);
+                          if (showDatePicker === 'date') {
+                            next.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+                          } else {
+                            next.setHours(selectedDate.getHours(), selectedDate.getMinutes());
+                          }
+                          return next;
+                        });
+                      }}
+                    />
+                    <Pressable onPress={() => setShowDatePicker(false)} style={[styles.btn, { backgroundColor: currentColors.elemBg }]}>
+                      <Text style={{ color: currentColors.accent, fontWeight: '700' }}>{t.confirm}</Text>
+                    </Pressable>
                   </View>
                 )}
               </View>
@@ -412,7 +471,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
       {showCategoryPicker && (
         <Modal visible={true} transparent animationType="fade" onRequestClose={() => setShowCategoryPicker(false)}>
           <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 }} onPress={() => setShowCategoryPicker(false)}>
-            <View style={{ backgroundColor: currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card, borderRadius: 16, borderWidth: 1, borderColor: currentColors.border, maxHeight: '60%' }}>
+            <View style={{ backgroundColor: currentColors.modalBg || (currentColors.card === 'rgba(255,255,255,0.06)' ? '#161B22' : currentColors.card), borderRadius: 16, borderWidth: 1, borderColor: currentColors.border, maxHeight: '60%' }}>
               <ScrollView bounces={false}>
                 <Pressable
                   style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: currentColors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
@@ -436,6 +495,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
           </Pressable>
         </Modal>
       )}
+      {analysisFlow}
     </Modal>
   );
 }
@@ -483,6 +543,8 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 2,
   },
+  photoTools: { position: 'absolute', top: 6, right: 6, gap: 4 },
+  photoTool: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.75)', borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
   imageActions: {
     flexDirection: 'row',
     gap: 8,

@@ -44,7 +44,6 @@ export async function analyzeImage({ base64Data, mimeType, images, text, weightG
             }
         ],
         generationConfig: {
-            temperature: 0.2, // Low temperature for factual JSON
             maxOutputTokens: 1000,
             responseMimeType: "application/json",
             ...reasoningConfig('gemini', modelId, reasoningLevel)
@@ -158,7 +157,7 @@ Return ONLY a raw JSON string, nothing else. If it is not food, return {"error":
             headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
             body: JSON.stringify({
                 contents: [{ parts }],
-                generationConfig: { temperature: 0.2, maxOutputTokens: 1000, responseMimeType: 'application/json', ...reasoningConfig('gemini', modelId, reasoningLevel) }
+                generationConfig: { maxOutputTokens: 1000, responseMimeType: 'application/json', ...reasoningConfig('gemini', modelId, reasoningLevel) }
             }),
             signal
         }

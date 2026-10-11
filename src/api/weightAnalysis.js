@@ -41,7 +41,7 @@ export async function requestWeightAnalysis(payload, photos, provider, model, ke
     const data = await request(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, signal: payload.signal,
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, ...photos.map(photo => ({ inline_data: { mime_type: photo.mimeType || 'image/jpeg', data: photo.base64Data } }))] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 16000, responseMimeType: 'application/json', responseJsonSchema: weightResultSchema, ...thinking } }),
+        generationConfig: { maxOutputTokens: 16000, responseMimeType: 'application/json', responseJsonSchema: weightResultSchema, ...thinking } }),
     }, provider);
     result = data.candidates?.[0]?.content?.parts?.filter(part => !part.thought).map(part => part.text || '').join('');
   } else if (provider === 'openai') {

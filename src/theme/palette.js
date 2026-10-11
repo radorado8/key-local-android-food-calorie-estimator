@@ -9,7 +9,7 @@ export function getPalette(mode, selected = 'original') {
   if (selected === 'original' || !COLOR_THEMES.includes(selected)) {
     const dark = mode === 'dark';
     const accent = dark ? '#2DD4BF' : '#0D9488';
-    const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+    const border = dark ? 'rgba(255,255,255,0.1)' : '#A8B4C3';
     const text = dark ? '#FFFFFF' : '#0F172A';
     const muted = dark ? 'rgba(255,255,255,0.7)' : '#64748B';
     return {
@@ -18,7 +18,7 @@ export function getPalette(mode, selected = 'original') {
       modalBg: dark ? '#161B22' : '#FFFFFF',
       text, muted, accent, border,
       elemBg: dark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-      elemBorder: dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.05)',
+      elemBorder: dark ? 'rgba(255,255,255,0.12)' : '#A8B4C3',
       btn: dark ? '#CFFAFE' : '#0D94881A', btnText: dark ? '#000000' : accent,
       onAccent: dark ? '#000000' : '#FFFFFF', btnBorder: border,
       tabBg: dark ? '#0B0F14' : '#FFFFFF',
@@ -33,7 +33,7 @@ export function getPalette(mode, selected = 'original') {
   const accent = dark ? darkAccent : lightAccent;
   const card = dark ? darkCard : '#FFFFFF';
   const muted = dark ? '#B2BCCB' : '#5E6B7C';
-  const border = dark ? '#3B4655' : '#DCE3EB';
+  const border = dark ? '#3B4655' : '#A8B4C3';
   return {
     bg: dark ? darkBg : lightBg, card, modalBg: card,
     text: dark ? '#F3F6FA' : '#1B2838', muted, accent, border,

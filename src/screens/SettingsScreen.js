@@ -1,3 +1,4 @@
+import ChoiceBox from '../components/ChoiceBox';
 import { parseBurnedCaloriesCsv, exportBurnedCaloriesCsv } from '../utils/burnedCaloriesCsv';
 import ColorThemePicker from '../components/ColorThemePicker';
 import { typography } from '../theme/palette';
@@ -204,7 +205,7 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors, disabled = fa
 
 export default function SettingsScreen() {
   const t = useTranslation();
-  const { showCalorieFatEquivalent, setShowCalorieFatEquivalent, showLatestMeal, setShowLatestMeal, dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, reasoningLevel, setReasoningLevel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled, burnedCalories, refreshBurnedCalories, burnedCaloriesHistory, importBurnedCalories } = useSettings();
+  const { weekStart, setWeekStart, showMealElapsed, setShowMealElapsed, galleryPhotoReviewEnabled, setGalleryPhotoReviewEnabled, showCalorieFatEquivalent, setShowCalorieFatEquivalent, showLatestMeal, setShowLatestMeal, dailyGoal, setDailyGoal, aiProvider, aiModel, setAiModel, reasoningLevel, setReasoningLevel, language, setLanguage, theme, userTheme, setTheme, useLocalStorage, setUseLocalStorage, customModels, setCustomModels, foodCategories, setFoodCategories, saveFoodImages, setSaveFoodImages, showImagesInHistory, setShowImagesInHistory, showUniqueHistorySearchResults, setShowUniqueHistorySearchResults, autoSaveEnabled, setAutoSaveEnabled, autoSaveSeconds, setAutoSaveSeconds, healthConnectEnabled, setHealthConnectEnabled, burnedCalories, refreshBurnedCalories, burnedCaloriesHistory, importBurnedCalories } = useSettings();
 
   const { colors } = useSettings();
 
@@ -997,6 +998,34 @@ export default function SettingsScreen() {
             </View>
             <Switch value={showLatestMeal === true} onValueChange={setShowLatestMeal}
               accessibilityLabel={t.showLatestMealTitle} trackColor={{ false: colors.elemBg, true: colors.accent }} />
+          </View>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.label, { color: colors.text, marginBottom: 10 }]}>{t.weekStartTitle}</Text>
+          <ChoiceBox value={weekStart} onChange={setWeekStart} colors={colors} label={t.weekStartTitle}
+            options={[{ value: 'monday', label: t.weekMonday }, { value: 'sunday', label: t.weekSunday }]} />
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.label, { color: colors.text }]}>{t.showMealElapsedTitle}</Text>
+              <Text style={[styles.hint, { color: colors.muted }]}>{t.showMealElapsedHint}</Text>
+            </View>
+            <Switch value={showMealElapsed} onValueChange={setShowMealElapsed}
+              accessibilityLabel={t.showMealElapsedTitle} trackColor={{ false: colors.elemBg, true: colors.accent }} />
+          </View>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.label, { color: colors.text }]}>{t.galleryPhotoReviewTitle}</Text>
+              <Text style={[styles.hint, { color: colors.muted }]}>{t.galleryPhotoReviewHint}</Text>
+            </View>
+            <Switch value={galleryPhotoReviewEnabled} onValueChange={setGalleryPhotoReviewEnabled}
+              accessibilityLabel={t.galleryPhotoReviewTitle} trackColor={{ false: colors.elemBg, true: colors.accent }} />
           </View>
         </View>
 

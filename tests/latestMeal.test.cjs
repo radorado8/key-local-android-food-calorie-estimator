@@ -24,3 +24,21 @@ test('empty history and invalid dates have no preview, Date objects are supporte
   const meal = { dateObj: new Date('2026-09-26T10:00:00Z') };
   assert.equal(getLatestMeal([meal]), meal);
 });
+
+test('live records support timestamp objects and invalid cached dates fall back to persisted timestamps', () => {
+  const { mealTimestamp } = output;
+  const now = Date.parse('2026-10-11T18:00:00Z');
+  const fresh = { timestamp: { seconds: now / 1000 } };
+  assert.equal(mealTimestamp(fresh), now);
+  assert.equal(getLatestMeal([{ timestamp: '2026-10-10T00:00:00Z' }, fresh]), fresh);
+  assert.equal(mealTimestamp({ dateObj: 'invalid', timestamp: '2026-10-11T18:00:00Z' }), now);
+  assert.equal(mealTimestamp({ timestamp: { toDate: () => new Date(now) } }), now);
+});
+test('new meal is immediately selected from a live snapshot before any restart', () => {
+  const previous = { id: 'old', timestamp: '2026-10-11T12:00:00Z' };
+  const fresh = { id: 'new', timestamp: '2026-10-11T18:00:00Z' };
+  assert.equal(getLatestMeal([previous]), previous);
+  const latest = getLatestMeal([fresh, previous]);
+  assert.equal(latest, fresh);
+  assert.equal(Math.max(0, Math.floor((Date.parse(fresh.timestamp) - output.mealTimestamp(latest)) / 60000)), 0);
+});

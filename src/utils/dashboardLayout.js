@@ -16,10 +16,10 @@ export function dashboardContentFits(viewport, fixedContent, hasLatestMeal, font
 
 export function dashboardButtonHeights(viewport, fixedContent, hasLatestMeal, fontScale = 1) {
   const { text: textMin, actions: actionMin } = minimumButtonHeights(fontScale);
-  // Voice and text should make use of spare vertical space, while remaining
-  // visually lighter than the primary photo actions below.
-  const textMax = Math.max(168, textMin);
+  // Voice, text and search use a 20% lower cap than photo actions,
+  // while preserving enough height for accessible text sizes.
   const actionMax = Math.max(116, actionMin);
+  const textMax = Math.max(116 * 0.8, textMin);
   const gaps = (hasLatestMeal ? 3 : 2) * 6;
   const available = Math.max(0, viewport - fixedContent - 20 - gaps);
   const extra = Math.max(0, available - textMin - actionMin);

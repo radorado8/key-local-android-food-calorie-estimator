@@ -88,6 +88,7 @@ function serviceFixture(failListWrite = false) {
     },
     'expo-file-system/legacy': {}, 'expo-image-manipulator': {},
     '../utils/usdaFavoriteNames': { upgradeUsdaFavoriteNames },
+    '../utils/restoreImageUris': { restoreImageUris: async records => ({ records, changed: false }) },
   });
   return { service, storage, old };
 }

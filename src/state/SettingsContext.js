@@ -35,7 +35,11 @@ export function SettingsProvider({ children }) {
   const [language, setLanguage] = useState(initialLang);
   const [theme, setTheme] = useState('system');
   const [showCalorieFatEquivalent, setShowCalorieFatEquivalent] = useState(false);
+  const [galleryPhotoReviewEnabled, setGalleryPhotoReviewEnabled] = useState(false);
   const [showLatestMeal, setShowLatestMeal] = useState(null);
+  const [showMealElapsed, setShowMealElapsed] = useState(true);
+  const [analyticsRangeModes, setAnalyticsRangeModes] = useState({ week: "rolling", fortnight: "rolling", month: "absolute", year: "rolling" });
+  const [weekStart, setWeekStart] = useState("monday");
   const [colorTheme, setColorTheme] = useState('original');
   const [useLocalStorage, setUseLocalStorage] = useState(true);
   const [customModels, setCustomModels] = useState([]);
@@ -105,7 +109,13 @@ export function SettingsProvider({ children }) {
           if (['none', 'gemini', 'openai'].includes(parsed?.claudeVoiceProvider)) setClaudeVoiceProvider(parsed.claudeVoiceProvider);
           if (typeof parsed?.language === 'string') setLanguage(parsed.language);
           if (typeof parsed?.showCalorieFatEquivalent === 'boolean') setShowCalorieFatEquivalent(parsed.showCalorieFatEquivalent);
+          if (typeof parsed?.galleryPhotoReviewEnabled === 'boolean') setGalleryPhotoReviewEnabled(parsed.galleryPhotoReviewEnabled);
           if (typeof parsed?.showLatestMeal === 'boolean') setShowLatestMeal(parsed.showLatestMeal);
+          if (typeof parsed?.showMealElapsed === 'boolean') setShowMealElapsed(parsed.showMealElapsed);
+          if (['monday', 'sunday'].includes(parsed?.weekStart)) setWeekStart(parsed.weekStart);
+          if (parsed?.analyticsRangeModes && typeof parsed.analyticsRangeModes === 'object') {
+            setAnalyticsRangeModes(previous => ({ ...previous, ...Object.fromEntries(Object.entries(parsed.analyticsRangeModes).filter(([key, value]) => ['week', 'fortnight', 'month', 'year'].includes(key) && ['rolling', 'absolute'].includes(value))) }));
+          }
           if (COLOR_THEMES.includes(parsed?.colorTheme)) setColorTheme(parsed.colorTheme);
           if (typeof parsed?.theme === 'string') setTheme(parsed.theme);
           if (Array.isArray(parsed?.customModels)) setCustomModels(parsed.customModels);
@@ -143,9 +153,9 @@ export function SettingsProvider({ children }) {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ modelReasoning, burnedCaloriesHistory, aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, expenditureEstimateEnabled, garminModeEnabled, garminRestingCalories, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, dailyEnergyReading })
+      JSON.stringify({ modelReasoning, burnedCaloriesHistory, aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, galleryPhotoReviewEnabled, analyticsRangeModes, weekStart, showMealElapsed, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, expenditureEstimateEnabled, garminModeEnabled, garminRestingCalories, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, dailyEnergyReading })
     ).catch(() => { });
-  }, [modelReasoning, aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, expenditureEstimateEnabled, garminModeEnabled, garminRestingCalories, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, dailyEnergyReading, burnedCaloriesHistory, hydrated]);
+  }, [modelReasoning, aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, galleryPhotoReviewEnabled, analyticsRangeModes, weekStart, showMealElapsed, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, expenditureEstimateEnabled, garminModeEnabled, garminRestingCalories, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, dailyEnergyReading, burnedCaloriesHistory, hydrated]);
 
   useEffect(() => {
     if (!hydrated || !healthConnectEnabled) return;
@@ -232,6 +242,14 @@ export function SettingsProvider({ children }) {
       setColorTheme,
       showCalorieFatEquivalent,
       setShowCalorieFatEquivalent,
+      galleryPhotoReviewEnabled,
+      setGalleryPhotoReviewEnabled,
+      analyticsRangeModes,
+      setAnalyticsRangeModes,
+      weekStart,
+      setWeekStart,
+      showMealElapsed,
+      setShowMealElapsed,
       showLatestMeal,
       setShowLatestMeal,
       colors: getPalette(effectiveTheme, colorTheme),
@@ -275,7 +293,7 @@ export function SettingsProvider({ children }) {
       setGarminRestingCalories,
       refreshBurnedCalories,
     };
-  }, [modelReasoning, aiProvider, providerModels, claudeVoiceProvider, hydrated, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, burnedCaloriesHistory, burnedCalories, estimatedBurnedCalories, expenditureEstimateEnabled, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, garminModeEnabled, garminRestingCalories, activeCalories, currentHealth.todayActiveCalories, activeCaloriesAvailable, restingBaseline.calories, restingBaseline.source, colorScheme]);
+  }, [modelReasoning, aiProvider, providerModels, claudeVoiceProvider, hydrated, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, galleryPhotoReviewEnabled, analyticsRangeModes, weekStart, showMealElapsed, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, burnedCaloriesHistory, burnedCalories, estimatedBurnedCalories, expenditureEstimateEnabled, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, garminModeEnabled, garminRestingCalories, activeCalories, currentHealth.todayActiveCalories, activeCaloriesAvailable, restingBaseline.calories, restingBaseline.source, colorScheme]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

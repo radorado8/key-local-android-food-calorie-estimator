@@ -1,3 +1,4 @@
+import ChoiceBox from '../components/ChoiceBox';
 import { aggregateAnalyticsMonths } from '../utils/burnedCaloriesCsv';
 import { analyticsPeriod, analyticsMaxOffset } from '../utils/analyticsPeriod';
 import { typography } from '../theme/palette';
@@ -27,7 +28,7 @@ function getLocalDateKey(d) {
 
 export default function AnalyticsScreen() {
     const t = useTranslation();
-    const { theme, dailyGoal, useLocalStorage, language, showCalorieFatEquivalent, healthConnectEnabled, burnedCaloriesHistory } = useSettings();
+    const { analyticsRangeModes, setAnalyticsRangeModes, weekStart, theme, dailyGoal, useLocalStorage, language, showCalorieFatEquivalent, healthConnectEnabled, burnedCaloriesHistory } = useSettings();
     const burnedLabel = language === 'sk' ? 'Spálené' : t.caloriesBurnedLabel;
     const showBurned = healthConnectEnabled || Object.keys(burnedCaloriesHistory || {}).length > 0;
     const [selectedDay, setSelectedDay] = useState(null);
@@ -37,7 +38,9 @@ export default function AnalyticsScreen() {
 
     const [periodOffset, setPeriodOffset] = useState(0);
     const changeViewMode = mode => { setViewMode(mode); setPeriodOffset(0); setSelectedDay(null); };
-    const [viewMode, setViewMode] = useState('week'); // 'week' | 'fortnight' | 'month'
+    const [viewMode, setViewMode] = useState('week');
+    const rangeMode = analyticsRangeModes[viewMode] || 'rolling';
+    const periodOptions = useMemo(() => ({ rangeMode, weekStart }), [rangeMode, weekStart]); // 'week' | 'fortnight' | 'month'
     const [meals, setMeals] = useState([]);
     const [chartWidth, setChartWidth] = useState(Math.max(240, screenWidth - 64));
 
@@ -58,15 +61,15 @@ export default function AnalyticsScreen() {
         if (showBurned) Object.entries(burnedCaloriesHistory || {}).forEach(([key, value]) => {
             if (value?.calories != null && Number.isFinite(Number(value.calories))) include(new Date(`${key}T00:00:00`));
         });
-        return analyticsMaxOffset(viewMode, earliest);
-    }, [meals, showBurned, burnedCaloriesHistory, viewMode, todayKey]);
+        return analyticsMaxOffset(viewMode, earliest, new Date(), periodOptions);
+    }, [meals, showBurned, burnedCaloriesHistory, viewMode, todayKey, periodOptions]);
     useEffect(() => {
         if (periodOffset > maxPeriodOffset) {
             setPeriodOffset(maxPeriodOffset);
             setSelectedDay(null);
         }
     }, [periodOffset, maxPeriodOffset]);
-    const period = useMemo(() => analyticsPeriod(viewMode, periodOffset), [viewMode, periodOffset, todayKey]);
+    const period = useMemo(() => analyticsPeriod(viewMode, periodOffset, new Date(), periodOptions), [viewMode, periodOffset, todayKey, periodOptions]);
     const numDays = period.dates.length;
 
     const dailyData = useMemo(() => {
@@ -120,7 +123,9 @@ export default function AnalyticsScreen() {
 
     const burnedSummary = useMemo(() => summarizeBurnedDays(dailyData), [dailyData]);
     const chartData = useMemo(() => viewMode === 'year' ? aggregateAnalyticsMonths(dailyData, language) : dailyData, [dailyData, viewMode, language]);
-    const selected = chartData.find(day => day.key === selectedDay) || chartData[chartData.length - 1];
+    const selected = chartData.find(day => day.key === selectedDay)
+        || chartData.find(day => viewMode === 'year' ? getLocalDateKey(day.date).slice(0, 7) === todayKey.slice(0, 7) : day.key === todayKey)
+        || chartData[chartData.length - 1];
 
     // ---- BAR CHART ----
     const chartPadding = { left: viewMode === 'year' ? 52 : 40, right: 16, top: 20, bottom: 30 };
@@ -375,6 +380,12 @@ export default function AnalyticsScreen() {
                         <Text style={{ color: colors.muted, marginTop: 10, fontSize: 14, textAlign: 'center' }}>{t.noDataForPeriod || 'Žiadne dáta za toto obdobie'}</Text>
                     </View>
                 )}
+                <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={{ color: colors.text, fontWeight: '700', marginBottom: 10 }}>{t.analyticsRangeType}</Text>
+                    <ChoiceBox value={rangeMode} colors={colors} label={t.analyticsRangeType}
+                        options={[{ value: 'rolling', label: t.analyticsRolling }, { value: 'absolute', label: t.analyticsAbsolute }]}
+                        onChange={value => { setAnalyticsRangeModes(previous => ({ ...previous, [viewMode]: value })); setPeriodOffset(0); setSelectedDay(null); }} />
+                </View>
             </ScrollView>
         </SafeAreaView>
     );

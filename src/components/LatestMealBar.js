@@ -1,3 +1,4 @@
+import { mealDateTime } from '../utils/mealDateTime';
 import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +16,10 @@ export default function LatestMealBar({ meal, colors, onPress }) {
         ? <Image source={{ uri: meal.imageUri }} style={styles.photo} resizeMode="cover" onError={() => setFailedUri(meal.imageUri)} />
         : <View style={[styles.photo, styles.placeholder, { backgroundColor: colors.elemBg }]}><Ionicons name="restaurant-outline" size={24} color={colors.accent} /></View>}
       <View style={styles.info}>
-        <Text style={[styles.label, { color: colors.muted }]}>{t.latestMealTitle}</Text>
+        <View style={styles.heading}>
+          <Text style={[styles.label, { color: colors.muted }]}>{t.latestMealTitle}</Text>
+          <Text style={[styles.date, { color: colors.muted }]}>{mealDateTime(meal)}</Text>
+        </View>
         <Text numberOfLines={1} style={[styles.name, { color: colors.text }]}>{meal.name || t.unknownFood}</Text>
         <View style={styles.nutrients}>
           <Text style={[styles.kcal, { color: colors.calories }]}>{value('calories')} kcal</Text>
@@ -31,6 +35,8 @@ const styles = StyleSheet.create({
   photo: { width: 54, height: 54, borderRadius: 12 },
   placeholder: { alignItems: 'center', justifyContent: 'center' },
   info: { flex: 1, minWidth: 0, gap: 3 },
+  heading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 6, rowGap: 2 },
+  date: { fontSize: 10, fontWeight: '400' },
   label: { fontSize: 14, fontWeight: '600' },
   name: { fontSize: 15, fontWeight: '600' },
   nutrients: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 8, rowGap: 2 },

@@ -377,7 +377,11 @@ test('reasoning applies to text and photos using provider-specific supported set
       await client.analyze({ aiProvider: provider, aiModel: model, reasoningLevel: 'high', ...(mode === 'text' ? { text: 'apple' } : { base64Data: 'IMAGE' }) });
       const body = client.calls[0].body;
       if (provider === 'openai') assert.equal(body.reasoning.effort, 'high');
-      if (provider === 'gemini') assert.equal(body.generationConfig.thinkingConfig.thinkingLevel, 'high');
+      if (provider === 'gemini') {
+        assert.equal(body.generationConfig.thinkingConfig.thinkingLevel, 'high');
+        for (const key of ['temperature', 'topP', 'topK', 'top_p', 'top_k']) assert.ok(!(key in body.generationConfig));
+        assert.ok(!('thinkingBudget' in body.generationConfig.thinkingConfig));
+      }
       if (model === 'claude-sonnet-4-6') { assert.equal(body.thinking.type, 'adaptive'); assert.equal(body.output_config.effort, 'high'); }
       if (model === 'claude-haiku-4-5') { assert.equal(body.thinking.budget_tokens, 8192); assert.ok(body.max_tokens > 8192); assert.equal(body.tool_choice.type, 'auto'); }
     }
@@ -467,8 +471,65 @@ test('analytics periods navigate contiguous local weeks and calendar months incl
     const nextDay = new Date(previous.end); nextDay.setDate(nextDay.getDate() + 1);
     assert.equal(nextDay.getTime(), current.start.getTime());
     assert.equal(previous.dates[0].getHours(), 0);
-    assert.equal(current.end.getDate(), 10);
+    assert.equal(current.end.getDate(), mode === 'month' ? 31 : 10);
     if (mode === 'month') { assert.equal(previous.dates.length, 29); assert.equal(previous.start.getMonth(), 1); }
     else assert.equal(previous.dates.length, mode === 'week' ? 7 : 14);
   }
+});
+
+
+test('calendar weeks include all seven days and honor the configured week start', () => {
+  const { analyticsPeriod } = loader()('src/utils/analyticsPeriod.js');
+  const now = new Date(2026, 9, 11, 12);
+  const monday = analyticsPeriod('week', 0, now, { rangeMode: 'absolute', weekStart: 'monday' });
+  const sunday = analyticsPeriod('week', 0, now, { rangeMode: 'absolute', weekStart: 'sunday' });
+  assert.equal(monday.start.getDate(), 5); assert.equal(monday.end.getDate(), 11);
+  assert.equal(sunday.start.getDate(), 11); assert.equal(sunday.end.getDate(), 17);
+  assert.equal(monday.dates.length, 7); assert.equal(sunday.dates.length, 7);
+});
+
+test('calendar fortnight spans two full weeks and previous ranges are contiguous', () => {
+  const { analyticsPeriod } = loader()('src/utils/analyticsPeriod.js');
+  const options = { rangeMode: 'absolute', weekStart: 'monday' };
+  const now = new Date(2026, 0, 1);
+  const current = analyticsPeriod('fortnight', 0, now, options);
+  const previous = analyticsPeriod('fortnight', 1, now, options);
+  assert.equal(current.dates.length, 14); assert.equal(current.start.getDay(), 1); assert.equal(current.end.getDay(), 0);
+  const next = new Date(previous.end); next.setDate(next.getDate() + 1);
+  assert.equal(next.getTime(), current.start.getTime());
+});
+
+test('rolling month and full calendar year include the intended dates', () => {
+  const { analyticsPeriod } = loader()('src/utils/analyticsPeriod.js');
+  const now = new Date(2024, 2, 10);
+  const month = analyticsPeriod('month', 0, now, { rangeMode: 'rolling' });
+  const year = analyticsPeriod('year', 0, now, { rangeMode: 'absolute' });
+  assert.equal(month.dates.length, 30); assert.equal(month.end.getDate(), 10);
+  assert.equal(year.dates.length, 366); assert.equal(year.start.getMonth(), 0); assert.equal(year.end.getMonth(), 11);
+});
+
+test('navigation reaches older data without opening ranges entirely before it', () => {
+  const { analyticsPeriod, analyticsMaxOffset } = loader()('src/utils/analyticsPeriod.js');
+  const now = new Date(2026, 9, 11), earliest = new Date(2026, 9, 4);
+  const options = { rangeMode: 'absolute', weekStart: 'monday' };
+  const limit = analyticsMaxOffset('week', earliest, now, options);
+  assert.equal(limit, 1);
+  const last = analyticsPeriod('week', limit, now, options);
+  assert.ok(last.start <= earliest && last.end >= earliest);
+  assert.equal(analyticsMaxOffset('week', new Date(2026, 9, 5), now, options), 0);
+});
+
+
+test('absolute year navigation reaches previous November and December but stops at the oldest year', () => {
+  const { analyticsPeriod, analyticsMaxOffset } = loader()('src/utils/analyticsPeriod.js');
+  const now = new Date(2026, 9, 11), earliest = new Date(2025, 10, 15);
+  const options = { rangeMode: 'absolute' };
+  assert.equal(analyticsMaxOffset('year', earliest, now, options), 1);
+  const previous = analyticsPeriod('year', 1, now, options);
+  assert.equal(previous.start.getFullYear(), 2025); assert.equal(previous.start.getMonth(), 0);
+  assert.equal(previous.end.getFullYear(), 2025); assert.equal(previous.end.getMonth(), 11);
+  assert.ok(previous.dates.some(date => date.getMonth() === 10));
+  assert.ok(previous.dates.some(date => date.getMonth() === 11));
+  assert.equal(analyticsMaxOffset('year', new Date(2026, 0, 1), now, options), 0);
+  assert.equal(analyticsMaxOffset('year', earliest, now, { rangeMode: 'rolling' }), 0);
 });

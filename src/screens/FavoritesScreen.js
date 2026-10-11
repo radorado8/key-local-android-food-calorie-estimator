@@ -1,3 +1,4 @@
+import { reanalyzedMealPatch } from '../utils/reanalyzeMeal';
 import ScannerScreen from './ScannerScreen';
 import AddFoodButton from '../components/AddFoodButton';
 import useFoodSearchInput from '../hooks/useFoodSearchInput';
@@ -429,6 +430,18 @@ export default function FavoritesScreen({ route, navigation }) {
             <MealEditDialog
                 visible={editOpen}
                 initialMeal={editItem}
+        analysisFlow={cameraContext?.reanalyzing ? <ScannerScreen navigation={navigation} route={route}
+          cameraContext={cameraContext} onCameraFlowClose={() => setCameraContext(null)} /> : null}
+        onReanalyze={draft => {
+          const original = editItem;
+          setCameraContext({ timestamp: Date.now(), imageUri: draft.imageUri, returnScreen: 'Favorites', saveDestination: 'favorites', reanalyzing: true,
+            onAnalysisSave: async result => {
+              const patch = reanalyzedMealPatch(draft, result);
+              await updateFavorite(original.id, patch);
+              setEditItem({ ...original, ...patch });
+            },
+          });
+        }}
                 colors={colors}
                 categories={foodCategories}
                 imageStorageFolder="favorite_images"
@@ -582,7 +595,7 @@ export default function FavoritesScreen({ route, navigation }) {
                     </View>
                 )}
             />
-      {cameraContext && <ScannerScreen navigation={navigation} route={route}
+      {cameraContext && !cameraContext.reanalyzing && <ScannerScreen navigation={navigation} route={route}
         cameraContext={cameraContext} onCameraFlowClose={() => setCameraContext(null)} />}
         </SafeAreaView>
     );

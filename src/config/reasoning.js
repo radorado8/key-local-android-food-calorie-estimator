@@ -25,9 +25,7 @@ export function reasoningConfig(provider, model, requested) {
   if (level === 'default') return {};
   if (provider === 'openai') return { reasoning: { effort: level }, max_output_tokens: 16000 };
   if (provider === 'gemini') {
-    const thinkingConfig = model.startsWith('gemini-3')
-      ? { thinkingLevel: level }
-      : { thinkingBudget: { none: 0, low: 1024, medium: 4096, high: 8192 }[level] };
+    const thinkingConfig = { thinkingLevel: level };
     return { thinkingConfig, maxOutputTokens: 12000 };
   }
   if (provider === 'claude') {

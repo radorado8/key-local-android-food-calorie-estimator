@@ -86,7 +86,7 @@ function PhotoFlowSurface({ embedded, onClose, children }) {
 export default function ScannerScreen({ navigation, route, cameraContext = null, onCameraFlowClose }) {
   const cameraOnly = !!cameraContext;
   const t = useTranslation();
-  const { dailyGoal, aiModel, reasoningLevel, aiProvider, claudeVoiceProvider, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds, burnedCalories, estimatedBurnedCalories, expenditureEstimateEnabled, healthConnectEnabled } = useSettings();
+  const { galleryPhotoReviewEnabled, dailyGoal, aiModel, reasoningLevel, aiProvider, claudeVoiceProvider, language, theme, useLocalStorage, saveFoodImages, autoSaveEnabled, autoSaveSeconds, burnedCalories, estimatedBurnedCalories, expenditureEstimateEnabled, healthConnectEnabled } = useSettings();
   const insets = useSafeAreaInsets();
   const audioRecordingRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -248,7 +248,16 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
     if (cameraContext) {
       if (lastActionTimestampRef.current === cameraContext.timestamp) return;
       lastActionTimestampRef.current = cameraContext.timestamp;
-      takePhoto(null, false, cameraContext).catch(error => {
+      const startFlow = async () => {
+        if (cameraContext.imageUri) {
+          const photo = await prepareImageForAnalysis({ uri: cameraContext.imageUri });
+          setSaveDestination(cameraContext.saveDestination || 'diary');
+          setPhotoDraft([photo]); setPhotoDraftWeight(null); setPhotoDescription('');
+          if (Platform.OS === 'ios') await new Promise(resolve => setTimeout(resolve, 400));
+          setShowPhotoReview(true);
+        } else await takePhoto(null, false, cameraContext);
+      };
+      startFlow().catch(error => {
         const friendly = getFriendlyError(error, t);
         Alert.alert(friendly.title, friendly.message);
         returnToPhotoOrigin();
@@ -298,6 +307,8 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
     };
   }, [now]);
 
+  const galleryResultHandlerRef = useRef({ reviewEnabled: galleryPhotoReviewEnabled });
+
   // Check for pending ImagePicker results (handles activity recreation)
   useEffect(() => {
     const checkPending = async () => {
@@ -306,6 +317,10 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
         if (pendingResult && pendingResult.assets?.[0]) {
           const photos = [];
           for (const asset of pendingResult.assets.slice(0, MAX_ANALYSIS_PHOTOS)) photos.push(await prepareImageForAnalysis(asset));
+          if (photos.length === 1 && !galleryResultHandlerRef.current.reviewEnabled) {
+            await galleryResultHandlerRef.current.analyze(photos[0], null);
+            return;
+          }
           setPhotoDraft(photos); setPhotoDescription(''); setPhotoDraftWeight(null); setShowPhotoReview(true);
         }
       } catch (err) {
@@ -630,6 +645,8 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
     }
   };
 
+  galleryResultHandlerRef.current = { reviewEnabled: galleryPhotoReviewEnabled, analyze: analyzePickedImage };
+
   const pickFromGallery = async (weightG = null, append = false) => {
     if (!append) { setSaveDestination('diary'); setFavoriteListId('default'); setWeightReference(null); }
     if (append && photoDraft.length >= MAX_ANALYSIS_PHOTOS) return;
@@ -657,6 +674,10 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
         const photos = [];
         for (const asset of res.assets.slice(0, MAX_ANALYSIS_PHOTOS - (append ? photoDraft.length : 0))) {
           photos.push(await prepareImageForAnalysis(asset));
+        }
+        if (!append && photos.length === 1 && !galleryPhotoReviewEnabled) {
+          await analyzePickedImage(photos[0], weightG);
+          return;
         }
         setPhotoDraft(previous => append ? [...previous, ...photos].slice(0, MAX_ANALYSIS_PHOTOS) : photos);
         if (!append) { setPhotoDescription(''); setPhotoDraftWeight(weightG); }
@@ -849,9 +870,9 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
             saving={saving}
             theme={theme}
             colors={colors}
-            saveLabel={saveDestination === 'favorites' ? t.photoFavorites : t.saveToLog}
+            saveLabel={cameraContext?.onAnalysisSave ? t.save : saveDestination === 'favorites' ? t.photoFavorites : t.saveToLog}
             onChange={next => setResult(weightReference && next.weight_g !== result.weight_g && Number(next.weight_g) > 0 ? { ...next, ...scaleFavoriteByWeight(weightReference, next) } : next)}
-            autoSaveEnabled={autoSaveEnabled}
+            autoSaveEnabled={autoSaveEnabled && !cameraContext?.onAnalysisSave}
             autoSaveSeconds={autoSaveSeconds}
             onReset={() => {
               setStatus('idle');
@@ -862,6 +883,13 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
             onSave={async () => {
               try {
                 setSaving(true);
+
+                if (cameraContext?.onAnalysisSave) {
+                  await cameraContext.onAnalysisSave(result);
+                  setStatus('idle'); setResult(null); setCapturedUri(null);
+                  returnToPhotoOrigin();
+                  return;
+                }
 
                 let finalImageUri = null;
                 if (capturedUri && saveFoodImages) {
@@ -926,6 +954,7 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
       {!cameraOnly && <ScrollView onLayout={event => setDashboardHeight(event.nativeEvent.layout.height)} contentContainerStyle={styles.dashboardContainer} indicatorStyle={theme === 'light' ? 'black' : 'white'}>
         <View onLayout={event => measureDashboardPart('summary', event.nativeEvent.layout.height)} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <DailySummary
+            latestMeal={latestMeal}
             dailyGoal={dailyGoal}
             burnedCalories={burnedCalories}
             estimatedBurnedCalories={estimatedBurnedCalories}
@@ -1118,7 +1147,7 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
               <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t.photoAnalysisTitle} ({photoDraft.length}/4)</Text>
               <Text style={{ color: colors.muted }}>{weightReference ? `${weightReference.name} · ${t.photoWeightHint}` : t.photoAnalysisHint}</Text>
               <Text style={{ color: colors.muted }}>{t.photoSaveDestination}</Text>
-              <ChoiceBox value={saveDestination} onChange={setSaveDestination} colors={colors} disabled={photoBusy}
+              <ChoiceBox value={saveDestination} onChange={setSaveDestination} colors={colors} disabled={photoBusy || !!cameraContext?.onAnalysisSave}
                 label={t.photoSaveDestination} options={[
                   { value: 'diary', label: t.photoDiary, icon: 'journal-outline' },
                   { value: 'favorites', label: t.photoFavorites, icon: 'heart-outline' },

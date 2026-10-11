@@ -1,3 +1,5 @@
+import { mealDateTime } from '../utils/mealDateTime';
+import { reanalyzedMealPatch } from '../utils/reanalyzeMeal';
 import ScannerScreen from './ScannerScreen';
 import AddFoodButton from '../components/AddFoodButton';
 import useFoodSearchInput from '../hooks/useFoodSearchInput';
@@ -617,6 +619,18 @@ export default function HistoryScreen({ route, navigation }) {
       <MealEditDialog
         visible={editOpen}
         initialMeal={editMeal}
+        analysisFlow={cameraContext?.reanalyzing ? <ScannerScreen navigation={navigation} route={route}
+          cameraContext={cameraContext} onCameraFlowClose={() => setCameraContext(null)} /> : null}
+        onReanalyze={draft => {
+          const original = editMeal;
+          setCameraContext({ timestamp: Date.now(), imageUri: draft.imageUri, returnScreen: 'History', saveDestination: 'diary', reanalyzing: true,
+            onAnalysisSave: async result => {
+              const patch = reanalyzedMealPatch(draft, result);
+              await updateMeal(original.id, patch);
+              setEditMeal({ ...original, ...patch });
+            },
+          });
+        }}
         colors={colors}
         onCancel={() => {
           setEditOpen(false);
@@ -715,27 +729,30 @@ export default function HistoryScreen({ route, navigation }) {
         )}
       />
 
-      {cameraContext && <ScannerScreen navigation={navigation} route={route}
+      {cameraContext && !cameraContext.reanalyzing && <ScannerScreen navigation={navigation} route={route}
         cameraContext={cameraContext} onCameraFlowClose={() => setCameraContext(null)} />}
     </SafeAreaView>
   );
 }
 
-const MealItem = ({ item, colors, t, onEdit, onRepeat, onRepeatLongPress, onDelete, onFavorite, onImagePress, showImage }) => (
+const MealItem = ({ item, colors, t, onEdit, onRepeat, onRepeatLongPress, onDelete, onFavorite, onImagePress, showImage }) => {
+  const [mealDate = '', mealTime = ''] = mealDateTime(item).split(' ');
+  return (
   <Pressable
     accessibilityRole="button"
     accessibilityLabel={t.editMealTitle || 'Upraviť jedlo'}
     onPress={onEdit}
     style={({ pressed }) => [styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.itemCardPressed]}
   >
-    {showImage && item.imageUri && (
-      <Pressable onPress={onImagePress} style={{ marginRight: 2 }}>
-        <Image
-          source={{ uri: item.imageUri }}
-          style={{ width: 56, height: 56, borderRadius: 2, backgroundColor: colors.border }}
-        />
-      </Pressable>
-    )}
+    <View style={{ width: 72, height: 96, alignItems: 'center', justifyContent: 'space-between' }}>
+      <Text numberOfLines={1} style={{ width: 56, textAlign: 'left', fontSize: 12, lineHeight: 16, fontWeight: '600', color: colors.muted }}>{mealTime}</Text>
+      {showImage && item.imageUri ? (
+        <Pressable onPress={onImagePress}>
+          <Image source={{ uri: item.imageUri }} style={{ width: 56, height: 56, borderRadius: 2, backgroundColor: colors.border }} />
+        </Pressable>
+      ) : <View style={{ height: 56 }} />}
+      <Text numberOfLines={1} style={{ fontSize: 12, lineHeight: 16, color: colors.muted }}>{mealDate}</Text>
+    </View>
     <View style={{ flex: 1, gap: 4 }}>
       <Text style={[styles.itemName, { color: colors.text }]}>{item.name || t.unknownFood}</Text>
       <View style={styles.itemValuesContainer}>
@@ -772,7 +789,8 @@ const MealItem = ({ item, colors, t, onEdit, onRepeat, onRepeatLongPress, onDele
       </Pressable>
     </View>
   </Pressable>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   container: {

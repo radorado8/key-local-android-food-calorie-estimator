@@ -1,3 +1,4 @@
+import { photoEditTranslations } from './photoEditTranslations';
 import { energyCsvTranslations } from './energyCsvTranslations';
 import { aiTranslations } from './aiTranslations';
 
@@ -2677,3 +2678,5 @@ for (const [language, values] of Object.entries(aiTranslations)) {
 for (const [language, values] of Object.entries(energyCsvTranslations)) {
     Object.assign(translations[language], values);
 }
+
+for (const [language, values] of Object.entries(photoEditTranslations)) Object.assign(translations[language], values);
