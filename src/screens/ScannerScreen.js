@@ -966,7 +966,7 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
           />
         </View>
 
-        {latestMealVisible && <View onLayout={event => measureDashboardPart('latest', event.nativeEvent.layout.height)}><LatestMealBar meal={latestMeal} colors={colors} onPress={() => navigation.navigate('History')} /></View>}
+        {latestMealVisible && <View onLayout={event => measureDashboardPart('latest', event.nativeEvent.layout.height)}><LatestMealBar meal={latestMeal} colors={colors} onPress={() => navigation.navigate('History', { openLatestMeal: Date.now() })} /></View>}
 
         <View style={styles.entryActions}>
           <Pressable

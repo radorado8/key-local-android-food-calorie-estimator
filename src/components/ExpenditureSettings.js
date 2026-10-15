@@ -7,7 +7,7 @@ import { calculateRestingProfile } from '../utils/calorieExpenditure';
 export default function ExpenditureSettings({ colors }) {
   const t = useTranslation();
   const { expenditureEstimateEnabled, setExpenditureEstimateEnabled, manualRestingCalories, setManualRestingCalories,
-    restingCaloriesBaseline, restingCaloriesSource, activeCaloriesAvailable, activeCalories, estimatedBurnedCalories, garminModeEnabled, setGarminModeEnabled, garminRestingCalories, setGarminRestingCalories } = useSettings();
+    restingCaloriesBaseline, restingCaloriesSource, activeCaloriesAvailable, activeCalories, additionalBurnedCalories, estimatedBurnedCalories, garminModeEnabled, setGarminModeEnabled, garminRestingCalories, setGarminRestingCalories } = useSettings();
   const garminMode = ['android', 'ios'].includes(Platform.OS) && garminModeEnabled;
   const editableResting = garminMode ? garminRestingCalories : manualRestingCalories;
   const [draft, setDraft] = useState(editableResting === null ? '' : String(editableResting));
@@ -36,7 +36,8 @@ export default function ExpenditureSettings({ colors }) {
     <Text style={[styles.hint, { color: colors.muted }]}>{sources[restingCaloriesSource]}</Text>
     <Text style={[styles.label, { color: colors.macros.protein }]}>{t.caloriesEstimatedLabel}: {estimatedBurnedCalories.toLocaleString()} kcal</Text>
     <Text style={[styles.label, { color: colors.text }]}>{garminMode ? t.garminActiveLabel : t.activeCaloriesLabel}: {activeCaloriesAvailable ? `${Math.round(activeCalories).toLocaleString()} kcal` : '—'}</Text>
-    {!activeCaloriesAvailable && <Text style={[styles.hint, { color: colors.muted }]}>{t.expenditureNoActive}</Text>}
+    {additionalBurnedCalories > 0 && <Text style={[styles.label, { color: colors.text }]}>{t.additionalBurnedTitle}: {additionalBurnedCalories.toLocaleString()} kcal</Text>}
+    {!activeCaloriesAvailable && additionalBurnedCalories === 0 && <Text style={[styles.hint, { color: colors.muted }]}>{t.expenditureNoActive}</Text>}
     <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>{garminMode ? t.garminRestingLabel : t.restingManual}</Text>
     <View style={styles.row}>
       <TextInput accessibilityLabel={garminMode ? t.garminRestingLabel : t.restingManual} value={draft} onChangeText={value => { setDraft(value); setError(false); }}

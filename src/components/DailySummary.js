@@ -1,3 +1,5 @@
+import { mealTypeAt } from '../utils/mealTypes';
+import { localDateKey } from '../utils/calorieExpenditure';
 import { getLatestMeal } from '../utils/latestMeal';
 import MealElapsedIndicator from './MealElapsedIndicator';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -9,18 +11,20 @@ import { useSettings } from '../state/SettingsContext';
 
 export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage = false, onPress, burnedCalories = null, estimatedBurnedCalories = null, expenditureEstimateEnabled = false, healthConnectEnabled = false, latestMeal = null }) {
   const t = useTranslation();
-  const { language, macroGoals, activeCalories, showMealElapsed } = useSettings();
+  const { language, macroGoals, activeCalories, showMealElapsed, mealTypeStarts } = useSettings();
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [loading, setLoading] = useState(true);
   const [observedLatestMeal, setObservedLatestMeal] = useState(latestMeal);
   const [ringWidth, setRingWidth] = useState(312);
+  const [cardWidth, setCardWidth] = useState(312);
+  const wideCard = cardWidth > 400;
   const ringScale = Math.min(1, ringWidth / 312);
 
   // Time & Meal Type Logic
   const [clockNow, setClockNow] = useState(Date.now());
   const [dateStr, setDateStr] = useState('');
   const [timeStr, setTimeStr] = useState('');
-  const [mealTypeStr, setMealTypeStr] = useState('');
+  const mealTypeStr = t[mealTypeAt(new Date(clockNow), mealTypeStarts).labelKey];
 
   useEffect(() => {
     const updateTime = () => {
@@ -35,17 +39,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
       const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: false };
       setTimeStr(now.toLocaleTimeString(language, timeOpts));
 
-      // Meal Type
-      const hour = now.getHours();
-      let mType = t.catOther;
-      if (hour >= 5 && hour < 10) mType = t.catBreakfast;
-      else if (hour >= 10 && hour < 11) mType = t.catSnack1;
-      else if (hour >= 11 && hour < 14) mType = t.catLunch;
-      else if (hour >= 14 && hour < 17) mType = t.catSnack2;
-      else if (hour >= 17 && hour < 22) mType = t.catDinner;
-      else if (hour >= 22 || hour < 5) mType = t.catSnack3;
 
-      setMealTypeStr(mType);
     };
 
     updateTime();
@@ -54,18 +48,18 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
     return () => { clearInterval(timer); appStateListener.remove(); };
   }, [language, t]);
 
-  // ... (useEffect remains same, omitted for brevity if using replace_file_content carefully)
+  // The clock updates on foregrounding and while open, including across midnight.
+  const currentDayKey = localDateKey(new Date(clockNow));
 
   useEffect(() => {
-    // Local mode: always proceed
-    const now = new Date();
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
-
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 6);
-
     const unsub = subscribeToMeals(useLocalStorage, (fetched) => {
+      const now = new Date();
+      const today = new Date(now);
+      today.setHours(0, 0, 0, 0);
+
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 6);
+
       setObservedLatestMeal(getLatestMeal(fetched));
       setClockNow(Date.now());
       const next = { calories: 0, protein: 0, carbs: 0, fat: 0 };
@@ -157,7 +151,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
     });
 
     return () => unsub();
-  }, [useLocalStorage]);
+  }, [useLocalStorage, currentDayKey, dailyGoal, language]);
 
   const todayCalories = totals.calories;
   const showEstimatedCalories = healthConnectEnabled && expenditureEstimateEnabled && Number.isFinite(estimatedBurnedCalories);
@@ -228,9 +222,9 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={event => setCardWidth(event.nativeEvent.layout.width)}>
       {/* Header Info inside the Card */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: Platform.OS === 'android' ? 312 : '100%', maxWidth: '100%', marginBottom: 2, paddingLeft: Platform.OS === 'android' ? 0 : 4, paddingRight: 4, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: Platform.OS === 'android' && !wideCard ? 312 : '100%', maxWidth: '100%', marginBottom: 2, paddingLeft: Platform.OS === 'android' ? 0 : 4, paddingRight: 4, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <View>
           <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800' }}>{dateStr}</Text>
         </View>
@@ -242,6 +236,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
         </View>
       </View>
 
+      <View style={{ width: '100%', alignItems: 'center' }}>
       <View style={[styles.ringWrap, { height: ringHeight * ringScale }]} onLayout={event => setRingWidth(event.nativeEvent.layout.width)}>
         <Svg width="100%" height={ringHeight * ringScale} viewBox={`0 0 ${size} ${ringHeight}`}>
           {showBurnedCalories ? (
@@ -321,7 +316,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
             })}
           </G>
         </Svg>
-        {showMealElapsed && <MealElapsedIndicator meal={observedLatestMeal} now={clockNow} colors={colors} onPress={onPress} />}
+
 
         <Pressable
           style={[styles.center, showBurnedCalories && styles.splitCenter, showEstimatedCalories && styles.estimatedCenter, { top: (showBurnedCalories ? 110 : 76) * ringScale }]}
@@ -349,6 +344,11 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
             </>
           )}
         </Pressable>
+      </View>
+
+        {showMealElapsed && <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, width: wideCard ? '100%' : 312, maxWidth: '100%' }}>
+          <MealElapsedIndicator meal={observedLatestMeal} now={clockNow} colors={colors} onPress={onPress} inset={wideCard ? 4 : 0} />
+        </View>}
       </View>
 
       <View style={[styles.macros, { borderTopColor: colors.border }]}>

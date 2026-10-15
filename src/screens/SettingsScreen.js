@@ -1,3 +1,5 @@
+import MealTimesSettings from '../components/MealTimesSettings';
+import AdditionalBurnedCaloriesSettings from '../components/AdditionalBurnedCaloriesSettings';
 import ChoiceBox from '../components/ChoiceBox';
 import { parseBurnedCaloriesCsv, exportBurnedCaloriesCsv } from '../utils/burnedCaloriesCsv';
 import ColorThemePicker from '../components/ColorThemePicker';
@@ -888,6 +890,8 @@ export default function SettingsScreen() {
               </View>
             )}
 
+            {healthConnectEnabled && <AdditionalBurnedCaloriesSettings colors={colors} />}
+
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
               <Pressable
                 onPress={healthConnectEnabled ? handleHealthConnectRefresh : handleHealthConnect}
@@ -912,6 +916,8 @@ export default function SettingsScreen() {
         )}
 
         <ExpenditureSettings colors={colors} />
+
+        <MealTimesSettings colors={colors} />
 
         <Pressable onPress={() => setMacroGoalsOpen(true)} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
           <Ionicons name="nutrition-outline" size={24} color={colors.accent} />

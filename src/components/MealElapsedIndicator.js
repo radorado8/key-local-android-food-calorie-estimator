@@ -5,7 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from '../hooks/useTranslation';
 
 // The wedge is a time scale, not a nutrition or hunger recommendation.
-export default function MealElapsedIndicator({ meal, now, colors, onPress }) {
+export default function MealElapsedIndicator({ meal, now, colors, onPress, inset = 0 }) {
   const t = useTranslation();
   const timestamp = mealTimestamp(meal);
   const minutes = timestamp === null ? null : Math.max(0, Math.floor((now - timestamp) / 60000));
@@ -17,12 +17,12 @@ export default function MealElapsedIndicator({ meal, now, colors, onPress }) {
   return <>
     <Pressable onPress={onPress} accessibilityRole="button"
       accessibilityLabel={`${t.sinceLastMeal}: ${elapsed}`}
-      style={{ position: 'absolute', left: 0, top: 0, width: 82 }}>
+      style={{ position: 'absolute', left: inset, top: 0, width: 82 }}>
       <Text numberOfLines={1} adjustsFontSizeToFit style={{ color: colors.muted, fontSize: 10, lineHeight: 13 }}>{t.sinceLastMeal}</Text>
       <Text key={elapsed} numberOfLines={1} style={{ width: 82, color: colors.text, fontSize: 18, lineHeight: 21, fontWeight: '700', fontVariant: ['tabular-nums'], transform: [{ translateY: 4 }] }}>{elapsed}</Text>
       <View style={{ position: 'absolute', left: 0, top: 43, width: 40, height: 1, backgroundColor: colors.border }} />
     </Pressable>
-    <View pointerEvents="none" style={{ position: 'absolute', right: 0, top: 0, width: 52, alignItems: 'center' }}>
+    <View pointerEvents="none" style={{ position: 'absolute', right: inset, top: 0, width: 52, alignItems: 'center' }}>
       <Svg width={50} height={28} viewBox="-1 -1 50 28">
         <Path d="M 0 26 L 48 0 L 48 26 Z" fill={colors.elemBg} />
         {progress > 0 && <Path d={`M 0 26 L ${x} ${y} L ${x} 26 Z`} fill={colors.accent} />}

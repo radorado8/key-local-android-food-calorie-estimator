@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ChoiceBox({ value, options, onChange, colors, label, disabled = false }) {
@@ -13,8 +13,9 @@ export default function ChoiceBox({ value, options, onChange, colors, label, dis
     </Pressable>
     <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
       <Pressable accessible={false} onPress={() => setOpen(false)} style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,.55)' }}>
-        <View accessibilityViewIsModal style={{ backgroundColor: colors.modalBg, borderRadius: 16, padding: 12 }}>
+        <View accessibilityViewIsModal style={{ backgroundColor: colors.modalBg, borderRadius: 16, padding: 12, maxHeight: '80%' }}>
           <Text style={{ color: colors.muted, padding: 12 }}>{label}</Text>
+          <ScrollView>
           {options.map(option => <Pressable key={option.value} accessibilityRole="button"
             accessibilityState={{ selected: option.value === value }} onPress={() => { setOpen(false); onChange(option.value); }}
             style={{ padding: 16, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
@@ -22,6 +23,7 @@ export default function ChoiceBox({ value, options, onChange, colors, label, dis
             <Text style={{ color: colors.text, flex: 1 }}>{option.label}</Text>
             {option.value === value && <Ionicons name="checkmark" size={20} color={colors.accent} />}
           </Pressable>)}
+          </ScrollView>
         </View>
       </Pressable>
     </Modal>

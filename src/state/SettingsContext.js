@@ -1,3 +1,5 @@
+import { DEFAULT_MEAL_STARTS, validMealStarts } from '../utils/mealTypes';
+import { additionalBurnedForDay, adjustedBurnedTotal, setBurnedAdjustment, mergeBurnedHealthReading } from '../utils/additionalBurnedCalories';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, Platform, useColorScheme } from 'react-native';
@@ -39,6 +41,8 @@ export function SettingsProvider({ children }) {
   const [showLatestMeal, setShowLatestMeal] = useState(null);
   const [showMealElapsed, setShowMealElapsed] = useState(true);
   const [analyticsRangeModes, setAnalyticsRangeModes] = useState({ week: "rolling", fortnight: "rolling", month: "absolute", year: "rolling" });
+  const [mealGapLimits, setMealGapLimits] = useState({ min: 1, max: 9 });
+  const [mealTypeStarts, setMealTypeStarts] = useState(DEFAULT_MEAL_STARTS);
   const [weekStart, setWeekStart] = useState("monday");
   const [colorTheme, setColorTheme] = useState('original');
   const [useLocalStorage, setUseLocalStorage] = useState(true);
@@ -60,12 +64,22 @@ export function SettingsProvider({ children }) {
   const [restingCaloriesHistory, setRestingCaloriesHistory] = useState({});
   const [dailyEnergyReading, setDailyEnergyReading] = useState(null);
   const [healthExpenditure, setCalorieExpenditure] = useState({ burnedCalories: null });
-  const currentHealth = healthConnectEnabled && healthExpenditure.date === localDateKey() ? healthExpenditure : {};
-  const burnedCalories = currentHealth.burnedCalories ?? null;
+  const [currentDay, setCurrentDay] = useState(localDateKey());
+  useEffect(() => {
+    const updateDay = () => setCurrentDay(localDateKey());
+    const timer = setInterval(updateDay, 30000);
+    const listener = AppState.addEventListener('change', state => { if (state === 'active') updateDay(); });
+    return () => { clearInterval(timer); listener.remove(); };
+  }, []);
+  const additionalBurnedCalories = additionalBurnedForDay(burnedCaloriesHistory, currentDay);
+  const additionalCountsAsActive = burnedCaloriesHistory[currentDay]?.additionalCountsAsActive === true;
+  const currentHealth = healthConnectEnabled && healthExpenditure.date === currentDay ? healthExpenditure : {};
+  const healthBurnedCalories = currentHealth.burnedCalories ?? null;
+  const burnedCalories = healthConnectEnabled ? adjustedBurnedTotal(healthBurnedCalories, additionalBurnedCalories) : null;
   const garminMode = ['android', 'ios'].includes(Platform.OS) && garminModeEnabled;
   const restingBaseline = garminMode ? { calories: garminRestingCalories, source: 'garmin' } : resolveRestingBaseline({ manual: manualRestingCalories,
     yesterday: currentHealth.yesterdayRestingCalories, history: restingCaloriesHistory });
-  const sourceTotal = currentHealth.rawBurnedCalories ?? burnedCalories;
+  const sourceTotal = currentHealth.rawBurnedCalories ?? healthBurnedCalories;
   const garminEstimate = garminMode && currentHealth.sampledAt
     && localDateKey(new Date(currentHealth.sampledAt)) === currentHealth.date
     ? estimateGarminExpenditure(sourceTotal, garminRestingCalories, currentHealth.sampledAt) : null;
@@ -79,9 +93,10 @@ export function SettingsProvider({ children }) {
     calculationKey: `${garminMode ? "garmin" : "health"}:${restingBaseline.calories}`,
   };
   const todayReading = healthConnectEnabled ? rememberDailyEnergyReading(dailyEnergyReading, candidate) : null;
-  const activeCalories = todayReading?.active ?? measuredActiveCalories;
+  const baseActiveCalories = todayReading?.active ?? measuredActiveCalories;
+  const activeCalories = adjustedBurnedTotal(baseActiveCalories, healthConnectEnabled && additionalCountsAsActive ? additionalBurnedCalories : 0);
   const activeCaloriesAvailable = validEnergy(activeCalories) !== null;
-  const estimatedBurnedCalories = estimateDailyExpenditure(restingBaseline.calories, activeCalories ?? 0);
+  const estimatedBurnedCalories = adjustedBurnedTotal(estimateDailyExpenditure(restingBaseline.calories, baseActiveCalories ?? 0), healthConnectEnabled ? additionalBurnedCalories : 0);
   const healthReadVersion = useRef(0);
 
   useEffect(() => {
@@ -112,6 +127,8 @@ export function SettingsProvider({ children }) {
           if (typeof parsed?.galleryPhotoReviewEnabled === 'boolean') setGalleryPhotoReviewEnabled(parsed.galleryPhotoReviewEnabled);
           if (typeof parsed?.showLatestMeal === 'boolean') setShowLatestMeal(parsed.showLatestMeal);
           if (typeof parsed?.showMealElapsed === 'boolean') setShowMealElapsed(parsed.showMealElapsed);
+          if (Number.isFinite(parsed?.mealGapLimits?.min) && Number.isFinite(parsed?.mealGapLimits?.max) && parsed.mealGapLimits.min >= 0 && parsed.mealGapLimits.max <= 24 && parsed.mealGapLimits.min < parsed.mealGapLimits.max) setMealGapLimits(parsed.mealGapLimits);
+          if (validMealStarts(parsed?.mealTypeStarts)) setMealTypeStarts(parsed.mealTypeStarts);
           if (['monday', 'sunday'].includes(parsed?.weekStart)) setWeekStart(parsed.weekStart);
           if (parsed?.analyticsRangeModes && typeof parsed.analyticsRangeModes === 'object') {
             setAnalyticsRangeModes(previous => ({ ...previous, ...Object.fromEntries(Object.entries(parsed.analyticsRangeModes).filter(([key, value]) => ['week', 'fortnight', 'month', 'year'].includes(key) && ['rolling', 'absolute'].includes(value))) }));
@@ -153,9 +170,9 @@ export function SettingsProvider({ children }) {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ modelReasoning, burnedCaloriesHistory, aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, galleryPhotoReviewEnabled, analyticsRangeModes, weekStart, showMealElapsed, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, expenditureEstimateEnabled, garminModeEnabled, garminRestingCalories, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, dailyEnergyReading })
+      JSON.stringify({ modelReasoning, burnedCaloriesHistory, aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, galleryPhotoReviewEnabled, analyticsRangeModes, mealGapLimits, mealTypeStarts, weekStart, showMealElapsed, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, expenditureEstimateEnabled, garminModeEnabled, garminRestingCalories, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, dailyEnergyReading })
     ).catch(() => { });
-  }, [modelReasoning, aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, galleryPhotoReviewEnabled, analyticsRangeModes, weekStart, showMealElapsed, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, expenditureEstimateEnabled, garminModeEnabled, garminRestingCalories, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, dailyEnergyReading, burnedCaloriesHistory, hydrated]);
+  }, [modelReasoning, aiProvider, providerModels, claudeVoiceProvider, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, galleryPhotoReviewEnabled, analyticsRangeModes, mealGapLimits, mealTypeStarts, weekStart, showMealElapsed, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, expenditureEstimateEnabled, garminModeEnabled, garminRestingCalories, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, dailyEnergyReading, burnedCaloriesHistory, hydrated]);
 
   useEffect(() => {
     if (!hydrated || !healthConnectEnabled) return;
@@ -173,7 +190,7 @@ export function SettingsProvider({ children }) {
       if (version !== healthReadVersion.current) return null;
       setCalorieExpenditure(expenditure);
       if (validEnergy(expenditure.burnedCalories) !== null) {
-        setBurnedCaloriesHistory(history => ({ ...history, [expenditure.date]: history[expenditure.date]?.source === 'csv' ? history[expenditure.date] : { calories: expenditure.burnedCalories, activeCalories: validEnergy(garminMode ? estimateGarminExpenditure(expenditure.rawBurnedCalories ?? expenditure.burnedCalories, garminRestingCalories, expenditure.sampledAt)?.active : expenditure.todayActiveCalories), restingCalories: validEnergy(expenditure.todayRestingCalories), checkedOn: localDateKey() } }));
+        setBurnedCaloriesHistory(history => ({ ...history, [expenditure.date]: mergeBurnedHealthReading(history[expenditure.date], { calories: expenditure.burnedCalories, activeCalories: validEnergy(garminMode ? estimateGarminExpenditure(expenditure.rawBurnedCalories ?? expenditure.burnedCalories, garminRestingCalories, expenditure.sampledAt)?.active : expenditure.todayActiveCalories), restingCalories: validEnergy(expenditure.todayRestingCalories), checkedOn: localDateKey() }) }));
       }
       if (!garminMode) setRestingCaloriesHistory(history => rememberRestingEnergy(history, expenditure.date, expenditure.todayRestingCalories));
       return expenditure.burnedCalories;
@@ -210,7 +227,7 @@ export function SettingsProvider({ children }) {
     if (!dates.length) return;
     historyReadInFlight.current = true;
     getHistoricalBurnedCalories(dates).then(values => {
-      if (Object.keys(values).length) setBurnedCaloriesHistory(history => ({ ...history, ...Object.fromEntries(Object.entries(values).filter(([date]) => history[date]?.source !== 'csv')) }));
+      if (Object.keys(values).length) setBurnedCaloriesHistory(history => ({ ...history, ...Object.fromEntries(Object.entries(values).map(([date, reading]) => [date, mergeBurnedHealthReading(history[date], reading)])) }));
     }).catch(() => {}).finally(() => { historyReadInFlight.current = false; });
   }, [hydrated, healthConnectEnabled, currentHealth.date]);
 
@@ -244,8 +261,12 @@ export function SettingsProvider({ children }) {
       setShowCalorieFatEquivalent,
       galleryPhotoReviewEnabled,
       setGalleryPhotoReviewEnabled,
+      mealGapLimits,
+      setMealGapLimits,
       analyticsRangeModes,
       setAnalyticsRangeModes,
+      mealTypeStarts,
+      setMealTypeStarts,
       weekStart,
       setWeekStart,
       showMealElapsed,
@@ -273,6 +294,15 @@ export function SettingsProvider({ children }) {
       setAutoSaveSeconds,
       healthConnectEnabled,
       setHealthConnectEnabled,
+      currentDay,
+      additionalBurnedCalories,
+      additionalCountsAsActive,
+      setAdditionalBurnedCalories: (calories, countsAsActive = additionalCountsAsActive) => {
+        if (validEnergy(calories) === null) return;
+        const date = localDateKey();
+        setCurrentDay(date);
+        setBurnedCaloriesHistory(history => ({ ...history, [date]: setBurnedAdjustment(history[date], Math.round(calories), history[date]?.source !== 'csv' && currentHealth.date === date ? currentHealth.burnedCalories : null, countsAsActive === true, history[date]?.source !== 'csv' && currentHealth.date === date ? baseActiveCalories : null) }));
+      },
       burnedCaloriesHistory,
       importBurnedCalories: values => setBurnedCaloriesHistory(history => ({ ...history, ...sanitizeBurnedHistory(values) })),
       burnedCalories,
@@ -293,7 +323,7 @@ export function SettingsProvider({ children }) {
       setGarminRestingCalories,
       refreshBurnedCalories,
     };
-  }, [modelReasoning, aiProvider, providerModels, claudeVoiceProvider, hydrated, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, galleryPhotoReviewEnabled, analyticsRangeModes, weekStart, showMealElapsed, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, burnedCaloriesHistory, burnedCalories, estimatedBurnedCalories, expenditureEstimateEnabled, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, garminModeEnabled, garminRestingCalories, activeCalories, currentHealth.todayActiveCalories, activeCaloriesAvailable, restingBaseline.calories, restingBaseline.source, colorScheme]);
+  }, [modelReasoning, aiProvider, providerModels, claudeVoiceProvider, hydrated, dailyGoal, customMacroGoals, aiModel, language, theme, colorTheme, showCalorieFatEquivalent, galleryPhotoReviewEnabled, analyticsRangeModes, mealGapLimits, mealTypeStarts, weekStart, showMealElapsed, showLatestMeal, useLocalStorage, customModels, foodCategories, saveFoodImages, showImagesInHistory, showUniqueHistorySearchResults, termsAccepted, autoSaveEnabled, autoSaveSeconds, healthConnectEnabled, burnedCaloriesHistory, burnedCalories, estimatedBurnedCalories, expenditureEstimateEnabled, manualRestingCalories, restingEnergyProfile, restingCaloriesHistory, garminModeEnabled, garminRestingCalories, activeCalories, currentDay, additionalBurnedCalories, additionalCountsAsActive, baseActiveCalories, currentHealth.burnedCalories, currentHealth.date, currentHealth.todayActiveCalories, activeCaloriesAvailable, restingBaseline.calories, restingBaseline.source, colorScheme]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

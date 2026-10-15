@@ -1,3 +1,4 @@
+import MealGapChart from '../components/MealGapChart';
 import ChoiceBox from '../components/ChoiceBox';
 import { aggregateAnalyticsMonths } from '../utils/burnedCaloriesCsv';
 import { analyticsPeriod, analyticsMaxOffset } from '../utils/analyticsPeriod';
@@ -165,13 +166,7 @@ export default function AnalyticsScreen() {
     const donutCx = donutSize / 2;
     const donutCy = donutSize / 2;
 
-    return (
-        <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
-            <View style={styles.headerBlock}>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>{t.analyticsTitle || 'Analýza'}</Text>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    const renderPeriodControls = () => (<>
                 {/* Period Selector */}
                 <View style={[styles.segmentContainer, { backgroundColor: colors.elemBg, borderColor: colors.border }]}>
                     <Pressable
@@ -208,6 +203,16 @@ export default function AnalyticsScreen() {
                         <Ionicons name="chevron-forward" size={24} color={colors.accent} />
                     </Pressable>
                 </View>
+    </>);
+
+    return (
+        <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
+            <View style={styles.headerBlock}>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>{t.analyticsTitle || 'Analýza'}</Text>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                {renderPeriodControls()}
                 {/* Bar Chart Card */}
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={styles.chartHeader}>
@@ -386,6 +391,8 @@ export default function AnalyticsScreen() {
                         options={[{ value: 'rolling', label: t.analyticsRolling }, { value: 'absolute', label: t.analyticsAbsolute }]}
                         onChange={value => { setAnalyticsRangeModes(previous => ({ ...previous, [viewMode]: value })); setPeriodOffset(0); setSelectedDay(null); }} />
                 </View>
+                <MealGapChart meals={meals} period={period} viewMode={viewMode} />
+                {renderPeriodControls()}
             </ScrollView>
         </SafeAreaView>
     );

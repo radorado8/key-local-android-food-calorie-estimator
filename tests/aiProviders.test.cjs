@@ -16,7 +16,7 @@ function loader(mocks = {}, globals = {}) {
       babelrc: false, configFile: false, plugins: ['@babel/plugin-transform-modules-commonjs', '@babel/plugin-transform-react-jsx'],
     });
     vm.runInNewContext(code, {
-      exports, console: { log() {}, warn() {}, error() {} }, setTimeout, ...globals,
+      exports, console: { log() {}, warn() {}, error() {} }, setTimeout, setInterval: () => 1, clearInterval: () => {}, ...globals,
       require: id => {
         if (id in mocks) return mocks[id];
         if (id.startsWith('.')) return load(path.resolve(path.dirname(file), id + '.js'));

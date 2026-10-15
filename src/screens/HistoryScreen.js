@@ -1,3 +1,5 @@
+import { MEAL_TYPES as MEAL_CATEGORIES, mealTypeAt } from '../utils/mealTypes';
+import { getLatestMeal } from '../utils/latestMeal';
 import { mealDateTime } from '../utils/mealDateTime';
 import { reanalyzedMealPatch } from '../utils/reanalyzeMeal';
 import ScannerScreen from './ScannerScreen';
@@ -32,29 +34,6 @@ import { useSettings } from '../state/SettingsContext';
 
 import { useTranslation } from '../hooks/useTranslation';
 import { normalizeFoodSearchText, sortFoodSearchResults } from '../utils/foodSearch';
-
-const MEAL_CATEGORIES = [
-  { id: 'breakfast', labelKey: 'catBreakfast', start: 1, end: 10 },
-  { id: 'snack1', labelKey: 'catSnack1', start: 10, end: 11 },
-  { id: 'lunch', labelKey: 'catLunch', start: 11, end: 14 },
-  { id: 'snack2', labelKey: 'catSnack2', start: 14, end: 16 },
-  { id: 'dinner', labelKey: 'catDinner', start: 16, end: 22 },
-  { id: 'snack3', labelKey: 'catSnack3', start: 22, end: 1 },
-];
-
-function getMealCategoryId(date) {
-  const hour = date.getHours();
-  // Handle late snack crossing midnight (22:00 - 01:00)
-  if (hour >= 22 || hour < 1) return 'snack3';
-
-  const cat = MEAL_CATEGORIES.find(c => hour >= c.start && hour < c.end);
-  return cat ? cat.id : 'other';
-}
-
-function getMealCategoryLabel(categoryId, t) {
-  const cat = MEAL_CATEGORIES.find(c => c.id === categoryId);
-  return cat ? t[cat.labelKey] : t.catOther;
-}
 
 function dateToKey(dateObj) {
   const yyyy = String(dateObj.getFullYear());
@@ -102,9 +81,10 @@ function formatDateLabelLong(dateObj, t, language, now) {
 export default function HistoryScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const t = useTranslation();
-  const { theme, useLocalStorage, language, dailyGoal, showImagesInHistory, showUniqueHistorySearchResults } = useSettings();
+  const { theme, useLocalStorage, language, dailyGoal, mealTypeStarts, showImagesInHistory, showUniqueHistorySearchResults } = useSettings();
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const getMealCategoryId = useCallback(date => mealTypeAt(date, mealTypeStarts).id, [mealTypeStarts]);
   const scrollRef = React.useRef(null);
   const [now, setNow] = useState(new Date());
 
@@ -210,7 +190,7 @@ export default function HistoryScreen({ route, navigation }) {
     Keyboard.dismiss();
   }, []);
 
-  // Always expand today and the most recent meal type when screen is focused
+  // Open today by default; the dashboard latest-meal link can open the last recorded day.
   useFocusEffect(
     useCallback(() => {
       if (scrollRef.current && sections?.length > 0) {
@@ -243,14 +223,20 @@ export default function HistoryScreen({ route, navigation }) {
             const lastCatId = getMealCategoryId(todayMeals[0].dateObj);
             setExpandedCategories({ [`${todayKey}_${lastCatId}`]: true });
           }
-        } else {
-          // If no today, maybe expand the first available day?
-          // User didn't specify. Left as is (expand nothing or keep state).
-          // Actually user said explicitly "aktualny den... ostatne vsetko zbalene".
-          // If no current day data, maybe expanding nothing is fine.
+        } else if (route.params?.openLatestMeal) {
+          const lastMeal = getLatestMeal(meals);
+          if (lastMeal) {
+            const date = lastMeal.dateObj || new Date(lastMeal.timestamp);
+            const dateKey = dateToKey(date);
+            setExpandedDays({ [dateKey]: true });
+            setExpandedCategories({ [`${dateKey}_${getMealCategoryId(date)}`]: true });
+          }
         }
       }
-    }, [meals])
+      if (!loading && route.params?.openLatestMeal) {
+        navigation.setParams({ openLatestMeal: undefined });
+      }
+    }, [meals, loading, route.params?.openLatestMeal, navigation, getMealCategoryId])
   );
 
   const searchIndex = useMemo(() => meals
