@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createAdaptiveTabNavigator } from './src/navigation/AdaptiveTabNavigator';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Platform, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,7 +20,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 
 enableScreens(true);
 
-const Tab = createBottomTabNavigator();
+const Tab = createAdaptiveTabNavigator();
 
 export default function App() {
   const [startupError, setStartupError] = useState(null);

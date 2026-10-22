@@ -395,7 +395,7 @@ test('upgrade discards old readings that lack a comparable source total version'
   assert.equal(utils.estimateDailyExpenditure(1900, lower.active), 1900);
 });
 
-const burnedHistory = load('../src/utils/burnedHistory.js', { './calorieExpenditure': utils });
+const burnedHistory = load('../src/utils/burnedHistory.js', { './calorieExpenditure': utils, './additionalBurnedCalories': load('../src/utils/additionalBurnedCalories.js', { './calorieExpenditure': utils }) });
 test('burned averages exclude unavailable days but include measured zero', () => {
   const result = burnedHistory.summarizeBurnedDays([{ burned: null }, { burned: 0 }, { burned: 2400 }]);
   assert.equal(result.average, 1200);
@@ -411,4 +411,18 @@ test('cached historical days skip reads while yesterday is finalized after midni
   history['2026-10-03'].checkedOn = '2026-10-03';
   assert.equal(burnedHistory.burnedHistoryDates(history, now).join(','), '2026-10-03');
   assert.equal(burnedHistory.sanitizeBurnedHistory({ bad: { calories: 100 }, '2026-10-03': { calories: -1 } })['2026-10-03'], undefined);
+});
+
+test('historical reconciliation catches delayed increases without lowering cached totals or doubling supplements', () => {
+  const previous = { '2026-10-20': { calories: 2200, baseCalories: 2000, additionalCalories: 200, activeCalories: 500, additionalCountsAsActive: true } };
+  const next = burnedHistory.reconcileBurnedHistory(previous, { '2026-10-20': { calories: 2400 }, '2026-10-19': { calories: 2500 } });
+  assert.equal(next['2026-10-20'].calories, 2600);
+  assert.equal(next['2026-10-20'].activeCalories, 500);
+  assert.equal(next['2026-10-19'].calories, 2500);
+  assert.equal(previous['2026-10-20'].calories, 2200);
+  assert.equal(burnedHistory.reconcileBurnedHistory(next, { '2026-10-20': { calories: 2300 } })['2026-10-20'].calories, 2600);
+});
+test('manual history refresh covers seven completed local days across year and DST boundaries', () => {
+  assert.equal(burnedHistory.recentBurnedDates(7, new Date('2027-01-02T12:00:00+01:00')).join(','), '2027-01-01,2026-12-31,2026-12-30,2026-12-29,2026-12-28,2026-12-27,2026-12-26');
+  assert.equal(burnedHistory.recentBurnedDates(1, new Date('2026-03-30T00:10:00+02:00'))[0], '2026-03-29');
 });

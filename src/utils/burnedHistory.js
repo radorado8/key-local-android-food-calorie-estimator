@@ -1,3 +1,4 @@
+import { mergeBurnedHealthReading } from './additionalBurnedCalories';
 import { localDateKey, validEnergy } from './calorieExpenditure';
 
 export function sanitizeBurnedHistory(value) {
@@ -26,4 +27,32 @@ export function summarizeBurnedDays(days) {
   const total = values.reduce((sum, value) => sum + value, 0);
   return { total: Math.round(total), average: Math.round(total / values.length),
     highest: Math.round(Math.max(...values)), lowest: Math.round(Math.min(...values)) };
+}
+
+// Calendar dates, not elapsed 24-hour periods (DST-safe).
+export function recentBurnedDates(count = 1, now = new Date()) {
+  return Array.from({ length: count }, (_, index) => {
+    const day = new Date(now);
+    day.setHours(0, 0, 0, 0);
+    day.setDate(day.getDate() - index - 1);
+    return localDateKey(day);
+  });
+}
+
+export function reconcileBurnedHistory(history, readings) {
+  const next = { ...history };
+  for (const [date, reading] of Object.entries(readings)) {
+    if (validEnergy(reading?.calories) === null) continue;
+    const previous = history[date];
+    const base = validEnergy(previous?.baseCalories)
+      ?? (validEnergy(previous?.calories) === null ? null
+        : Math.max(0, previous.calories - (validEnergy(previous.additionalCalories) ?? 0)));
+    if (base !== null && reading.calories <= base) continue;
+    // An explicit historical refresh may also improve imported burned data.
+    const merged = mergeBurnedHealthReading(previous ? { ...previous, source: undefined } : previous,
+      { ...previous, ...reading,
+        activeCalories: reading.activeCalories ?? previous?.baseActiveCalories ?? (validEnergy(previous?.activeCalories) === null ? null : Math.max(0, previous.activeCalories - (previous.additionalCountsAsActive ? previous.additionalCalories ?? 0 : 0))) });
+    next[date] = merged;
+  }
+  return next;
 }

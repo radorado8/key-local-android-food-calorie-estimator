@@ -18,11 +18,29 @@ async function requireKey(provider) {
 async function request(url, options, provider) {
   checkAbort(options.signal);
   const response = await fetch(url, options);
-  // Do not display raw provider error bodies: they can contain submitted data or credentials.
+  // Classify known errors locally; never retain/display raw provider responses.
   if (!response.ok) {
     const error = new Error('ai_request_failed');
     error.provider = provider;
     error.status = response.status;
+    if (provider === 'claude' && [400, 404, 413].includes(response.status)) {
+      try {
+        const body = await response.json();
+        const message = typeof body?.error?.message === 'string' ? body.error.message : '';
+        if (body?.error?.type === 'invalid_request_error'
+          && /credit balance is too low|insufficient credits/i.test(message)) {
+          error.reason = 'billing';
+        } else if (body?.error?.type === 'not_found_error'
+          || /model[^\n]*(?:not found|does not exist|not available|not supported|do not have access)/i.test(message)) {
+          error.reason = 'model';
+        } else if (response.status === 413 || /image[^\n]*(?:too large|exceed|invalid|not supported)|(?:invalid|unsupported)[^\n]*image|could not process image/i.test(message)) {
+          error.reason = 'image';
+        } else if (body?.error?.type === 'invalid_request_error'
+          && /thinking|budget_tokens|tool_choice|max_tokens|output_config|effort/i.test(message)) {
+          error.reason = 'parameters';
+        }
+      } catch { /* Preserve the HTTP error if the response is not JSON. */ }
+    }
     throw error;
   }
   const data = await response.json();

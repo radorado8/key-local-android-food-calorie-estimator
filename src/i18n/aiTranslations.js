@@ -1,5 +1,10 @@
 export const aiTranslations = {
   "sk": {
+    "aiModelError": "Zvolený model nie je dostupný alebo k nemu API účet nemá prístup. Vyber iný model v Nastaveniach.",
+    "aiParameterError": "Služba odmietla nastavenie modelu alebo uvažovania. Skús úroveň Predvolené alebo iný model.",
+    "aiImageError": "Služba odmietla obrázok pre jeho formát alebo veľkosť. Skús inú fotku alebo menej fotiek.",
+    "aiBadRequestError": "Claude odmietol požiadavku. Presnú príčinu sa nepodarilo určiť. Skontroluj API kredit, model a úroveň uvažovania. Skús úroveň Predvolené a krátky textový opis jedla.",
+    "aiBillingError": "Na API účte nemáš dostatočný kredit. Skontroluj fakturáciu v konzole poskytovateľa. Predplatné chatu nezahŕňa API kredit.",
     "photoSaveDestination": "Uložiť do",
     "photoDiary": "Denník jedál",
     "photoFavorites": "Obľúbené",
@@ -57,6 +62,11 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "Tento model nemá overené nastaviteľné uvažovanie. Použije sa Default."
   },
   "en": {
+    "aiModelError": "The selected model is unavailable or your API account cannot access it. Choose another model in Settings.",
+    "aiParameterError": "The service rejected the model or reasoning settings. Try the Default reasoning level or another model.",
+    "aiImageError": "The service rejected an image because of its format or size. Try another photo or fewer photos.",
+    "aiBadRequestError": "Claude rejected the request. The exact cause could not be identified. Check your API credit, selected model and reasoning setting. Try Default reasoning and a short text description.",
+    "aiBillingError": "Your API account has insufficient credit. Check billing in the provider console. A chat subscription does not include API credit.",
     "photoSaveDestination": "Save to",
     "photoDiary": "Food diary",
     "photoFavorites": "Favorites",
@@ -114,6 +124,11 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "Configurable reasoning is not verified for this model. Its default is used."
   },
   "cs": {
+    "aiModelError": "Vybraný model není dostupný nebo k němu API účet nemá přístup. Vyber jiný model v Nastavení.",
+    "aiParameterError": "Služba odmítla nastavení modelu nebo uvažování. Zkus úroveň Výchozí nebo jiný model.",
+    "aiImageError": "Služba odmítla obrázek kvůli formátu nebo velikosti. Zkus jinou fotku nebo méně fotek.",
+    "aiBadRequestError": "Claude odmítl požadavek. Přesnou příčinu se nepodařilo určit. Zkontroluj API kredit, model a úroveň uvažování. Zkus výchozí úroveň a krátký textový popis jídla.",
+    "aiBillingError": "Na API účtu nemáš dostatečný kredit. Zkontroluj fakturaci v konzoli poskytovatele. Předplatné chatu nezahrnuje API kredit.",
     "photoSaveDestination": "Uložit do",
     "photoDiary": "Deník jídel",
     "photoFavorites": "Oblíbené",
@@ -171,6 +186,11 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "Tento model nemá ověřené nastavitelné uvažování. Použije se Default."
   },
   "de": {
+    "aiModelError": "Das gewählte Modell ist nicht verfügbar oder dein API-Konto hat keinen Zugriff. Wähle ein anderes Modell in den Einstellungen.",
+    "aiParameterError": "Der Dienst hat die Modell- oder Denkeinstellungen abgelehnt. Versuche die Standard-Denkstufe oder ein anderes Modell.",
+    "aiImageError": "Der Dienst hat ein Bild wegen Format oder Größe abgelehnt. Versuche ein anderes Foto oder weniger Fotos.",
+    "aiBadRequestError": "Claude hat die Anfrage abgelehnt. Die genaue Ursache konnte nicht ermittelt werden. Prüfe API-Guthaben, Modell und Denkstufe. Versuche die Standardstufe und eine kurze Textbeschreibung.",
+    "aiBillingError": "Dein API-Konto hat nicht genügend Guthaben. Prüfe die Abrechnung in der Anbieterkonsole. Ein Chat-Abonnement enthält kein API-Guthaben.",
     "photoSaveDestination": "Speichern in",
     "photoDiary": "Ernährungstagebuch",
     "photoFavorites": "Favoriten",
@@ -228,6 +248,11 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "Für dieses Modell ist kein einstellbares Denken bestätigt. Der Standard wird verwendet."
   },
   "es": {
+    "aiModelError": "El modelo seleccionado no está disponible o tu cuenta API no tiene acceso. Elige otro modelo en Ajustes.",
+    "aiParameterError": "El servicio rechazó los ajustes del modelo o de razonamiento. Prueba el nivel Predeterminado u otro modelo.",
+    "aiImageError": "El servicio rechazó una imagen por su formato o tamaño. Prueba otra foto o menos fotos.",
+    "aiBadRequestError": "Claude rechazó la solicitud. No se pudo identificar la causa exacta. Comprueba el saldo API, el modelo y el razonamiento. Prueba el nivel predeterminado y una descripción breve.",
+    "aiBillingError": "Tu cuenta API no tiene saldo suficiente. Revisa la facturación en la consola del proveedor. La suscripción al chat no incluye saldo para la API.",
     "photoSaveDestination": "Guardar en",
     "photoDiary": "Diario de comidas",
     "photoFavorites": "Favoritos",
@@ -285,6 +310,11 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "No se ha verificado el razonamiento configurable de este modelo. Se usa el valor predeterminado."
   },
   "fr": {
+    "aiModelError": "Le modèle choisi est indisponible ou ton compte API ne peut pas y accéder. Choisis un autre modèle dans les réglages.",
+    "aiParameterError": "Le service a refusé les réglages du modèle ou du raisonnement. Essaie le niveau Par défaut ou un autre modèle.",
+    "aiImageError": "Le service a refusé une image en raison de son format ou de sa taille. Essaie une autre photo ou moins de photos.",
+    "aiBadRequestError": "Claude a refusé la requête. La cause exacte est inconnue. Vérifie le crédit API, le modèle et le raisonnement. Essaie le niveau par défaut et une courte description.",
+    "aiBillingError": "Le solde de ton compte API est insuffisant. Vérifie la facturation dans la console du fournisseur. Un abonnement au chat ne comprend pas de crédit API.",
     "photoSaveDestination": "Enregistrer dans",
     "photoDiary": "Journal alimentaire",
     "photoFavorites": "Favoris",
@@ -342,6 +372,11 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "Le raisonnement configurable de ce modèle n’est pas vérifié. Le réglage par défaut est utilisé."
   },
   "it": {
+    "aiModelError": "Il modello selezionato non è disponibile o il tuo account API non può accedervi. Scegli un altro modello nelle Impostazioni.",
+    "aiParameterError": "Il servizio ha rifiutato le impostazioni del modello o del ragionamento. Prova il livello Predefinito o un altro modello.",
+    "aiImageError": "Il servizio ha rifiutato un’immagine per formato o dimensioni. Prova un’altra foto o meno foto.",
+    "aiBadRequestError": "Claude ha rifiutato la richiesta. Non è stato possibile identificare la causa esatta. Controlla credito API, modello e ragionamento. Prova il livello predefinito e una breve descrizione.",
+    "aiBillingError": "Il credito del tuo account API è insufficiente. Controlla la fatturazione nella console del fornitore. Un abbonamento alla chat non include credito API.",
     "photoSaveDestination": "Salva in",
     "photoDiary": "Diario alimentare",
     "photoFavorites": "Preferiti",
@@ -399,6 +434,11 @@ export const aiTranslations = {
     "aiReasoningUnsupported": "Il ragionamento configurabile di questo modello non è verificato. Viene usato il valore predefinito."
   },
   "pl": {
+    "aiModelError": "Wybrany model jest niedostępny lub konto API nie ma do niego dostępu. Wybierz inny model w Ustawieniach.",
+    "aiParameterError": "Usługa odrzuciła ustawienia modelu lub rozumowania. Spróbuj poziomu Domyślne lub innego modelu.",
+    "aiImageError": "Usługa odrzuciła obraz ze względu na format lub rozmiar. Spróbuj innego zdjęcia lub mniejszej liczby zdjęć.",
+    "aiBadRequestError": "Claude odrzucił żądanie. Nie udało się ustalić dokładnej przyczyny. Sprawdź środki API, model i rozumowanie. Spróbuj poziomu domyślnego i krótkiego opisu.",
+    "aiBillingError": "Twoje konto API nie ma wystarczających środków. Sprawdź rozliczenia w konsoli dostawcy. Subskrypcja czatu nie obejmuje środków na API.",
     "photoSaveDestination": "Zapisz w",
     "photoDiary": "Dziennik posiłków",
     "photoFavorites": "Ulubione",

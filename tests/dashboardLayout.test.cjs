@@ -34,3 +34,11 @@ test('automatic first-run choice requires enough room for the panel and readable
   assert.equal(latestMealFitsInitially(600, 400), false);
   assert.equal(latestMealFitsInitially(800, 400), true);
 });
+test('reducing the navigation height gives the released space to both button rows', () => {
+  const before = dashboardButtonHeights(700, 520, true);
+  const after = dashboardButtonHeights(726, 520, true);
+  assert.ok(after.text > before.text);
+  assert.ok(after.actions > before.actions);
+  assert.equal(Math.round(after.text + after.actions - before.text - before.actions), 26);
+  assert.ok(520 + 20 + 18 + after.text + after.actions <= 726);
+});

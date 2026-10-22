@@ -951,7 +951,7 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
   // Idle state (Dashboard)
   return (
     <SafeAreaView style={cameraOnly ? { position: 'absolute', width: 0, height: 0 } : [styles.safe, { backgroundColor: colors.bg }]} edges={['right', 'left', 'top']}>
-      {!cameraOnly && <ScrollView onLayout={event => setDashboardHeight(event.nativeEvent.layout.height)} contentContainerStyle={styles.dashboardContainer} indicatorStyle={theme === 'light' ? 'black' : 'white'}>
+      {!cameraOnly && <ScrollView style={{ flex: 1, minHeight: 0 }} onLayout={event => setDashboardHeight(event.nativeEvent.layout.height)} contentContainerStyle={styles.dashboardContainer} indicatorStyle={theme === 'light' ? 'black' : 'white'}>
         <View onLayout={event => measureDashboardPart('summary', event.nativeEvent.layout.height)} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <DailySummary
             latestMeal={latestMeal}

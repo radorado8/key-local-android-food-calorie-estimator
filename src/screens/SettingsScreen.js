@@ -37,7 +37,7 @@ import { getAllMeals, importMeals, clearAllMeals } from '../api/mealService';
 import { clearCategoryFromFavorites, getFavoriteImageUris } from '../api/favoritesService';
 import { escapeCsvField, parseCsvRow, parseFiniteNumber } from '../utils/csv';
 import TermsModal from '../components/TermsModal';
-import ExpenditureSettings from '../components/ExpenditureSettings';
+import ExpenditureSettings, { RestingProfileDialog } from '../components/ExpenditureSettings';
 import MacroGoalsDialog from '../components/MacroGoalsDialog';
 import { connectHealthConnect, openHealthConnectSettingsScreen } from '../api/healthConnect';
 function clampDailyGoal(value) {
@@ -212,6 +212,7 @@ export default function SettingsScreen() {
   const { colors } = useSettings();
 
   const [dailyGoalInput, setDailyGoalInput] = useState(String(dailyGoal));
+  const [goalProfileOpen, setGoalProfileOpen] = useState(false);
   const [macroGoalsOpen, setMacroGoalsOpen] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [autoSaveSecondsInput, setAutoSaveSecondsInput] = useState(String(autoSaveSeconds));
@@ -822,12 +823,12 @@ export default function SettingsScreen() {
         Alert.alert(Platform.OS === 'ios' ? t.appleHealthTitle : t.healthConnectTitle, getHealthConnectErrorMessage(access.availability, t));
         return;
       }
-      let calories = await refreshBurnedCalories();
+      let calories = await refreshBurnedCalories(false, 7);
       if (calories === null) {
         const result = await connectHealthConnect();
         if (result.connected) {
           setHealthConnectEnabled(true);
-          calories = await refreshBurnedCalories();
+          calories = await refreshBurnedCalories(false, 7);
         } else {
           setHealthConnectEnabled(false);
           const message = getHealthConnectErrorMessage(result.availability, t);
@@ -863,6 +864,16 @@ export default function SettingsScreen() {
             />
             <Text style={[styles.unit, { color: colors.muted }]}>kcal</Text>
           </View>
+          <Pressable accessibilityRole="button" onPress={() => setGoalProfileOpen(true)}
+            style={({ pressed }) => ({ marginTop: 12, minHeight: 46, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.elemBorder, backgroundColor: colors.elemBg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.7 : 1 })}>
+            <Ionicons name="calculator-outline" size={20} color={colors.text} />
+            <Text style={{ flexShrink: 1, fontWeight: '700', color: colors.text, textAlign: 'center' }}>{t.dailyGoalCalculate}</Text>
+          </Pressable>
+          {goalProfileOpen && <RestingProfileDialog colors={colors} onClose={() => setGoalProfileOpen(false)} onSaveTotal={value => {
+            const goal = clampDailyGoal(value);
+            setDailyGoal(goal);
+            setDailyGoalInput(String(goal));
+          }} />}
         </View>
 
         {['android', 'ios'].includes(Platform.OS) && (
@@ -1285,11 +1296,6 @@ export default function SettingsScreen() {
             <Ionicons name="logo-github" size={18} color={colors.accent} />
             <Text style={{ color: colors.accent, fontWeight: '700' }}>GitHub</Text>
           </Pressable>
-
-          <Text style={[styles.hint, { color: colors.muted, marginBottom: 4 }]}>Support:</Text>
-          <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 12 }} onPress={() => Linking.openURL('https://ko-fi.com/caloriesai')}>
-            ☕ {t.buyMeCoffee}
-          </Text>
 
           <Text style={[styles.hint, { color: colors.muted, marginBottom: 4, marginTop: 12 }]}>{t.poweredBy || 'Powered by:'}</Text>
           <Text style={{ color: colors.muted, fontSize: 13 }}>

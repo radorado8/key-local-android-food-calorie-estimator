@@ -10,7 +10,7 @@ import { resolveMacroGoals, validMacroGoals } from '../utils/macroGoals';
 
 import { COLOR_THEMES, getPalette } from '../theme/palette';
 import { calculateRestingProfile, estimateGarminExpenditure, estimateDailyExpenditure, localDateKey, rememberRestingEnergy, rememberDailyEnergyReading, resolveRestingBaseline, sanitizeRestingHistory, validEnergy } from '../utils/calorieExpenditure';
-import { burnedHistoryDates, sanitizeBurnedHistory } from '../utils/burnedHistory';
+import { burnedHistoryDates, sanitizeBurnedHistory, recentBurnedDates, reconcileBurnedHistory } from '../utils/burnedHistory';
 import { getHistoricalBurnedCalories, getCalorieExpenditure } from '../api/healthConnect';
 
 import { normalizeReasoning } from '../config/reasoning';
@@ -179,7 +179,7 @@ export function SettingsProvider({ children }) {
     setDailyEnergyReading(previous => rememberDailyEnergyReading(previous, candidate));
   }, [hydrated, healthConnectEnabled, candidate.date, candidate.total, candidate.active, candidate.estimated, candidate.calculationKey]);
 
-  const refreshBurnedCalories = async (requestMissingPermissions = false) => {
+  const refreshBurnedCalories = async (requestMissingPermissions = false, historicalDays = 1) => {
     const version = ++healthReadVersion.current;
     if (!hydrated || !['android', 'ios'].includes(Platform.OS) || !healthConnectEnabled) {
       setCalorieExpenditure({ burnedCalories: null, estimatedBurnedCalories: null });
@@ -193,6 +193,13 @@ export function SettingsProvider({ children }) {
         setBurnedCaloriesHistory(history => ({ ...history, [expenditure.date]: mergeBurnedHealthReading(history[expenditure.date], { calories: expenditure.burnedCalories, activeCalories: validEnergy(garminMode ? estimateGarminExpenditure(expenditure.rawBurnedCalories ?? expenditure.burnedCalories, garminRestingCalories, expenditure.sampledAt)?.active : expenditure.todayActiveCalories), restingCalories: validEnergy(expenditure.todayRestingCalories), checkedOn: localDateKey() }) }));
       }
       if (!garminMode) setRestingCaloriesHistory(history => rememberRestingEnergy(history, expenditure.date, expenditure.todayRestingCalories));
+      // Always recheck yesterday; a manual refresh also reconciles the last week.
+      try {
+        const values = await getHistoricalBurnedCalories(recentBurnedDates(historicalDays));
+        if (version === healthReadVersion.current) {
+          setBurnedCaloriesHistory(history => reconcileBurnedHistory(history, values));
+        }
+      } catch { /* A failed historical read must not discard today's reading. */ }
       return expenditure.burnedCalories;
     } catch {
       if (version !== healthReadVersion.current) return null;

@@ -1,3 +1,4 @@
+import { usePaneWidth } from '../navigation/PaneWidthContext';
 import MealGapChart from '../components/MealGapChart';
 import ChoiceBox from '../components/ChoiceBox';
 import { aggregateAnalyticsMonths } from '../utils/burnedCaloriesCsv';
@@ -10,7 +11,6 @@ import {
     StyleSheet,
     Text,
     View,
-    useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Rect, G, Line, Text as SvgText, Path, Circle } from 'react-native-svg';
@@ -33,7 +33,7 @@ export default function AnalyticsScreen() {
     const burnedLabel = language === 'sk' ? 'Spálené' : t.caloriesBurnedLabel;
     const showBurned = healthConnectEnabled || Object.keys(burnedCaloriesHistory || {}).length > 0;
     const [selectedDay, setSelectedDay] = useState(null);
-    const { width: screenWidth } = useWindowDimensions();
+    const screenWidth = usePaneWidth();
 
     const { colors } = useSettings();
 

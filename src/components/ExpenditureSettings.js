@@ -62,7 +62,7 @@ function Button({ colors, label, onPress, style, filled = false, selected }) {
   </Pressable>;
 }
 
-export function RestingProfileDialog({ colors, onClose }) {
+export function RestingProfileDialog({ colors, onClose, onSaveTotal }) {
   const t = useTranslation();
   const { restingEnergyProfile, setRestingEnergyProfile, setManualRestingCalories } = useSettings();
   const [draft, setDraft] = useState({ age: String(restingEnergyProfile?.age ?? ''), height: String(restingEnergyProfile?.height ?? ''),
@@ -80,14 +80,15 @@ export function RestingProfileDialog({ colors, onClose }) {
   const save = () => {
     if (!estimate) { setError(true); return; }
     setRestingEnergyProfile(profile);
-    setManualRestingCalories(estimate.resting);
+    if (onSaveTotal) onSaveTotal(estimate.total);
+    else setManualRestingCalories(estimate.resting);
     onClose();
   };
   return <Modal visible transparent animationType="fade" onRequestClose={onClose}>
     <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={[styles.dialog, { backgroundColor: colors.modalBg }]}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, gap: 12 }}>
-          <Text style={[styles.title, { color: colors.text }]}>{t.restingCalculate}</Text>
+        <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, gap: 12 }}>
+          <Text style={[styles.title, { color: colors.text }]}>{onSaveTotal ? t.dailyGoalCalculate : t.restingCalculate}</Text>
           {[[ 'age', t.profileAge ], [ 'height', t.profileHeight ], [ 'weight', t.profileWeight ]].map(([key, label]) =>
             <View key={key} style={styles.row}>
               <Text style={[styles.label, { flex: 1, color: colors.text }]}>{label}</Text>
@@ -100,17 +101,17 @@ export function RestingProfileDialog({ colors, onClose }) {
           {choices('sex', [['male', t.profileMale], ['female', t.profileFemale]])}
           <Text style={[styles.label, { color: colors.text }]}>{t.profileActivity}</Text>
           {choices('activity', [['sedentary', t.profileSedentary], ['moderate', t.profileModerate], ['athlete', t.profileAthlete]])}
-          <Text style={[styles.hint, { color: colors.muted }]}>{t.profileActivityHint}</Text>
+          <Text style={[styles.hint, { color: colors.muted }]}>{onSaveTotal ? t.dailyGoalProfileHint : t.profileActivityHint}</Text>
           {estimate && <View style={[styles.result, { backgroundColor: colors.elemBg }]}>
-            <Text style={[styles.label, { color: colors.macros.protein }]}>{t.restingCalories}: {estimate.resting.toLocaleString()} kcal</Text>
-            <Text style={[styles.hint, { color: colors.muted }]}>{t.profileTotal}: {estimate.total.toLocaleString()} kcal</Text>
+            <Text style={[styles.label, { color: colors.macros.protein }]}>{onSaveTotal ? t.dailyGoal : t.restingCalories}: {(onSaveTotal ? estimate.total : estimate.resting).toLocaleString()} kcal</Text>
+            <Text style={[styles.hint, { color: colors.muted }]}>{onSaveTotal ? t.restingCalories : t.profileTotal}: {(onSaveTotal ? estimate.resting : estimate.total).toLocaleString()} kcal</Text>
           </View>}
           {error && <Text accessibilityRole="alert" style={{ color: colors.danger }}>{t.profileInvalid}</Text>}
-          <View style={styles.row}>
-            <Button colors={colors} style={{ flex: 1 }} onPress={onClose} label={t.cancel} />
-            <Button colors={colors} style={{ flex: 1 }} filled onPress={save} label={t.save} />
-          </View>
         </ScrollView>
+        <View style={[styles.row, { flexShrink: 0, padding: 16, borderTopWidth: 1, borderTopColor: colors.border }]}>
+          <Button colors={colors} style={{ flex: 1 }} onPress={onClose} label={t.cancel} />
+          <Button colors={colors} style={{ flex: 1 }} filled onPress={save} label={t.save} />
+        </View>
       </View>
     </KeyboardAvoidingView>
   </Modal>;

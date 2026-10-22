@@ -37,14 +37,36 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     let window = UIWindow(windowScene: windowScene)
-    window.rootViewController = appDelegate.window?.rootViewController
     self.window = window
     appDelegate.window = window
-    window.makeKeyAndVisible()
+    appDelegate.reactNativeFactory?.startReactNative(
+      withModuleName: "main",
+      in: window,
+      launchOptions: appDelegate.reactNativeLaunchOptions
+    )
   }
 }
 `;
 
+    if (!config.modResults.contents.includes('var reactNativeLaunchOptions:')) {
+      config.modResults.contents = config.modResults.contents.replace(
+        '  var window: UIWindow?',
+        '  var window: UIWindow?\n  var reactNativeLaunchOptions: [UIApplication.LaunchOptionsKey: Any]?'
+      );
+      config.modResults.contents = config.modResults.contents.replace(
+        '    bindReactNativeFactory(factory)',
+        '    bindReactNativeFactory(factory)\n    reactNativeLaunchOptions = launchOptions'
+      );
+    }
+    // Create React Native only after UIKit provides the scene's window.
+    config.modResults.contents = config.modResults.contents.replace(
+      /#if os\(iOS\) \|\| os\(tvOS\)[\s\S]*?#endif/,
+      ''
+    );
+    config.modResults.contents = config.modResults.contents.replace(
+      /\n@available\(iOS 13\.0, \*\)\nclass SceneDelegate:[\s\S]*$/,
+      ''
+    );
     if (!config.modResults.contents.includes('class SceneDelegate: UIResponder, UIWindowSceneDelegate')) {
       config.modResults.contents += sceneDelegate;
     }

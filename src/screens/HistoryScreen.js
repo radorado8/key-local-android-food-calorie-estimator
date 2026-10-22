@@ -1,3 +1,4 @@
+import { usePaneWidth, PaneVisibleContext } from '../navigation/PaneWidthContext';
 import { MEAL_TYPES as MEAL_CATEGORIES, mealTypeAt } from '../utils/mealTypes';
 import { getLatestMeal } from '../utils/latestMeal';
 import { mealDateTime } from '../utils/mealDateTime';
@@ -7,7 +8,7 @@ import AddFoodButton from '../components/AddFoodButton';
 import useFoodSearchInput from '../hooks/useFoodSearchInput';
 import { typography } from '../theme/palette';
 import React, { useDeferredValue, useEffect, useMemo, useState, useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import {
   ActivityIndicator,
   Alert,
@@ -15,7 +16,6 @@ import {
   SectionList,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
   Image,
   AppState,
@@ -79,6 +79,9 @@ function formatDateLabelLong(dateObj, t, language, now) {
 }
 
 export default function HistoryScreen({ route, navigation }) {
+  const paneVisible = React.useContext(PaneVisibleContext);
+  const isFocused = useIsFocused();
+  const historyVisible = isFocused || paneVisible;
   const insets = useSafeAreaInsets();
   const t = useTranslation();
   const { theme, useLocalStorage, language, dailyGoal, mealTypeStarts, showImagesInHistory, showUniqueHistorySearchResults } = useSettings();
@@ -136,7 +139,7 @@ export default function HistoryScreen({ route, navigation }) {
 
   const { colors } = useSettings();
 
-  const { width } = useWindowDimensions();
+  const width = usePaneWidth();
   const isMobile = width <= 768;
 
   // Midnight refresh check
@@ -191,8 +194,8 @@ export default function HistoryScreen({ route, navigation }) {
   }, []);
 
   // Open today by default; the dashboard latest-meal link can open the last recorded day.
-  useFocusEffect(
-    useCallback(() => {
+  useEffect(() => {
+      if (!historyVisible) return;
       if (scrollRef.current && sections?.length > 0) {
         try {
           scrollRef.current.scrollToLocation({
@@ -223,7 +226,7 @@ export default function HistoryScreen({ route, navigation }) {
             const lastCatId = getMealCategoryId(todayMeals[0].dateObj);
             setExpandedCategories({ [`${todayKey}_${lastCatId}`]: true });
           }
-        } else if (route.params?.openLatestMeal) {
+        } else if (route.params?.openLatestMeal || paneVisible) {
           const lastMeal = getLatestMeal(meals);
           if (lastMeal) {
             const date = lastMeal.dateObj || new Date(lastMeal.timestamp);
@@ -236,8 +239,7 @@ export default function HistoryScreen({ route, navigation }) {
       if (!loading && route.params?.openLatestMeal) {
         navigation.setParams({ openLatestMeal: undefined });
       }
-    }, [meals, loading, route.params?.openLatestMeal, navigation, getMealCategoryId])
-  );
+    }, [historyVisible, paneVisible, meals, loading, route.params?.openLatestMeal, navigation, getMealCategoryId]);
 
   const searchIndex = useMemo(() => meals
     .map(item => ({

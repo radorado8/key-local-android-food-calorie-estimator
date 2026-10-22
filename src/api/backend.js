@@ -20,6 +20,14 @@ export function getFriendlyError(err, t) {
   if (msg === 'invalid_api_key') return { title: getText('errorTitle', 'Error'), message: getText('aiInvalidKey', 'Enter an API key without spaces.') };
   if (msg === 'empty_transcription' || msg === 'missing_audio') return { title: getText('errorTitle', 'Error'), message: getText('aiEmptyVoice', 'No speech recognized. Please record again.') };
   if (msg === 'ai_request_failed') {
+    if (err.reason === 'billing') return { title: provider + ' (' + err.status + ')', message: getText('aiBillingError', 'Your API account has insufficient credit. Check billing in the provider console. A chat subscription does not include API credit.') };
+    const reasons = {
+      model: ['aiModelError', 'The selected model is unavailable or your API account cannot access it. Choose another model in Settings.'],
+      parameters: ['aiParameterError', 'The service rejected the model or reasoning settings. Try the Default reasoning level or another model.'],
+      image: ['aiImageError', 'The service rejected an image because of its format or size. Try another photo or fewer photos.'],
+    };
+    if (reasons[err.reason]) return { title: provider + ' (' + err.status + ')', message: getText(...reasons[err.reason]) };
+    if (err.provider === 'claude' && err.status === 400) return { title: provider + ' (400)', message: getText('aiBadRequestError', 'Claude rejected the request. The exact cause could not be identified. Check your API credit, selected model and reasoning setting. Try Default reasoning and a short text description.') };
     const key = [401, 403].includes(err.status) ? 'aiAuthError' : err.status === 429 ? 'aiQuotaError' : 'aiRequestError';
     return { title: provider + ' (' + err.status + ')', message: getText(key, 'Request failed. Check your API key, model and account quota.') };
   }

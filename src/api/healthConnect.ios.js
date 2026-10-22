@@ -85,4 +85,23 @@ export function openHealthConnectSettingsScreen() {
   // iOS exposes Health permissions in Settings > Health > Data Access & Devices.
 }
 
-export async function getHistoricalBurnedCalories() { return {}; }
+export async function getHistoricalBurnedCalories(dates) {
+  if (!(await hasTotalCaloriesPermission())) return {};
+  const values = {};
+  for (let offset = 0; offset < dates.length; offset += 4) {
+    await Promise.all(dates.slice(offset, offset + 4).map(async key => {
+      const [year, month, day] = key.split('-').map(Number);
+      const start = new Date(year, month - 1, day);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      try {
+        const [active, resting] = await Promise.all(ENERGY_TYPES.map(type => readEnergy(type, start, end)));
+        if (active !== null || resting !== null) values[key] = {
+          calories: Math.round((active ?? 0) + (resting ?? 0)),
+          activeCalories: active, restingCalories: resting, checkedOn: localDateKey(),
+        };
+      } catch { /* Preserve cached data on failure. */ }
+    }));
+  }
+  return values;
+}

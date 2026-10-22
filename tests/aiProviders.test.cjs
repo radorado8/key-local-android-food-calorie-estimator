@@ -278,6 +278,31 @@ test('authentication and quota failures expose useful status without provider re
   }
 });
 
+test('Claude 400 insufficient API credit is distinguished without exposing response data or retrying', async () => {
+  const client = apiClient([{ httpStatus: 400, error: { type: 'invalid_request_error',
+    message: 'Your credit balance is too low to access the Anthropic API. private-secret-data' } }]);
+  await assert.rejects(client.analyze({ aiProvider: 'claude', text: 'apple' }), error => {
+    assert.equal(error.reason, 'billing');
+    assert.match(client.friendly(error).message, /insufficient credit/);
+    assert.ok(!JSON.stringify(error).includes('private-secret-data'));
+    assert.ok(!JSON.stringify(client.friendly(error)).includes('private-secret-data'));
+    return true;
+  });
+  assert.equal(client.calls.length, 1);
+});
+
+test('other Claude 400 errors are not incorrectly reported as missing credit', async () => {
+  for (const message of ['model: unavailable-model', 'thinking: invalid configuration']) {
+    const client = apiClient([{ httpStatus: 400, error: { type: 'invalid_request_error', message } }]);
+    await assert.rejects(client.analyze({ aiProvider: 'claude', text: 'apple' }), error => {
+      assert.notEqual(error.reason, 'billing');
+      assert.equal(error.status, 400);
+      return true;
+    });
+    assert.equal(client.calls.length, 1);
+  }
+});
+
 test('all UI languages include the complete provider settings and error labels', () => {
   const { aiTranslations } = loader()('src/i18n/aiTranslations.js');
   const keys = Object.keys(aiTranslations.en).sort();
@@ -532,4 +557,23 @@ test('absolute year navigation reaches previous November and December but stops 
   assert.ok(previous.dates.some(date => date.getMonth() === 11));
   assert.equal(analyticsMaxOffset('year', new Date(2026, 0, 1), now, options), 0);
   assert.equal(analyticsMaxOffset('year', earliest, now, { rangeMode: 'rolling' }), 0);
+});
+
+ test('Claude model, thinking, image and unknown failures provide safe actionable messages', async () => {
+  for (const [status, type, message, reason, hint] of [
+    [404, 'not_found_error', 'model: unavailable private-secret-data', 'model', /another model/],
+    [400, 'invalid_request_error', 'thinking.budget_tokens: invalid private-secret-data', 'parameters', /Default reasoning/],
+    [400, 'invalid_request_error', 'image exceeds maximum size private-secret-data', 'image', /another photo/],
+    [400, 'invalid_request_error', 'private-secret-data', undefined, /could not be identified/],
+  ]) {
+    const client = apiClient([{ httpStatus: status, error: { type, message } }]);
+    await assert.rejects(client.analyze({ aiProvider: 'claude', text: 'apple' }), error => {
+      assert.equal(error.reason, reason);
+      assert.match(client.friendly(error).message, hint);
+      assert.ok(!JSON.stringify(error).includes('private-secret-data'));
+      assert.ok(!JSON.stringify(client.friendly(error)).includes('private-secret-data'));
+      return true;
+    });
+    assert.equal(client.calls.length, 1);
+  }
 });
