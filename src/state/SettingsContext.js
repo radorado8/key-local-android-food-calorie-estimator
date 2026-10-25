@@ -114,7 +114,7 @@ export function SettingsProvider({ children }) {
           if (Number.isFinite(parsed?.dailyGoal)) setDailyGoal(parsed.dailyGoal);
           if (validMacroGoals(parsed?.customMacroGoals)) setCustomMacroGoals(parsed.customMacroGoals);
           if (typeof parsed?.aiModel === 'string') {
-            setAiModel(parsed.aiModel === 'gemini-flash-latest' ? DEFAULT_PUBLIC_MODEL_ID : parsed.aiModel);
+            setAiModel(parsed.aiModel);
           }
           if (parsed?.modelReasoning && typeof parsed.modelReasoning === 'object' && !Array.isArray(parsed.modelReasoning)) setModelReasoning(parsed.modelReasoning);
           if (isAIProvider(parsed?.aiProvider)) setAiProvider(parsed.aiProvider);

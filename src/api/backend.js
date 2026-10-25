@@ -1,3 +1,4 @@
+import { retryAnalysis } from './retryAnalysis';
 import { analyzeWithProvider } from './providers';
 import { AI_PROVIDERS } from '../config/aiProviders';
 
@@ -70,10 +71,10 @@ export function getFriendlyError(err, t) {
 // ... (BackendError class stays)
 
 export async function analyzeFood(payload) {
-  return analyzeWithProvider(payload);
+  return retryAnalysis(() => analyzeWithProvider({ ...payload, analysisRetryManaged: true }), payload);
 }
 
 export async function analyzeFoodDescriptionInput(payload) {
-  return analyzeWithProvider(payload);
+  return retryAnalysis(() => analyzeWithProvider({ ...payload, analysisRetryManaged: true }), payload);
 }
 

@@ -1011,10 +1011,14 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
             onPress={() => navigation.navigate('Favorites', { openSearch: Date.now() })}
             onLongPress={() => navigation.navigate('History', { openSearch: Date.now() })}
           >
+            <Text numberOfLines={1} style={{ marginBottom: 3, fontSize: 9, lineHeight: 11, height: 11, flexShrink: 0, color: colors.btnText, opacity: 0.8, textAlign: 'center' }}>{t.homeSearchTap}</Text>
             <View style={styles.voiceLabel}>
               <Ionicons name="search" size={20} color={colors.btnText} />
               <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.sectionTitle, { color: colors.btnText, textTransform: 'none', flexShrink: 1 }]}>{t.homeSearch}</Text>
             </View>
+            <Text numberOfLines={1} style={{ marginTop: 3, fontSize: 9, lineHeight: 11, height: 11, flexShrink: 0, color: colors.btnText, opacity: 0.8, textAlign: 'center' }}>
+              {t.homeSearchHold}
+            </Text>
           </Pressable>
         </View>
 

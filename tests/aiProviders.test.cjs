@@ -382,6 +382,8 @@ test('settings migration preserves the Gemini model and remembers a separate mod
   value = await restarted.render();
   assert.equal(value.reasoningLevel, 'low');
   assert.equal(value.dailyGoal, 2500);
+  persisted = JSON.stringify({ aiModel: 'gemini-flash-latest', aiProvider: 'gemini' });
+  assert.equal((await mount()).value.aiModel, 'gemini-flash-latest');
 });
 
 test('reasoning defaults and unknown custom models never send thinking parameters', async () => {
@@ -576,4 +578,72 @@ test('absolute year navigation reaches previous November and December but stops 
     });
     assert.equal(client.calls.length, 1);
   }
+});
+
+test('current Gemini and Claude catalogs expose verified models with economical defaults', () => {
+  const load = loader();
+  const { PROVIDER_MODELS, DEFAULT_MODELS } = load('src/config/aiProviders.js');
+  const { getAvailableModelIds } = load('src/config/aiModels.js');
+  for (const id of ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview']) {
+    assert.ok(getAvailableModelIds('').includes(id));
+  }
+  for (const id of ['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1']) assert.ok(PROVIDER_MODELS.claude.some(model => model.id === id));
+  assert.equal(DEFAULT_MODELS.gemini, 'gemini-3.5-flash-lite');
+  assert.equal(DEFAULT_MODELS.claude, 'claude-haiku-4-5');
+});
+
+test('current thinking capabilities omit unsupported levels and preserve API defaults', () => {
+  const { reasoningLevels, reasoningConfig } = loader()('src/config/reasoning.js');
+  for (const model of ['gemini-4-argon', 'gemini-3.8-flash']) {
+    assert.ok(!reasoningLevels('gemini', model).includes('minimal'));
+    assert.equal(Object.keys(reasoningConfig('gemini', model, 'default')).length, 0);
+  }
+  assert.ok(reasoningLevels('gemini', 'gemini-3.6-flash').includes('minimal'));
+  for (const model of ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-fable-5-1']) {
+    assert.ok(!reasoningLevels('claude', model).includes('none'));
+    assert.ok(reasoningLevels('claude', model).includes('xhigh'));
+    assert.equal(Object.keys(reasoningConfig('claude', model, 'default')).length, 0);
+  }
+});
+
+for (const model of ['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1']) {
+  test(`${model}: default and high use automatic tools and sufficient output budget`, async () => {
+    for (const level of ['default', 'high']) {
+      const client = apiClient([response('claude')]);
+      assert.equal((await client.analyze({ aiProvider: 'claude', aiModel: model, reasoningLevel: level, text: 'apple' })).calories, 52);
+      const body = client.calls[0].body;
+      assert.equal(body.tool_choice.type, 'auto');
+      assert.equal(body.max_tokens, 16000);
+      assert.equal(body.thinking?.type, level === 'default' ? undefined : 'adaptive');
+      assert.equal(body.output_config?.effort, level === 'default' ? undefined : 'high');
+    }
+  });
+}
+
+test('new Claude automatic tools accept complete JSON fallback but reject truncated answers', async () => {
+  for (const stop_reason of ['end_turn', 'max_tokens']) {
+    const client = apiClient([{ stop_reason, content: [{ type: 'text', text: JSON.stringify(food) }] }]);
+    const result = client.analyze({ aiProvider: 'claude', aiModel: 'claude-sonnet-5-5', text: 'apple' });
+    if (stop_reason === 'end_turn') assert.equal((await result).calories, 52);
+    else await assert.rejects(result, /Invalid format/);
+  }
+});
+
+test('Gemini Argon reserves shared thinking/output budget with default and explicit effort', async () => {
+  for (const level of ['default', 'high']) {
+    const client = apiClient([response('gemini')]);
+    await client.analyze({ aiProvider: 'gemini', aiModel: 'gemini-4-argon', reasoningLevel: level, text: 'apple' });
+    const config = client.calls[0].body.generationConfig;
+    assert.equal(config.maxOutputTokens, 32768);
+    assert.equal(config.thinkingConfig?.thinkingLevel, level === 'default' ? undefined : 'high');
+    for (const key of ['temperature', 'topP', 'topK', 'thinkingBudget']) assert.equal(config[key], undefined);
+  }
+});
+
+test('new Claude weight analysis uses automatic tools and scales the existing nutrients', async () => {
+  const client = apiClient([{ stop_reason: 'tool_use', content: [{ type: 'tool_use', name: 'portion_weight', input: { error: null, weight_g: 200, confidence: 0.9 } }] }]);
+  const result = await client.analyze({ aiProvider: 'claude', aiModel: 'claude-opus-5-5', images: [{ base64Data: 'PHOTO' }], weightReference: food });
+  assert.equal(result.calories, 104);
+  assert.equal(client.calls[0].body.tool_choice.type, 'auto');
+  assert.equal(client.calls[0].body.max_tokens, 16000);
 });

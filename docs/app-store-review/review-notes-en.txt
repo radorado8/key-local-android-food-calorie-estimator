@@ -1,0 +1,40 @@
+CALORIES AI KEY — REVIEW INFORMATION
+
+PURPOSE AND AUDIENCE
+A personal food diary for adults to record meals, calories and macros, reuse favorites, set goals and compare intake with available energy expenditure. Manual entry works without an AI key. Optional photo, text and voice analysis reduces logging effort. Results are estimates the user can edit. The app is for general wellness, not diagnosis or treatment.
+
+SETUP AND MAIN FEATURES
+No app account, registration or sign-in is required.
+1. Launch and accept the displayed terms.
+2. In History (Food Log), use manual Add Meal, enter a name, weight and nutrition, and save. Date/time can be changed.
+3. Home shows daily intake and goals. Tap a History meal to edit; plus repeats it; holding plus allows a different weight.
+4. Favorites organizes reusable foods. Analytics offers week, two-week, month and year views. Settings includes goals, language, themes and data export/import. Diary data is stored locally.
+
+OPTIONAL AI
+In Settings choose Gemini, OpenAI or Claude, add your provider API key and select a model. Use Camera, Gallery or Text on Home. Photos and text supports up to four photos plus a description. Review/edit estimates before saving; History displays the first photo.
+Voice records up to 30 seconds. Gemini supports voice through its API; OpenAI uses transcription. Claude voice requires a separately configured Gemini or OpenAI transcription provider/key. Provider fees, account eligibility and limits apply.
+
+OPTIONAL APPLE HEALTH
+Enable Apple Health in Settings and grant read access on a supported device. The app reads active and resting energy, calculates their total and displays expenditure on Home/in Analytics. No measured energy is available if readable Health data is absent. The app does not write to Health. Health is optional; the diary works without it. The full diary and Health history are not automatically sent to AI providers.
+
+EXTERNAL SERVICES
+Google Gemini API, OpenAI API and Anthropic Claude API provide optional AI analysis/transcription as described above. Apple Health/HealthKit supplies optional iOS energy readings. Health Connect is Android-only. Firebase hosts the public website/privacy policy, not the iOS diary. An optional favorites library uses bundled USDA-derived food data. No required app authentication, advertising, in-app purchases or payment processor.
+
+REGIONS
+Core features do not intentionally differ by region. Localization affects presentation. AI availability depends on provider-supported regions, account/model access, billing, service limits and connectivity. Health depends on device/OS support, permission and available data.
+
+CONTENT AND RIGHTS
+A private wellness diary, with no public social feed or user-to-user messaging. Users capture/select their own photos. App Store sample photos are public domain/CC0:
+Muesli — Markus Kuhn, public domain:
+https://commons.wikimedia.org/wiki/File:Fresh-muesli.jpg
+Oatmeal bars — Fumikas Sagisavas, CC0:
+https://commons.wikimedia.org/wiki/File:Oatmeal_yogurt_bars.jpg
+Chicken/rice — Renee Comet / NCI, public domain:
+https://commons.wikimedia.org/wiki/File:Chicken_and_rice.jpg
+Screenshot meal/Health data is illustrative; simulated Health data is not included in production.
+
+Privacy: https://kalorie-jedlo-web-rot.web.app/privacy.html
+
+PENDING BEFORE RESUBMISSION
+Physical-device video: TO BE ADDED.
+Reviewer access to AI analysis: TO BE PROVIDED SEPARATELY.

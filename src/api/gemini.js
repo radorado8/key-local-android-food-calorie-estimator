@@ -1,5 +1,5 @@
 import { analysisPhotos, photoInstructions } from './photoInput';
-import { reasoningConfig } from '../config/reasoning';
+import { analysisModelConfig, reasoningConfig } from '../config/reasoning';
 import { getActiveApiKey } from '../utils/apiKeys';
 import { PROMPTS } from '../config/prompts';
 import { DEFAULT_PUBLIC_MODEL_ID } from '../config/aiModels';
@@ -12,7 +12,7 @@ function apiError(status) {
     return error;
 }
 
-export async function analyzeImage({ base64Data, mimeType, images, text, weightG, language = 'en', aiModel, reasoningLevel, signal, apiKey: suppliedKey }) {
+export async function analyzeImage({ base64Data, mimeType, images, text, weightG, language = 'en', aiModel, reasoningLevel, signal, apiKey: suppliedKey, maxAttempts = 3 }) {
     const apiKey = suppliedKey || await getActiveApiKey('gemini');
     if (!apiKey) {
         throw new Error('Chýba API kľúč. Nastav ho v nastaveniach.');
@@ -46,13 +46,12 @@ export async function analyzeImage({ base64Data, mimeType, images, text, weightG
         generationConfig: {
             maxOutputTokens: 1000,
             responseMimeType: "application/json",
-            ...reasoningConfig('gemini', modelId, reasoningLevel)
+            ...analysisModelConfig('gemini', modelId), ...reasoningConfig('gemini', modelId, reasoningLevel)
         }
     };
 
     // Retry logic
     let attempts = 0;
-    const maxAttempts = 3;
 
     while (attempts < maxAttempts) {
         attempts++;
@@ -157,7 +156,7 @@ Return ONLY a raw JSON string, nothing else. If it is not food, return {"error":
             headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
             body: JSON.stringify({
                 contents: [{ parts }],
-                generationConfig: { maxOutputTokens: 1000, responseMimeType: 'application/json', ...reasoningConfig('gemini', modelId, reasoningLevel) }
+                generationConfig: { maxOutputTokens: 1000, responseMimeType: 'application/json', ...analysisModelConfig('gemini', modelId), ...reasoningConfig('gemini', modelId, reasoningLevel) }
             }),
             signal
         }

@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { DEFAULT_MODELS, PROVIDER_MODELS, modelProvider } from '../config/aiProviders';
+import { DEFAULT_MODELS, PROVIDER_MODELS, MODEL_COST_INFO, modelProvider } from '../config/aiProviders';
 import { reasoningLevels } from '../config/reasoning';
 import ApiKeySettings from '../components/ApiKeySettings';
 
@@ -185,8 +185,9 @@ const Dropdown = ({ label, value, options, onSelect, hint, colors, disabled = fa
                   >
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.optionLabel, { color: active ? colors.accent : colors.text }]}>
-                        {opt.label}
+                        {opt.label}{opt.recommended ? ` · ${t.aiModelBudget}` : opt.expensive ? ` · ${t.aiModelExpensive}` : ''}
                       </Text>
+                      {opt.price && <Text style={[styles.optionDesc, { color: colors.muted }]}>{opt.price}</Text>}
                       {(opt.descriptionKey || opt.description) && (
                         <Text style={[styles.optionDesc, { color: colors.muted }]}>
                           {opt.descriptionKey ? t[opt.descriptionKey] : opt.description}
@@ -938,9 +939,9 @@ export default function SettingsScreen() {
         <ApiKeySettings colors={colors}>
         <Dropdown
           label={t.aiModel}
-          hint={t.aiModelHint}
+          hint={`${t.aiModelHint}\n${t.aiModelCostHint}`}
           value={aiModel}
-          options={allowedModels}
+          options={allowedModels.map(model => ({ ...model, price: t.aiModelPriceCheck, ...MODEL_COST_INFO[model.id] }))}
           onSelect={setAiModel}
           colors={colors}
         />

@@ -29,6 +29,23 @@ export function summarizeBurnedDays(days) {
     highest: Math.round(Math.max(...values)), lowest: Math.round(Math.min(...values)) };
 }
 
+// Both averages must use the same observed days. Include a day with burned
+// energy even before its first meal, but exclude empty/future calendar slots.
+export function summarizeCalorieBalance(days) {
+  const observed = days.filter(day => day.calories > 0 || validEnergy(day.burned) !== null);
+  const intake = days.reduce((sum, day) => sum + day.calories, 0);
+  const burned = days.filter(day => validEnergy(day.burned) !== null);
+  if (!burned.length) return null;
+  const expenditure = burned.reduce((sum, day) => sum + day.burned, 0);
+  const difference = intake - expenditure;
+  return {
+    intakeAverage: Math.round(intake / observed.length),
+    burnedAverage: Math.round(expenditure / observed.length),
+    totalDifference: Math.round(difference),
+    averageDifference: Math.round(difference / observed.length),
+  };
+}
+
 // Calendar dates, not elapsed 24-hour periods (DST-safe).
 export function recentBurnedDates(count = 1, now = new Date()) {
   return Array.from({ length: count }, (_, index) => {

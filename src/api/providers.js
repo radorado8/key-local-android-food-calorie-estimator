@@ -1,6 +1,6 @@
 import { requestWeightAnalysis } from './weightAnalysis';
 import { analysisPhotos } from './photoInput';
-import { reasoningConfig, reasoningLevels } from '../config/reasoning';
+import { analysisModelConfig, reasoningConfig, reasoningLevels } from '../config/reasoning';
 import { Platform } from 'react-native';
 import { getActiveApiKey } from '../utils/apiKeys';
 import { DEFAULT_MODELS, isAIProvider } from '../config/aiProviders';
@@ -98,7 +98,7 @@ export async function analyzeWithProvider(payload) {
   if (payload.weightReference) return requestWeightAnalysis(payload, photos, provider, model, key, reasoningConfig(provider, model, payload.reasoningLevel), request);
   if (provider === 'gemini') {
     const options = { ...payload, apiKey: key, aiModel: model };
-    if (photos.length) return analyzeImage({ ...options, images: photos });
+    if (photos.length) return analyzeImage({ ...options, images: photos, maxAttempts: payload.analysisRetryManaged ? 1 : 3 });
     if (payload.audioUri || payload.audioBase64) {
       const transcript = await transcribeGemini(payload, key);
       checkAbort(payload.signal);
@@ -130,17 +130,19 @@ export async function analyzeWithProvider(payload) {
     const result = data.output?.filter(item => item.type === 'message').flatMap(item => item.content || []).filter(item => item.type === 'output_text').map(item => item.text).join('');
     return parseFoodResult(result);
   }
+  const claudeConfig = { ...analysisModelConfig('claude', model), ...thinking };
+  const autoTool = claudeConfig.tool_choice?.type === 'auto';
   const content = [];
   photos.forEach(photo => content.push({ type: 'image', source: { type: 'base64', media_type: photo.mimeType || 'image/jpeg', data: photo.base64Data } }));
-  content.push({ type: 'text', text: thinking.thinking?.type === 'enabled' ? prompt + '\nReturn the result by calling food_analysis. If you cannot call it, return only the JSON object.' : prompt });
+  content.push({ type: 'text', text: autoTool ? prompt + '\nReturn the result by calling food_analysis. If you cannot call it, return only the JSON object.' : prompt });
   const data = await request('https://api.anthropic.com/v1/messages', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01',
       ...(Platform.OS === 'web' ? { 'anthropic-dangerous-direct-browser-access': 'true' } : {}) }, signal: payload.signal,
     body: JSON.stringify({ model, max_tokens: 1500, messages: [{ role: 'user', content }],
       tools: [{ name: 'food_analysis', description: 'Return the estimated nutritional values of one food portion.', input_schema: foodResultSchema }],
-      tool_choice: { type: 'tool', name: 'food_analysis' }, ...thinking }),
+      tool_choice: { type: 'tool', name: 'food_analysis' }, ...claudeConfig }),
   }, provider);
-  if (thinking.thinking?.type === 'enabled' && data.stop_reason === 'end_turn') return parseFoodResult(data.content?.filter(item => item.type === 'text').map(item => item.text).join(''));
+  if (autoTool && data.stop_reason === 'end_turn') return parseFoodResult(data.content?.filter(item => item.type === 'text').map(item => item.text).join(''));
   if (data.stop_reason !== 'tool_use') throw new Error('Invalid format from AI');
   return parseFoodResult(data.content?.find(item => item.type === 'tool_use' && item.name === 'food_analysis')?.input);
 }

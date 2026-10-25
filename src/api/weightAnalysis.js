@@ -1,3 +1,5 @@
+import { analysisModelConfig } from '../config/reasoning';
+
 export const weightResultSchema = {
   type: 'object', additionalProperties: false,
   properties: {
@@ -41,7 +43,7 @@ export async function requestWeightAnalysis(payload, photos, provider, model, ke
     const data = await request(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, signal: payload.signal,
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, ...photos.map(photo => ({ inline_data: { mime_type: photo.mimeType || 'image/jpeg', data: photo.base64Data } }))] }],
-        generationConfig: { maxOutputTokens: 16000, responseMimeType: 'application/json', responseJsonSchema: weightResultSchema, ...thinking } }),
+        generationConfig: { maxOutputTokens: 16000, responseMimeType: 'application/json', responseJsonSchema: weightResultSchema, ...analysisModelConfig(provider, model), ...thinking } }),
     }, provider);
     result = data.candidates?.[0]?.content?.parts?.filter(part => !part.thought).map(part => part.text || '').join('');
   } else if (provider === 'openai') {
@@ -54,16 +56,16 @@ export async function requestWeightAnalysis(payload, photos, provider, model, ke
     if (data.status !== 'completed') throw new Error('Invalid format from AI');
     result = data.output?.filter(item => item.type === 'message').flatMap(item => item.content || []).filter(item => item.type === 'output_text').map(item => item.text).join('');
   } else {
-    const manualThinking = thinking.thinking?.type === 'enabled';
+    const autoTool = thinking.thinking?.type === 'enabled' || analysisModelConfig(provider, model).tool_choice?.type === 'auto';
     const data = await request('https://api.anthropic.com/v1/messages', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' }, signal: payload.signal,
       body: JSON.stringify({ model, max_tokens: Math.max(1500, (thinking.thinking?.budget_tokens || 0) + 1500),
-        messages: [{ role: 'user', content: [...photos.map(photo => ({ type: 'image', source: { type: 'base64', media_type: photo.mimeType || 'image/jpeg', data: photo.base64Data } })), { type: 'text', text: prompt }] }],
+        messages: [{ role: 'user', content: [...photos.map(photo => ({ type: 'image', source: { type: 'base64', media_type: photo.mimeType || 'image/jpeg', data: photo.base64Data } })), { type: 'text', text: autoTool ? prompt + '\nCall portion_weight with the result, or return only the JSON object.' : prompt }] }],
         tools: [{ name: 'portion_weight', description: 'Estimate only the portion weight.', input_schema: weightResultSchema }],
-        tool_choice: manualThinking ? { type: 'auto' } : { type: 'tool', name: 'portion_weight' }, ...thinking }),
+        tool_choice: autoTool ? { type: 'auto' } : { type: 'tool', name: 'portion_weight' }, ...analysisModelConfig(provider, model), ...thinking }),
     }, provider);
     result = data.content?.find(item => item.type === 'tool_use' && item.name === 'portion_weight')?.input;
-    if (!result && manualThinking && data.stop_reason === 'end_turn') result = data.content?.filter(item => item.type === 'text').map(item => item.text).join('');
+    if (!result && autoTool && data.stop_reason === 'end_turn') result = data.content?.filter(item => item.type === 'text').map(item => item.text).join('');
   }
   return scaleFavoriteByWeight(payload.weightReference, parseWeightResult(result));
 }

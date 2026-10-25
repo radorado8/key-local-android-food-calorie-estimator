@@ -768,6 +768,10 @@ const MealItem = ({ item, colors, t, onEdit, onRepeat, onRepeatLongPress, onDele
         onLongPress={onRepeatLongPress}
       >
         <Ionicons name="add" size={18} color={colors.accent} />
+        <View pointerEvents="none" style={{ position: 'absolute', right: 2, bottom: 1, flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+          <Ionicons name="chevron-down" size={8} color={colors.accent} style={{ transform: [{ translateY: 2 }, { translateX: 1 }] }} />
+          <Text style={{ color: colors.accent, fontSize: 8, lineHeight: 10, fontWeight: '700' }}>g</Text>
+        </View>
       </Pressable>
       <Pressable
         style={({ pressed }) => [styles.miniAction, styles.deleteAction, pressed && styles.actionBtnPressed]}

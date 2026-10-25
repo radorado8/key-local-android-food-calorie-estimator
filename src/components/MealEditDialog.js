@@ -55,9 +55,16 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
   const nameRef = useRef(null);
   const imagePickerBusyRef = useRef(false);
   const editCameraRef = useRef(null);
+  const imageSelectionSessionRef = useRef(0);
+  const editorVisibleRef = useRef(visible);
+  editorVisibleRef.current = visible;
   const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    ++imageSelectionSessionRef.current;
+    setShowCamera(false);
+    setCapturingPhoto(false);
+    setShowCategoryPicker(false);
     if (!visible) return;
 
     setName(String(initialMeal?.name || ''));
@@ -167,7 +174,9 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
   };
 
   const chooseImage = async (source) => {
-    if (imagePickerBusyRef.current) return;
+    if (!editorVisibleRef.current || imagePickerBusyRef.current) return;
+    const session = imageSelectionSessionRef.current;
+    const isCurrent = () => editorVisibleRef.current && session === imageSelectionSessionRef.current;
     imagePickerBusyRef.current = true;
     try {
       // The editor autofocuses its text input. Dismiss the iOS keyboard before
@@ -177,9 +186,11 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
         await new Promise(resolve => setTimeout(resolve, 300));
       }
 
+      if (!isCurrent()) return;
       if (source === 'camera') {
         let permission = cameraPermission;
         if (!permission?.granted) permission = await requestCameraPermission();
+        if (!isCurrent()) return;
         if (!permission?.granted) {
           Alert.alert(t.errorTitle || 'Error', t.cameraPermissionMissing || 'Camera permission is required.');
           return;
@@ -190,12 +201,13 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
       }
 
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!isCurrent()) return;
       if (permission.status !== 'granted') {
         Alert.alert(t.errorTitle || 'Error', t.galleryError || 'Photo library permission is required.');
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
-      if (!result.canceled && result.assets?.[0]?.uri) await saveSelectedImage(result.assets[0].uri);
+      if (isCurrent() && !result.canceled && result.assets?.[0]?.uri) await saveSelectedImage(result.assets[0].uri);
     } catch (error) {
       console.error('Meal image selection failed', error);
       Alert.alert(t.errorTitle || 'Error', error?.message || t.galleryError || 'Could not open the camera or photo library.');
@@ -369,7 +381,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
             )}
 
             <Text style={[styles.label, { color: currentColors.muted }]}>{t.nameLabel}</Text>
-            <TextInput
+            <TextInput selectTextOnFocus
               ref={nameRef}
               value={name}
               onChangeText={setName}
@@ -381,23 +393,23 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
             <View style={styles.grid}>
               <View style={styles.gridItem}>
                 <Text style={[styles.label, { color: currentColors.muted }]}>{t.calories}</Text>
-                <TextInput value={calories} onChangeText={setCalories} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
+                <TextInput selectTextOnFocus value={calories} onChangeText={setCalories} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
               </View>
               <View style={styles.gridItem}>
                 <Text style={[styles.label, { color: currentColors.muted }]}>{t.protein} (g)</Text>
-                <TextInput value={protein} onChangeText={setProtein} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
+                <TextInput selectTextOnFocus value={protein} onChangeText={setProtein} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
               </View>
               <View style={styles.gridItem}>
                 <Text style={[styles.label, { color: currentColors.muted }]}>{t.carbs} (g)</Text>
-                <TextInput value={carbs} onChangeText={setCarbs} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
+                <TextInput selectTextOnFocus value={carbs} onChangeText={setCarbs} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
               </View>
               <View style={styles.gridItem}>
                 <Text style={[styles.label, { color: currentColors.muted }]}>{t.fat} (g)</Text>
-                <TextInput value={fat} onChangeText={setFat} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
+                <TextInput selectTextOnFocus value={fat} onChangeText={setFat} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
               </View>
               <View style={styles.gridItem}>
                 <Text style={[styles.label, { color: currentColors.muted }]}>{t.weightLabel} (g)</Text>
-                <TextInput value={weightG} onChangeText={setWeightG} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
+                <TextInput selectTextOnFocus value={weightG} onChangeText={setWeightG} keyboardType="numeric" inputMode="numeric" style={[styles.input, { backgroundColor: currentColors.elemBg, borderColor: currentColors.elemBorder, color: currentColors.text }]} />
               </View>
               {categories.length > 0 && (
                 <View style={styles.gridItem}>
@@ -432,7 +444,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
           </ScrollView>
         </Animated.View>
 
-        {showCamera && (
+        {visible && showCamera && (
           <View style={[StyleSheet.absoluteFillObject, styles.cameraOverlay]}>
             <CameraView
               ref={editCameraRef}

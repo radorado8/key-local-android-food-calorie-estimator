@@ -17,7 +17,7 @@ import Svg, { Rect, G, Line, Text as SvgText, Path, Circle } from 'react-native-
 import { Ionicons } from '@expo/vector-icons';
 import { subscribeToMeals } from '../api/mealService';
 import { useSettings } from '../state/SettingsContext';
-import { summarizeBurnedDays } from '../utils/burnedHistory';
+import { summarizeBurnedDays, summarizeCalorieBalance } from '../utils/burnedHistory';
 import { useTranslation } from '../hooks/useTranslation';
 
 function getLocalDateKey(d) {
@@ -123,6 +123,7 @@ export default function AnalyticsScreen() {
     }, [dailyData]);
 
     const burnedSummary = useMemo(() => summarizeBurnedDays(dailyData), [dailyData]);
+    const calorieBalance = useMemo(() => summarizeCalorieBalance(dailyData), [dailyData]);
     const chartData = useMemo(() => viewMode === 'year' ? aggregateAnalyticsMonths(dailyData, language) : dailyData, [dailyData, viewMode, language]);
     const selected = chartData.find(day => day.key === selectedDay)
         || chartData.find(day => viewMode === 'year' ? getLocalDateKey(day.date).slice(0, 7) === todayKey.slice(0, 7) : day.key === todayKey)
@@ -324,8 +325,8 @@ export default function AnalyticsScreen() {
 
                 {/* Summary Cards Row */}
                 <View style={styles.summaryRow}>
-                    <SummaryCard label={t.totalCalories || 'Celkové kalórie'} burned={showBurned ? burnedSummary.total : undefined} burnedLabel={burnedLabel} consumedLabel={showBurned ? t.caloriesIntakeLabel : null} difference={showBurned ? (burnedSummary.total === null ? null : Math.round(summary.totalCals - burnedSummary.total)) : undefined} showFatEquivalent={showCalorieFatEquivalent} fatEquivalentLabel={t.calorieFatEquivalent} language={language} differenceLabel={t.calorieDifference} value={`${summary.totalCals}`} unit="kcal" icon="nutrition" iconColor={colors.accent} colors={colors} />
-                    <SummaryCard label={t.avgCalories || 'Priemer/deň'} burned={showBurned ? burnedSummary.average : undefined} burnedLabel={burnedLabel} consumedLabel={showBurned ? t.caloriesIntakeLabel : null} difference={showBurned ? (burnedSummary.average === null ? null : Math.round(summary.avgCals - burnedSummary.average)) : undefined} showFatEquivalent={showCalorieFatEquivalent} fatEquivalentLabel={t.calorieFatEquivalent} language={language} differenceLabel={t.calorieDifference} value={`${summary.avgCals}`} unit="kcal" icon="flame" iconColor={colors.calories} colors={colors} />
+                    <SummaryCard label={t.totalCalories || 'Celkové kalórie'} burned={showBurned ? burnedSummary.total : undefined} burnedLabel={burnedLabel} consumedLabel={showBurned ? t.caloriesIntakeLabel : null} difference={showBurned ? (calorieBalance?.totalDifference ?? null) : undefined} showFatEquivalent={showCalorieFatEquivalent} fatEquivalentLabel={t.calorieFatEquivalent} language={language} differenceLabel={t.calorieDifference} value={`${summary.totalCals}`} unit="kcal" icon="nutrition" iconColor={colors.accent} colors={colors} />
+                    <SummaryCard label={t.avgCalories || 'Priemer/deň'} burned={showBurned ? (calorieBalance?.burnedAverage ?? null) : undefined} burnedLabel={burnedLabel} consumedLabel={showBurned ? t.caloriesIntakeLabel : null} difference={showBurned ? (calorieBalance?.averageDifference ?? null) : undefined} showFatEquivalent={showCalorieFatEquivalent} fatEquivalentLabel={t.calorieFatEquivalent} language={language} differenceLabel={t.calorieDifference} value={`${showBurned && calorieBalance ? calorieBalance.intakeAverage : summary.avgCals}`} unit="kcal" icon="flame" iconColor={colors.calories} colors={colors} />
                 </View>
                 <View style={styles.summaryRow}>
                     <SummaryCard label={t.lowestDay || 'Najnižší deň'} burned={showBurned ? burnedSummary.lowest : undefined} burnedLabel={burnedLabel} consumedLabel={showBurned ? t.caloriesIntakeLabel : null} value={`${summary.lowest}`} unit="kcal" icon="arrow-down" iconColor={colors.accent} colors={colors} />
