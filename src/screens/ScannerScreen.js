@@ -38,7 +38,7 @@ import NutritionResultCard from '../components/NutritionResultCard';
 import { subscribeToMeals, createMeal } from '../api/mealService';
 import { getAppConfig } from '../config/appConfig';
 import { useTranslation } from '../hooks/useTranslation';
-import { Audio } from 'expo-av';
+import { RecordingPresets, useAudioRecorder, requestRecordingPermissionsAsync, setAudioModeAsync } from 'expo-audio';
 import { Ionicons } from '@expo/vector-icons';
 
 const MAX_RECORDING_DURATION_MS = 30_000;
@@ -137,15 +137,24 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
   const finishVoiceRecordingRef = useRef(null);
   const finishingVoiceRef = useRef(false);
   const startingVoiceRef = useRef(false);
+  const recordingStartedAtRef = useRef(0);
+
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY, status => {
+    // Native recording can stop at the 30-second limit before the JS timer runs.
+    if (status.isFinished && audioRecordingRef.current && Date.now() - recordingStartedAtRef.current >= MAX_RECORDING_DURATION_MS - 250 && !finishingVoiceRef.current && !recordingLimitReachedRef.current) {
+      recordingLimitReachedRef.current = true;
+      finishVoiceRecordingRef.current?.();
+    }
+  });
 
   const stopRecording = useCallback(async () => {
     const recording = audioRecordingRef.current;
     if (!recording) return null;
 
     try {
-      const status = await recording.getStatusAsync();
-      if (status.isRecording) await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
+      const status = recording.getStatus();
+      if (status.isRecording) await recording.stop();
+      const uri = recording.uri;
       const audio = uri ? { uri, mimeType: 'audio/mp4' } : null;
       return audio;
     } finally {
@@ -157,8 +166,9 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
 
   useEffect(() => navigation.addListener('blur', () => {
     if (!audioRecordingRef.current) return;
+    recordingLimitReachedRef.current = true;
     stopRecording()
-      .then(() => Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true }))
+      .then(() => setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }))
       .catch(() => {});
   }), [navigation, stopRecording]);
 
@@ -191,6 +201,8 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
     returnToPhotoOrigin();
   };
   const cancelCamera = async () => {
+    shutterOpacity.stopAnimation();
+    shutterOpacity.setValue(0);
     setShowCamera(false);
     if (photoDraft.length) {
       if (Platform.OS === 'ios') await new Promise(resolve => setTimeout(resolve, 400));
@@ -230,7 +242,7 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
     }
 
     const updateDuration = async () => {
-      const status = await audioRecordingRef.current?.getStatusAsync();
+      const status = await audioRecordingRef.current?.getStatus();
       const duration = status?.durationMillis || 0;
       setRecordingDurationMillis(duration);
       if (duration >= MAX_RECORDING_DURATION_MS && !recordingLimitReachedRef.current) {
@@ -429,19 +441,20 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
     }
     startingVoiceRef.current = true;
     try {
-      const permission = await Audio.requestPermissionsAsync();
+      const permission = await requestRecordingPermissionsAsync();
       if (permission.status !== 'granted') {
         Alert.alert(t.errorTitle || 'Chyba', t.microphonePermissionMissing || 'Povoľ prístup k mikrofónu a skús znova.');
         return;
       }
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        playThroughEarpieceAndroid: false,
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
+        shouldRouteThroughEarpiece: false,
       });
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      await recording.startAsync();
+      const recording = audioRecorder;
+      await recording.prepareToRecordAsync();
+      recordingStartedAtRef.current = Date.now();
+      recording.record({ forDuration: 30 });
       audioRecordingRef.current = recording;
       recordingLimitReachedRef.current = false;
       setRecordingDurationMillis(0);
@@ -519,7 +532,7 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
     try {
       const audio = await stopRecording();
       if (!audio?.uri) throw new Error(t.audioMissing || 'Nahrávku sa nepodarilo uložiť.');
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
       await analyzeFoodInput(audio);
     } catch (error) {
       Alert.alert(t.errorTitle || 'Chyba', error?.message || t.audioMissing || 'Nahrávanie sa nepodarilo dokončiť.');
@@ -727,6 +740,8 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
     setCameraDraftMode(append);
     setShowPhotoReview(false);
     if (append && Platform.OS === 'ios') await new Promise(resolve => setTimeout(resolve, 400));
+    shutterOpacity.stopAnimation();
+    shutterOpacity.setValue(0);
     setShowCamera(true);
   };
 
@@ -1098,48 +1113,51 @@ export default function ScannerScreen({ navigation, route, cameraContext = null,
         visible={showCamera}
         animationType="slide"
         transparent={false}
+        presentationStyle="fullScreen"
+        hardwareAccelerated
         onRequestClose={cancelCamera}
       >
-        <View style={styles.cameraOverlay}>
+        <View style={styles.cameraOverlay} collapsable={false}>
           <CameraView
             ref={cameraRef}
             style={styles.camera}
             facing={facing}
             flash={flash}
-          >
-            <Animated.View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: 'black', opacity: shutterOpacity, pointerEvents: 'none', zIndex: 1 }
-              ]}
-            />
-            <Pressable onPress={() => handleCapture(true)} disabled={photoDraft.length >= 4}
-              style={{ position: 'absolute', bottom: 205, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.75)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 24 }}>
-              <Text style={{ color: 'white', fontWeight: '700', fontSize: 16 }}>{t.photoMultipleButton}</Text>
+          />
+          {Platform.OS === 'ios' && <Animated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: 'black', opacity: shutterOpacity, zIndex: 1 }
+            ]}
+          />}
+          <Pressable onPress={() => handleCapture(true)} disabled={photoDraft.length >= 4}
+            style={{ position: 'absolute', zIndex: 2, elevation: 2, bottom: 205, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.75)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 24 }}>
+            <Text style={{ color: 'white', fontWeight: '700', fontSize: 16 }}>{t.photoMultipleButton}</Text>
+          </Pressable>
+          <View style={styles.cameraControls}>
+            <Pressable
+              style={styles.camBtnSecondary}
+              onPress={cancelCamera}
+              testID="camera-cancel"
+            >
+              <Text style={styles.camBtnText}>{t.cancel}</Text>
             </Pressable>
-            <View style={styles.cameraControls}>
-              <Pressable
-                style={styles.camBtnSecondary}
-                onPress={cancelCamera}
-              >
-                <Text style={styles.camBtnText}>{t.cancel}</Text>
-              </Pressable>
 
-              <Pressable
-                style={styles.camBtnMain}
-                onPress={() => handleCapture()}
-              >
-                <View style={styles.camBtnInner} />
-              </Pressable>
+            <Pressable
+              style={styles.camBtnMain}
+              onPress={() => handleCapture()}
+            >
+              <View style={styles.camBtnInner} />
+            </Pressable>
 
-              <Pressable
-                style={styles.camBtnSecondary}
-                onPress={() => setFlash(f => f === 'off' ? 'on' : 'off')}
-              >
-                <Text style={styles.camBtnText}>{flash === 'on' ? t.flashOn : t.flashOff}</Text>
-              </Pressable>
-            </View>
-          </CameraView>
+            <Pressable
+              style={styles.camBtnSecondary}
+              onPress={() => setFlash(f => f === 'off' ? 'on' : 'off')}
+            >
+              <Text style={styles.camBtnText}>{flash === 'on' ? t.flashOn : t.flashOff}</Text>
+            </Pressable>
+          </View>
         </View>
       </Modal>
 
@@ -1330,7 +1348,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   cameraOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     backgroundColor: 'black',
     zIndex: 999,
   },
@@ -1339,6 +1357,8 @@ const styles = StyleSheet.create({
   },
   cameraControls: {
     position: 'absolute',
+    zIndex: 2,
+    elevation: 2,
     bottom: 80,
     left: 0,
     right: 0,

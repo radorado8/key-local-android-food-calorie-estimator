@@ -69,7 +69,8 @@ for (const platform of ['ios', 'android']) test(`${platform}: elapsed indicator 
   assert.equal(find(app.tree, node => node.type === 'MealElapsedIndicator').props.inset, 0);
   const height = ring().props.style[1].height;
   app.tree.props.onLayout({ nativeEvent: { layout: { width: 580 } } }); app.render();
-  assert.equal(overlay().props.style.width, '100%');
+  assert.equal(overlay().props.style.width, 580);
+  assert.equal(overlay().props.style.height, 48);
   assert.equal(find(app.tree, node => node.type === 'MealElapsedIndicator').props.inset, 4);
   assert.equal(ring().props.style[1].height, height);
 });

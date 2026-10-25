@@ -3,7 +3,7 @@
     "name": "Calories AI Local",
     "slug": "android-food-calorie-estimator",
     "scheme": "keylocalfoodestimator",
-    "version": "1.0.73",
+    "version": "1.0.74",
     "orientation": "default",
     "icon": "./assets/icon_key_fire_android.png",
     "userInterfaceStyle": "automatic",
@@ -14,7 +14,7 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "buildNumber": "256",
+      "buildNumber": "258",
       "supportsTablet": true,
       "icon": "./assets/icon_key_fire_ios.png",
       "bundleIdentifier": "com.rados.caloriesai",
@@ -28,7 +28,7 @@
     },
     "android": {
       "package": "com.rados.keylocalandroidfoodcalorieestimator",
-      "versionCode": 256,
+      "versionCode": 257,
       "permissions": [
         "android.permission.health.READ_TOTAL_CALORIES_BURNED",
         "android.permission.health.READ_ACTIVE_CALORIES_BURNED"
@@ -54,7 +54,7 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 36,
+            "compileSdkVersion": 37,
             "targetSdkVersion": 36,
             "minSdkVersion": 26,
             "ndkVersion": "27.2.12479018",
@@ -64,10 +64,11 @@
               "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g",
               "android.r8.optimizedResourceShrinking": "true"
             },
-            "extraProguardRules": "-keep class expo.modules.** { *; }"
+            "extraProguardRules": "-keep class expo.modules.** { *; }",
+            "useLegacyPackaging": true
           },
           "ios": {
-            "deploymentTarget": "15.1",
+            "deploymentTarget": "16.4",
             "buildReactNativeFromSource": true
           }
         }
@@ -100,12 +101,10 @@
       "expo-document-picker",
       "expo-file-system",
       "./plugins/withShortcutIcons",
-      "./plugins/withExtractNativeLibs",
       "./plugins/withUnrestrictedScannerOrientation",
       "./plugins/withAllModulesBuildTools",
       "./plugins/withR8Optimization",
       "./plugins/withIosPodsDeploymentTarget",
-      "./plugins/withIosSceneLifecycle",
       [
         "expo-splash-screen",
         {
@@ -118,14 +117,22 @@
           }
         }
       ],
-      "./plugins/withIosFmtCompatibility",
       [
         "expo-media-library",
         {
           "savePhotosPermission": "Calories AI saves the meal photo you select to your photo library when you tap Save photo.",
           "granularPermissions": []
         }
-      ]
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Calories AI to record a food description for analysis.",
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
+        }
+      ],
+      "./plugins/withAndroidDevSupport"
     ],
     "extra": {
       "allowedEmails": [],

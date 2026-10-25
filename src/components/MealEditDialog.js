@@ -242,7 +242,7 @@ export default function MealEditDialog({ visible, initialMeal, onCancel, onSave,
     setSavingImage(true);
     let temporaryUri;
     try {
-      const MediaLibrary = await import('expo-media-library');
+      const MediaLibrary = await import('expo-media-library/legacy');
       // Scoped storage permits adding photos without reading the user's gallery.
       if (Platform.OS === 'ios' || (Platform.OS === 'android' && Number(Platform.Version) < 29)) {
         const permission = await MediaLibrary.requestPermissionsAsync(true, ['photo']);
