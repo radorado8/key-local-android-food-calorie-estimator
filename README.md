@@ -20,7 +20,9 @@ Food analysis uses **your own API key** for Gemini, OpenAI, or Claude. The app s
 - macOS with Xcode and an iOS Simulator for iOS development
 - An API key from at least one supported AI provider to analyze food
 
-This app uses native modules, so use a development build rather than Expo Go.
+This app uses Expo SDK 58 and React Native 0.88 with native modules, so use a development build rather than Expo Go. The minimum OS versions are iOS 16.4 and Android 8 (API 26). Android compilation requires SDK 37; the app targets API 36.
+
+On iPhone, iPad, and iPhone Duo, navigation follows the native system layout. On Mac, the iPad app uses bottom navigation. The local module in `modules/calories-platform/` distinguishes a Mac from a physical iPad; rebuild the native iOS app after changing it.
 
 ## Run locally
 
@@ -73,6 +75,7 @@ The tests cover AI provider/key handling, macronutrient goals, and USDA favorite
 - `src/data/` — bundled USDA starter list
 - `src/i18n/` — interface translations
 - `plugins/` — Expo native build configuration
+- `modules/` — local native modules, including Mac runtime detection
 - [`docs/ai-providers.md`](docs/ai-providers.md) — provider, model, key storage, and voice-input details
 
 The bundled food list is derived from USDA FoodData Central SR Legacy and contains no images. See [`src/data/USDA-ATTRIBUTION.md`](src/data/USDA-ATTRIBUTION.md) for its source and attribution details.

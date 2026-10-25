@@ -346,7 +346,7 @@ export default function DailySummary({ dailyGoal = 2100, colors, useLocalStorage
         </Pressable>
       </View>
 
-        {showMealElapsed && <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, width: wideCard ? '100%' : 312, maxWidth: '100%' }}>
+        {showMealElapsed && <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, height: 48, width: wideCard ? cardWidth : Math.min(312, cardWidth) }}>
           <MealElapsedIndicator meal={observedLatestMeal} now={clockNow} colors={colors} onPress={onPress} inset={wideCard ? 4 : 0} />
         </View>}
       </View>

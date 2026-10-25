@@ -16,7 +16,7 @@ import AnalyticsScreen from './src/screens/AnalyticsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { SettingsProvider, useSettings } from './src/state/SettingsContext';
 import { useTranslation } from './src/hooks/useTranslation';
-import * as NavigationBar from 'expo-navigation-bar';
+import { NavigationBar } from 'expo-navigation-bar';
 
 enableScreens(true);
 
@@ -129,14 +129,7 @@ function AppContent({ startupError }) {
     }
   }, [t]);
 
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      const navColor = colors.tabBg;
-      const iconStyle = theme === 'light' ? 'dark' : 'light';
-      NavigationBar.setBackgroundColorAsync(navColor).catch(() => { });
-      NavigationBar.setButtonStyleAsync(iconStyle).catch(() => { });
-    }
-  }, [theme, colors]);
+
 
 
   if (!hydrated) {
@@ -147,6 +140,7 @@ function AppContent({ startupError }) {
     <NavigationContainer>
       <QuickActionHandler />
       <StatusBar style={theme === 'light' ? 'dark' : 'light'} />
+      {Platform.OS === 'android' && <NavigationBar style={theme === 'light' ? 'dark' : 'light'} />}
       <TermsModal visible={!termsAccepted} mode="onboarding" />
 
       <Tab.Navigator

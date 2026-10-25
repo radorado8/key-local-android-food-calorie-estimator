@@ -4,6 +4,9 @@ import { createNavigatorFactory, TabRouter, useNavigationBuilder } from '@react-
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '../state/SettingsContext';
 import { splitDashboardLayout } from '../utils/splitDashboardLayout';
+import NativeTabRail from './NativeTabRail';
+import { usesNativeTabRail } from './nativeTabPolicy';
+import { isIOSAppOnMac } from '../utils/platformEnvironment';
 import { PaneWidthContext, PaneVisibleContext } from './PaneWidthContext';
 
 function AdaptiveTabNavigator({ children, screenOptions, initialRouteName, ...rest }) {
@@ -11,10 +14,14 @@ function AdaptiveTabNavigator({ children, screenOptions, initialRouteName, ...re
     children, screenOptions, initialRouteName, ...rest,
   });
   const { colors } = useSettings();
-  const insets = useSafeAreaInsets();
+  const windowInsets = useSafeAreaInsets();
+  const nativeTabs = usesNativeTabRail(Platform, isIOSAppOnMac);
+  // NativeTabRail already measures a rectangle inside all system bars on iOS.
+  const insets = nativeTabs ? { left: 0, right: 0, top: 0, bottom: 0 } : windowInsets;
   const [size, setSize] = useState({ width: 0, height: 0 });
   const availableWidth = Math.max(0, size.width - insets.left - insets.right);
-  const layout = splitDashboardLayout(availableWidth, size.height);
+  const [nativeFrame, setNativeFrame] = useState(null);
+  const layout = splitDashboardLayout(availableWidth, size.height, nativeFrame);
   // Foldable windows are wider and shorter than ordinary portrait phones,
   // including when the outer display is used. Keep their navigation compact.
   const compact = layout.split || (size.width >= 440 && size.height > 0 && size.height <= 800);
@@ -57,21 +64,20 @@ function AdaptiveTabNavigator({ children, screenOptions, initialRouteName, ...re
       <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={.8} style={{ color, flexShrink: 1, fontSize: compact ? 10 : 11, fontWeight: '700', textAlign: 'center', paddingHorizontal: 3 }}>{options.title || route.name}</Text>
     </Pressable>;
   };
-  return <NavigationContent>
-    <View style={{ flex: 1, backgroundColor: colors.bg }} onLayout={event => {
+  const content = <View style={{ flex: 1, backgroundColor: colors.bg }} onLayout={event => {
       const { width, height } = event.nativeEvent.layout;
       setSize(previous => previous.width === width && previous.height === height ? previous : { width, height });
     }}>
-      <View style={{ flex: 1, minWidth: 1, minHeight: 1, overflow: 'hidden', flexDirection: 'row', paddingLeft: insets.left, paddingRight: insets.right }}>
+      <View style={{ flex: 1, minWidth: 1, minHeight: 1, overflow: 'hidden', flexDirection: layout.homeOnRight ? 'row-reverse' : 'row', paddingLeft: insets.left, paddingRight: insets.right }}>
         {/* Keep inactive SVG screens laid out: display:none gives their native
             viewBox a zero-sized viewport while a fold transition is drawing. */}
         <View pointerEvents={showScanner ? 'auto' : 'none'} accessibilityElementsHidden={!showScanner} importantForAccessibility={showScanner ? 'auto' : 'no-hide-descendants'}
-          style={[{ minWidth: 1, minHeight: 1, width: Math.max(1, layout.split ? layout.left : availableWidth) }, !showScanner && { position: 'absolute', top: 0, bottom: 0, left: insets.left, opacity: 0, zIndex: -1 }]}>
-          <PaneWidthContext.Provider value={layout.split ? layout.left : availableWidth}><SafeAreaProvider style={{ flex: 1, minWidth: 1, minHeight: 1 }}>{loaded.current.has(scanner.key) && descriptors[scanner.key].render()}</SafeAreaProvider></PaneWidthContext.Provider>
+          style={[{ minWidth: 1, minHeight: 1, width: Math.max(1, layout.split ? layout.homeWidth : availableWidth) }, !showScanner && { position: 'absolute', top: 0, bottom: 0, left: insets.left, opacity: 0, zIndex: -1 }]}>
+          <PaneWidthContext.Provider value={layout.split ? layout.homeWidth : availableWidth}><SafeAreaProvider style={{ flex: 1, minWidth: 1, minHeight: 1 }}>{loaded.current.has(scanner.key) && descriptors[scanner.key].render()}</SafeAreaProvider></PaneWidthContext.Provider>
         </View>
         <View pointerEvents={showDetails ? 'auto' : 'none'} accessibilityElementsHidden={!showDetails} importantForAccessibility={showDetails ? 'auto' : 'no-hide-descendants'}
-          style={[{ flex: 1, minWidth: 1, minHeight: 1, borderLeftWidth: layout.split ? 1 : 0, borderLeftColor: colors.border }, !showDetails && { position: 'absolute', top: 0, bottom: 0, left: insets.left, right: insets.right, opacity: 0, zIndex: -1 }]}>
-          <PaneWidthContext.Provider value={layout.split ? availableWidth - layout.left - 1 : availableWidth}><SafeAreaProvider style={{ flex: 1, minWidth: 1, minHeight: 1 }}>
+          style={[{ flex: 1, minWidth: 1, minHeight: 1, borderLeftWidth: layout.split && !layout.homeOnRight ? 1 : 0, borderRightWidth: layout.split && layout.homeOnRight ? 1 : 0, borderLeftColor: colors.border, borderRightColor: colors.border }, !showDetails && { position: 'absolute', top: 0, bottom: 0, left: insets.left, right: insets.right, opacity: 0, zIndex: -1 }]}>
+          <PaneWidthContext.Provider value={layout.split ? layout.detailWidth : availableWidth}><SafeAreaProvider style={{ flex: 1, minWidth: 1, minHeight: 1 }}>
             {details.map(route => {
               if (!loaded.current.has(route.key)) return null;
               const visible = (layout.split ? detail.key : focused.key) === route.key;
@@ -81,14 +87,16 @@ function AdaptiveTabNavigator({ children, screenOptions, initialRouteName, ...re
           </SafeAreaProvider></PaneWidthContext.Provider>
         </View>
       </View>
-      {!hideBar && <View style={{ flexShrink: 0, backgroundColor: colors.tabBg, borderTopWidth: 1, borderTopColor: colors.tabBorder, paddingBottom: bottom, paddingLeft: insets.left, paddingRight: insets.right }}>
+      {!nativeTabs && !hideBar && <View style={{ flexShrink: 0, backgroundColor: colors.tabBg, borderTopWidth: 1, borderTopColor: colors.tabBorder, paddingBottom: bottom, paddingLeft: insets.left, paddingRight: insets.right }}>
         {layout.split ? <View style={{ flexDirection: 'row' }}>
           <View style={{ width: layout.left, alignItems: 'center' }}><View style={{ width: 96, height: tabHeight }}>{tab(scanner)}</View></View>
           <View style={{ flex: 1, flexDirection: 'row', borderLeftWidth: 1, borderLeftColor: colors.border }}>{details.map(tab)}</View>
         </View> : <View style={{ alignSelf: 'center', width: '100%', maxWidth: 600, flexDirection: 'row' }}>{state.routes.map(tab)}</View>}
       </View>}
-    </View>
-  </NavigationContent>;
+    </View>;
+  return <NavigationContent>{nativeTabs
+    ? <NativeTabRail state={state} navigation={navigation} descriptors={descriptors} hidden={hideBar} split={layout.split} detailKey={detail.key} onGeometry={setNativeFrame}>{content}</NativeTabRail>
+    : content}</NavigationContent>;
 }
 
 export const createAdaptiveTabNavigator = createNavigatorFactory(AdaptiveTabNavigator);
